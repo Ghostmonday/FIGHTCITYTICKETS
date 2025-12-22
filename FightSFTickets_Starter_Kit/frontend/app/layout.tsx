@@ -9,9 +9,14 @@ export const metadata: Metadata = {
   title: "FightSFTickets.com — Appeal Your SF Parking Ticket",
   description:
     "Appeal your parking ticket in 5 minutes. We format your statement, print your letter, and mail it to the right place.",
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+  },
   openGraph: {
     title: "FightSFTickets.com — Appeal Your SF Parking Ticket",
-    description: "Appeal your parking ticket in 5 minutes. We handle the paperwork.",
+    description:
+      "Appeal your parking ticket in 5 minutes. We handle the paperwork.",
     type: "website",
   },
 };

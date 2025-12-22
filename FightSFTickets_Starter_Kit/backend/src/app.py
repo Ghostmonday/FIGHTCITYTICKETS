@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .middleware.rate_limit import limiter
+from .routes.admin import router as admin_router
 from .routes.checkout import router as checkout_router
 from .routes.health import router as health_router
 from .routes.statement import router as statement_router
@@ -22,10 +23,14 @@ from .routes.transcribe import router as transcribe_router
 from .routes.webhooks import router as webhooks_router
 from .services.database import get_db_service
 
-# Set up logger
+# Set up logger with file handler
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("server.log"),
+        logging.StreamHandler()
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -142,6 +147,7 @@ app.include_router(transcribe_router, prefix="/api", tags=["transcribe"])
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
 app.include_router(webhooks_router, prefix="/api/webhook", tags=["webhooks"])
+app.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 
 @app.get("/")

@@ -20,32 +20,32 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/fightsf"
 
     # Stripe Configuration
-    stripe_secret_key: str = "change-me"
-    stripe_publishable_key: str = "change-me"
-    stripe_webhook_secret: str = "change-me"
+    stripe_secret_key: str = "sk_test_dummy"
+    stripe_publishable_key: str = "pk_test_dummy"
+    stripe_webhook_secret: str = "whsec_dummy"
 
     # Stripe Price IDs (test mode)
     stripe_price_standard: str = "price_1SedsMLncfs9uXKNp1q7FWc7"  # $9.89 test
     stripe_price_certified: str = "price_1SedsaLncfs9uXKN7YnRzjt4"  # $19.89 test
 
     # Lob Configuration
-    lob_api_key: str = "change-me"
+    lob_api_key: str = "test_dummy"
     lob_mode: str = "test"  # "test" or "live"
 
     # AI Services - DeepSeek
-    deepseek_api_key: str = "change-me"
+    deepseek_api_key: str = "sk_dummy"
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-chat"
 
     # AI Services - OpenAI
-    openai_api_key: str = "change-me"
+    openai_api_key: str = "sk_dummy"
 
     # Application URLs
     app_url: str = "http://localhost:3000"
     api_url: str = "http://localhost:8000"
 
     # Security
-    secret_key: str = "dev-secret-change-in-production"
+    secret_key: str = "dev_secret_change_in_production"
 
     @property
     def debug(self) -> bool:

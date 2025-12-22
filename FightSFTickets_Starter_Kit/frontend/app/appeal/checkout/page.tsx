@@ -20,16 +20,21 @@ function CheckoutPageContent() {
     certified: { amount: 19.0, label: "Certified Mail" },
   };
 
-  const currentPrice = prices[appealType as keyof typeof prices] || prices.standard;
+  const currentPrice =
+    prices[appealType as keyof typeof prices] || prices.standard;
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!userInfo.name.trim()) newErrors.name = "Full name is required";
-    if (!userInfo.addressLine1.trim()) newErrors.addressLine1 = "Address is required";
+    if (!userInfo.addressLine1.trim())
+      newErrors.addressLine1 = "Address is required";
     if (!userInfo.city.trim()) newErrors.city = "City is required";
-    if (!userInfo.state.trim() || userInfo.state.length !== 2) newErrors.state = "State code (2 letters) is required";
-    if (!userInfo.zip.trim() || userInfo.zip.length !== 5) newErrors.zip = "Valid 5-digit ZIP code is required";
-    if (!userInfo.email.trim() || !userInfo.email.includes("@")) newErrors.email = "Valid email is required";
+    if (!userInfo.state.trim() || userInfo.state.length !== 2)
+      newErrors.state = "State code (2 letters) is required";
+    if (!userInfo.zip.trim() || userInfo.zip.length !== 5)
+      newErrors.zip = "Valid 5-digit ZIP code is required";
+    if (!userInfo.email.trim() || !userInfo.email.includes("@"))
+      newErrors.email = "Valid email is required";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -61,11 +66,11 @@ function CheckoutPageContent() {
         draft_text: state.draftLetter || "Sample draft text",
         license_plate: state.licensePlate,
         selected_evidence: state.photos,
-        signature_data: state.signature || undefined
+        signature_data: state.signature || undefined,
       };
 
       const result = await createCheckoutSession(checkoutData);
-      
+
       if (result.checkout_url) {
         window.location.href = result.checkout_url;
       } else {
@@ -76,7 +81,7 @@ function CheckoutPageContent() {
       alert(
         error instanceof Error
           ? error.message
-          : "Failed to start checkout. Please try again."
+          : "Failed to start checkout. Please try again.",
       );
       setIsLoading(false);
     }
@@ -84,9 +89,9 @@ function CheckoutPageContent() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setUserInfo(prev => ({ ...prev, [name]: value }));
+    setUserInfo((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[name];
         return newErrors;
@@ -126,7 +131,9 @@ function CheckoutPageContent() {
             </div>
             <div className="border-t pt-4 flex justify-between text-lg font-bold">
               <span>Total</span>
-              <span className="text-indigo-600">${currentPrice.amount.toFixed(2)}</span>
+              <span className="text-indigo-600">
+                ${currentPrice.amount.toFixed(2)}
+              </span>
             </div>
           </div>
         </div>
@@ -179,94 +186,138 @@ function CheckoutPageContent() {
           </h2>
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name
+              </label>
               <input
                 type="text"
                 name="name"
                 value={userInfo.name}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full px-4 py-2 border rounded-lg text-gray-900 ${errors.name ? "border-red-500" : "border-gray-300"}`}
                 placeholder="Jane Doe"
               />
-              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+              {errors.name && (
+                <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Email Address
+              </label>
               <input
                 type="email"
                 name="email"
                 value={userInfo.email}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full px-4 py-2 border rounded-lg text-gray-900 ${errors.email ? "border-red-500" : "border-gray-300"}`}
                 placeholder="jane@example.com"
               />
-              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Street Address
+              </label>
               <input
                 type="text"
                 name="addressLine1"
                 value={userInfo.addressLine1}
                 onChange={handleInputChange}
-                className={`w-full px-4 py-2 border rounded-lg ${errors.addressLine1 ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full px-4 py-2 border rounded-lg text-gray-900 ${errors.addressLine1 ? "border-red-500" : "border-gray-300"}`}
                 placeholder="123 Market St"
               />
-              {errors.addressLine1 && <p className="text-red-500 text-xs mt-1">{errors.addressLine1}</p>}
+              {errors.addressLine1 && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.addressLine1}
+                </p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2 (Optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Address Line 2 (Optional)
+              </label>
               <input
                 type="text"
                 name="addressLine2"
                 value={userInfo.addressLine2}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-900"
                 placeholder="Apt 4B"
               />
             </div>
 
             <div className="grid grid-cols-6 gap-4">
               <div className="col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City
+                </label>
                 <input
                   type="text"
                   name="city"
                   value={userInfo.city}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-2 border rounded-lg ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-4 py-2 border rounded-lg text-gray-900 ${errors.city ? "border-red-500" : "border-gray-300"}`}
                   placeholder="San Francisco"
                 />
-                {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+                {errors.city && (
+                  <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+                )}
               </div>
               <div className="col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  State
+                </label>
                 <input
                   type="text"
                   name="state"
                   value={userInfo.state}
-                  onChange={(e) => handleInputChange({ ...e, target: { ...e.target, value: e.target.value.toUpperCase().slice(0, 2) } } as any)}
-                  className={`w-full px-4 py-2 border rounded-lg ${errors.state ? 'border-red-500' : 'border-gray-300'}`}
+                  onChange={(e) =>
+                    handleInputChange({
+                      ...e,
+                      target: {
+                        ...e.target,
+                        value: e.target.value.toUpperCase().slice(0, 2),
+                      },
+                    } as any)
+                  }
+                  className={`w-full px-4 py-2 border rounded-lg text-gray-900 ${errors.state ? "border-red-500" : "border-gray-300"}`}
                   placeholder="CA"
                   maxLength={2}
                 />
-                {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+                {errors.state && (
+                  <p className="text-red-500 text-xs mt-1">{errors.state}</p>
+                )}
               </div>
               <div className="col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">ZIP</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ZIP
+                </label>
                 <input
                   type="text"
                   name="zip"
                   value={userInfo.zip}
-                  onChange={(e) => handleInputChange({ ...e, target: { ...e.target, value: e.target.value.replace(/\D/g, '').slice(0, 5) } } as any)}
-                  className={`w-full px-4 py-2 border rounded-lg ${errors.zip ? 'border-red-500' : 'border-gray-300'}`}
+                  onChange={(e) =>
+                    handleInputChange({
+                      ...e,
+                      target: {
+                        ...e.target,
+                        value: e.target.value.replace(/\D/g, "").slice(0, 5),
+                      },
+                    } as any)
+                  }
+                  className={`w-full px-4 py-2 border rounded-lg text-gray-900 ${errors.zip ? "border-red-500" : "border-gray-300"}`}
                   placeholder="94103"
                   maxLength={5}
                 />
-                {errors.zip && <p className="text-red-500 text-xs mt-1">{errors.zip}</p>}
+                {errors.zip && (
+                  <p className="text-red-500 text-xs mt-1">{errors.zip}</p>
+                )}
               </div>
             </div>
           </div>
@@ -279,7 +330,9 @@ function CheckoutPageContent() {
             disabled={isLoading}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-lg text-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? "Processing..." : `Pay $${currentPrice.amount.toFixed(2)}`}
+            {isLoading
+              ? "Processing..."
+              : `Pay $${currentPrice.amount.toFixed(2)}`}
           </button>
           <p className="text-sm text-gray-500 text-center mt-4">
             Secure payment powered by Stripe

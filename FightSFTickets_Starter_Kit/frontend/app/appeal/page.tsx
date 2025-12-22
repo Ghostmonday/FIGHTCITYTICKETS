@@ -8,7 +8,8 @@ import { useAppeal } from "../lib/appeal-context";
 function AppealPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const appealType = (searchParams.get("type") as "standard" | "certified") || "standard";
+  const appealType =
+    (searchParams.get("type") as "standard" | "certified") || "standard";
   const { state, updateState } = useAppeal();
 
   const [formData, setFormData] = useState({
@@ -146,12 +147,17 @@ function AppealPageContent() {
                 : "bg-gray-100 text-gray-800"
             }`}
           >
-            {appealType === "certified" ? "Certified Mail ($19)" : "Standard Mail ($9)"}
+            {appealType === "certified"
+              ? "Certified Mail ($19)"
+              : "Standard Mail ($9)"}
           </span>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-lg shadow-md p-6"
+        >
           {/* Citation Number */}
           <div className="mb-6">
             <label
@@ -167,17 +173,19 @@ function AppealPageContent() {
               onChange={(e) =>
                 handleChange(
                   "citationNumber",
-                  e.target.value.replace(/\D/g, "").slice(0, 9)
+                  e.target.value.replace(/\D/g, "").slice(0, 9),
                 )
               }
               placeholder="912345678"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 ${
                 errors.citationNumber ? "border-red-500" : "border-gray-300"
               }`}
               maxLength={9}
             />
             {errors.citationNumber && (
-              <p className="text-red-500 text-sm mt-1">{errors.citationNumber}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.citationNumber}
+              </p>
             )}
             <p className="text-gray-500 text-sm mt-1">
               Found on your parking ticket (9-digit number starting with 9)
@@ -197,10 +205,13 @@ function AppealPageContent() {
               id="licensePlate"
               value={formData.licensePlate}
               onChange={(e) =>
-                handleChange("licensePlate", e.target.value.toUpperCase().slice(0, 10))
+                handleChange(
+                  "licensePlate",
+                  e.target.value.toUpperCase().slice(0, 10),
+                )
               }
               placeholder="ABC1234"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
               maxLength={10}
             />
             <p className="text-gray-500 text-sm mt-1">
@@ -222,12 +233,14 @@ function AppealPageContent() {
               value={formData.violationDate}
               onChange={(e) => handleChange("violationDate", e.target.value)}
               max={new Date().toISOString().split("T")[0]}
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 ${
                 errors.violationDate ? "border-red-500" : "border-gray-300"
               }`}
             />
             {errors.violationDate && (
-              <p className="text-red-500 text-sm mt-1">{errors.violationDate}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.violationDate}
+              </p>
             )}
             <p className="text-gray-500 text-sm mt-1">
               The date you received the parking ticket
@@ -250,7 +263,7 @@ function AppealPageContent() {
                 handleChange("vehicleInfo", e.target.value.slice(0, 200))
               }
               placeholder="e.g., 2020 Honda Civic, Blue"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 ${
                 errors.vehicleInfo ? "border-red-500" : "border-gray-300"
               }`}
               maxLength={200}
@@ -285,7 +298,8 @@ function AppealPageContent() {
         <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
           <p className="text-sm text-gray-700">
             <strong>Note:</strong> We do not recommend specific evidence or
-            promise outcomes. You are responsible for the content of your appeal.
+            promise outcomes. You are responsible for the content of your
+            appeal.
           </p>
         </div>
       </div>
