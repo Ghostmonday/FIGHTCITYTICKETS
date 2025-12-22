@@ -47,6 +47,10 @@ class Settings(BaseSettings):
     # Security
     secret_key: str = "dev-secret-change-in-production"
 
+    @property
+    def debug(self) -> bool:
+        return self.app_env == "dev"
+
     def cors_origin_list(self) -> List[str]:
         # supports comma-separated origins
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
