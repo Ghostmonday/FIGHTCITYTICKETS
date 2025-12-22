@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { transcribeAudio } from "../../lib/api";
+import { useAppeal } from "../../lib/appeal-context";
 
 type RecordingState = "idle" | "requesting" | "recording" | "processing";
 
-export default function VoicePage() {
+function VoicePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appealType = searchParams.get("type") || "standard";
+  const { state: contextState, updateState } = useAppeal();
 
   const [state, setState] = useState<RecordingState>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +20,7 @@ export default function VoicePage() {
   const [audioLevel, setAudioLevel] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [transcript, setTranscript] = useState<string>("");
+  const [transcript, setTranscript] = useState<string>(contextState.transcript || "");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -185,6 +187,7 @@ export default function VoicePage() {
       });
       const result = await transcribeAudio(audioFile);
       setTranscript(result.transcript || "");
+      updateState({ transcript: result.transcript || "" }); // Update context immediately
       setError(null);
     } catch (err) {
       console.error("Transcription error:", err);
@@ -199,7 +202,7 @@ export default function VoicePage() {
   };
 
   const handleContinue = () => {
-    // TODO: Store transcript in state/context
+    updateState({ transcript });
     router.push(`/appeal/review?type=${appealType}`);
   };
 
@@ -398,3 +401,10 @@ export default function VoicePage() {
   );
 }
 
+export default function VoicePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <VoicePageContent />
+    </Suspense>
+  );
+}

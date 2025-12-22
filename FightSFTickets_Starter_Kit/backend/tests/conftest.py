@@ -82,6 +82,10 @@ def mock_stripe_service(monkeypatch):
             }
 
     from src.services import stripe_service
-
     monkeypatch.setattr(stripe_service, "StripeService", MockStripeService)
+
+    # Also patch where it is used in the routes
+    import src.routes.checkout
+    monkeypatch.setattr(src.routes.checkout, "StripeService", MockStripeService)
+
     return MockStripeService()
