@@ -12,24 +12,8 @@ function CameraPageContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { state, updateState } = useAppeal();
 
-  const [photos, setPhotos] = useState<File[]>(state.photos || []);
-  const [previews, setPreviews] = useState<string[]>([]);
-
-  useEffect(() => {
-    // Generate previews for existing photos
-    if (state.photos.length > 0 && previews.length === 0) {
-      state.photos.forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          if (e.target?.result) {
-            setPreviews((prev) => [...prev, e.target!.result as string]);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-    }
-  }, [state.photos]);
-  const [isUploading, setIsUploading] = useState(false);
+  // State now holds base64 strings
+  const [photos, setPhotos] = useState<string[]>(state.photos || []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -40,15 +24,12 @@ function CameraPageContent() {
       return;
     }
 
-    const newPhotos = [...photos, ...imageFiles];
-    setPhotos(newPhotos);
-
-    // Create previews
+    // Convert to Base64
     imageFiles.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (e.target?.result) {
-          setPreviews((prev) => [...prev, e.target!.result as string]);
+          setPhotos((prev) => [...prev, e.target!.result as string]);
         }
       };
       reader.readAsDataURL(file);
@@ -57,7 +38,6 @@ function CameraPageContent() {
 
   const removePhoto = (index: number) => {
     setPhotos((prev) => prev.filter((_, i) => i !== index));
-    setPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleContinue = () => {
@@ -124,16 +104,16 @@ function CameraPageContent() {
         </div>
 
         {/* Photo Grid */}
-        {previews.length > 0 && (
+        {photos.length > 0 && (
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Selected Photos ({previews.length})
+              Selected Photos ({photos.length})
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {previews.map((preview, index) => (
+              {photos.map((photo, index) => (
                 <div key={index} className="relative group">
                   <img
-                    src={preview}
+                    src={photo}
                     alt={`Photo ${index + 1}`}
                     className="w-full h-48 object-cover rounded-lg"
                   />

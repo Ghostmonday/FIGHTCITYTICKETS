@@ -22,23 +22,43 @@ function ReviewPageContent() {
       setDraftText(state.draftLetter);
       setOriginalText(state.draftLetter);
     } else {
-      const { citationNumber, violationDate, transcript } = state;
-      const initialDraft = `Dear SFMTA Citation Review,
+      // Auto-refine if we have a transcript but no draft yet
+      const generateDraft = async () => {
+        setIsRefining(true);
+        try {
+          const { refineStatement } = await import("../../lib/api");
+          const result = await refineStatement({
+            transcript: state.transcript || "I am writing to appeal this ticket.",
+            citation_number: state.citationNumber || "912345678",
+          });
 
-I am writing to appeal parking citation #${citationNumber || "912345678"} issued on ${violationDate || "[DATE]"}.
+          if (result.success && result.refined_text) {
+            setDraftText(result.refined_text);
+            setOriginalText(result.refined_text);
+            updateState({ draftLetter: result.refined_text });
+          } else {
+             // Fallback to template if API fails
+            const initialDraft = `Dear SFMTA Citation Review,\n\nI am writing to appeal parking citation #${state.citationNumber || "912345678"}.\n\n${state.transcript || "[YOUR STORY]"}\n\nSincerely,\n[YOUR NAME]`;
+            setDraftText(initialDraft);
+          }
+        } catch (e) {
+             // Fallback to template if API fails
+            const initialDraft = `Dear SFMTA Citation Review,\n\nI am writing to appeal parking citation #${state.citationNumber || "912345678"}.\n\n${state.transcript || "[YOUR STORY]"}\n\nSincerely,\n[YOUR NAME]`;
+            setDraftText(initialDraft);
+        } finally {
+          setIsRefining(false);
+        }
+      };
 
-On the date of the violation, I parked my vehicle in what I believed to be a legal parking space. ${transcript || "[YOUR STORY WILL BE INSERTED HERE]"}
-
-I respectfully request that this citation be dismissed.
-
-Thank you for your consideration.
-
-Sincerely,
-[YOUR NAME]`;
-      setDraftText(initialDraft);
-      setOriginalText(initialDraft);
+      if (state.transcript) {
+          generateDraft();
+      } else {
+          // No transcript, just set placeholder
+            const initialDraft = `Dear SFMTA Citation Review,\n\nI am writing to appeal parking citation #${state.citationNumber || "912345678"}.\n\n[YOUR STORY]\n\nSincerely,\n[YOUR NAME]`;
+            setDraftText(initialDraft);
+      }
     }
-  }, [state]);
+  }, [state.draftLetter]); // Only run if draftLetter status changes (or initially) - beware of loops with state.transcript
 
   const handleRefine = async () => {
     setIsRefining(true);
@@ -51,6 +71,7 @@ Sincerely,
 
       if (result.success && result.refined_text) {
         setDraftText(result.refined_text);
+        updateState({ draftLetter: result.refined_text });
         setIsEditing(false);
       } else {
         alert(

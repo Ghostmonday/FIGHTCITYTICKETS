@@ -187,6 +187,7 @@ function VoicePageContent() {
       });
       const result = await transcribeAudio(audioFile);
       setTranscript(result.transcript || "");
+      updateState({ transcript: result.transcript || "" }); // Update context immediately
       setError(null);
     } catch (err) {
       console.error("Transcription error:", err);
