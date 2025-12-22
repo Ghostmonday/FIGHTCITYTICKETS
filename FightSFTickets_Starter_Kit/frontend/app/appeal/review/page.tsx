@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAppeal } from "../../lib/appeal-context";
 
-export default function ReviewPage() {
+function ReviewPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appealType = searchParams.get("type") || "standard";
+  const { state, updateState } = useAppeal();
 
   const [draftText, setDraftText] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -15,13 +17,17 @@ export default function ReviewPage() {
   const [originalText, setOriginalText] = useState("");
 
   useEffect(() => {
-    // TODO: Get transcript from context/state
-    // For now, generate a sample draft
-    const sampleDraft = `Dear SFMTA Citation Review,
+    // If draftLetter exists, use it. Otherwise, generate one from transcript and metadata.
+    if (state.draftLetter) {
+      setDraftText(state.draftLetter);
+      setOriginalText(state.draftLetter);
+    } else {
+      const { citationNumber, violationDate, transcript } = state;
+      const initialDraft = `Dear SFMTA Citation Review,
 
-I am writing to appeal parking citation #912345678 issued on [DATE].
+I am writing to appeal parking citation #${citationNumber || "912345678"} issued on ${violationDate || "[DATE]"}.
 
-On the date of the violation, I parked my vehicle in what I believed to be a legal parking space. [YOUR STORY WILL BE INSERTED HERE]
+On the date of the violation, I parked my vehicle in what I believed to be a legal parking space. ${transcript || "[YOUR STORY WILL BE INSERTED HERE]"}
 
 I respectfully request that this citation be dismissed.
 
@@ -29,10 +35,10 @@ Thank you for your consideration.
 
 Sincerely,
 [YOUR NAME]`;
-
-    setDraftText(sampleDraft);
-    setOriginalText(sampleDraft);
-  }, []);
+      setDraftText(initialDraft);
+      setOriginalText(initialDraft);
+    }
+  }, [state]);
 
   const handleRefine = async () => {
     setIsRefining(true);
@@ -40,7 +46,7 @@ Sincerely,
       const { refineStatement } = await import("../../lib/api");
       const result = await refineStatement({
         transcript: draftText,
-        citation_number: "912345678", // TODO: Get from context
+        citation_number: state.citationNumber || "912345678",
       });
 
       if (result.success && result.refined_text) {
@@ -66,7 +72,7 @@ Sincerely,
   };
 
   const handleContinue = () => {
-    // TODO: Store draft in context
+    updateState({ draftLetter: draftText });
     router.push(`/appeal/signature?type=${appealType}`);
   };
 
@@ -179,3 +185,10 @@ Sincerely,
   );
 }
 
+export default function ReviewPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ReviewPageContent />
+    </Suspense>
+  );
+}

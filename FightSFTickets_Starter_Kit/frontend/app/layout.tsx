@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
 import { BackgroundAudio } from "./components/BackgroundAudio";
+import { AppealProvider } from "./lib/appeal-context";
 
 export const metadata: Metadata = {
   title: "FightSFTickets.com — Appeal Your SF Parking Ticket",
@@ -33,8 +34,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="min-h-screen antialiased">
-        <BackgroundAudio />
-        {children}
+        <AppealProvider>
+          <BackgroundAudio />
+          {children}
+        </AppealProvider>
       </body>
     </html>
   );

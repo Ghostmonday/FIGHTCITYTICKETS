@@ -1,17 +1,34 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAppeal } from "../../lib/appeal-context";
 
-export default function CameraPage() {
+function CameraPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appealType = searchParams.get("type") || "standard";
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { state, updateState } = useAppeal();
 
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [photos, setPhotos] = useState<File[]>(state.photos || []);
   const [previews, setPreviews] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Generate previews for existing photos
+    if (state.photos.length > 0 && previews.length === 0) {
+      state.photos.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            setPreviews((prev) => [...prev, e.target!.result as string]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  }, [state.photos]);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,7 +61,7 @@ export default function CameraPage() {
   };
 
   const handleContinue = () => {
-    // TODO: Store photos in state/context
+    updateState({ photos });
     router.push(`/appeal/voice?type=${appealType}`);
   };
 
@@ -174,3 +191,10 @@ export default function CameraPage() {
   );
 }
 
+export default function CameraPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CameraPageContent />
+    </Suspense>
+  );
+}

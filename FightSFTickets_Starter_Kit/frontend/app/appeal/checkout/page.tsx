@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAppeal } from "../../lib/appeal-context";
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appealType = searchParams.get("type") || "standard";
+  const { state } = useAppeal();
 
   const [isLoading, setIsLoading] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
@@ -23,20 +25,19 @@ export default function CheckoutPage() {
     setIsLoading(true);
     try {
       const { createCheckoutSession } = await import("../../lib/api");
-      
-      // TODO: Get form data from context/state
+
       const checkoutData = {
-        citation_number: "912345678", // TODO: Get from context
+        citation_number: state.citationNumber || "912345678",
         appeal_type: appealType as "standard" | "certified",
-        user_name: "John Doe", // TODO: Get from context
-        user_address_line1: "123 Main St", // TODO: Get from context
-        user_city: "San Francisco", // TODO: Get from context
-        user_state: "CA", // TODO: Get from context
-        user_zip: "94102", // TODO: Get from context
-        violation_date: "2024-01-15", // TODO: Get from context
-        vehicle_info: "Honda Civic", // TODO: Get from context
-        appeal_reason: "Sample reason", // TODO: Get from context
-        draft_text: "Sample draft text", // TODO: Get from context
+        user_name: "John Doe", // User info not in context, using placeholder
+        user_address_line1: "123 Main St", // User info not in context, using placeholder
+        user_city: "San Francisco", // User info not in context, using placeholder
+        user_state: "CA", // User info not in context, using placeholder
+        user_zip: "94102", // User info not in context, using placeholder
+        violation_date: state.violationDate || "2024-01-15",
+        vehicle_info: state.vehicleInfo || "Honda Civic",
+        appeal_reason: state.transcript || "Sample reason",
+        draft_text: state.draftLetter || "Sample draft text",
       };
 
       const result = await createCheckoutSession(checkoutData);
@@ -170,3 +171,10 @@ export default function CheckoutPage() {
   );
 }
 
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CheckoutPageContent />
+    </Suspense>
+  );
+}
