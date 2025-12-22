@@ -1,0 +1,347 @@
+"""
+Citation Validation Service for FightSFTickets.com
+
+Validates San Francisco parking citation numbers and calculates appeal deadlines.
+Implements SFMTA-specific validation rules and 21-day appeal deadline calculation.
+"""
+
+import re
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Dict, Optional, Tuple
+
+
+class CitationAgency(Enum):
+    """Parking citation issuing agencies in San Francisco."""
+
+    SFMTA = "SFMTA"  # San Francisco Municipal Transportation Agency
+    SFPD = "SFPD"  # San Francisco Police Department
+    SFMUD = "SFMUD"  # San Francisco Municipal Utility District
+    UNKNOWN = "UNKNOWN"
+
+
+@dataclass
+class CitationValidationResult:
+    """Result of citation validation."""
+
+    is_valid: bool
+    citation_number: str
+    agency: CitationAgency
+    deadline_date: Optional[str] = None
+    days_remaining: Optional[int] = None
+    is_past_deadline: bool = False
+    is_urgent: bool = False
+    error_message: Optional[str] = None
+    formatted_citation: Optional[str] = None
+
+
+@dataclass
+class CitationInfo:
+    """Complete citation information."""
+
+    citation_number: str
+    agency: CitationAgency
+    violation_date: Optional[str]
+    license_plate: Optional[str]
+    vehicle_info: Optional[str]
+    deadline_date: Optional[str]
+    days_remaining: Optional[int]
+    is_within_appeal_window: bool
+    can_appeal_online: bool = False
+
+
+class CitationValidator:
+    """Validates SF parking citations and calculates appeal deadlines."""
+
+    # SFMTA citation number patterns
+    # SFMTA citations are typically 9 digits starting with 9
+    SFMTA_PATTERN = re.compile(r"^9\d{8}$")
+
+    # SFPD citations may have different formats
+    SFPD_PATTERN = re.compile(r"^[A-Z0-9]{6,10}$")
+
+    # Minimum and maximum citation lengths
+    MIN_LENGTH = 6
+    MAX_LENGTH = 12
+
+    @classmethod
+    def validate_citation_format(
+        cls, citation_number: str
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Validate citation number format.
+
+        Args:
+            citation_number: The citation number to validate
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        if not citation_number:
+            return False, "Citation number is required"
+
+        # Clean the citation number
+        clean_number = citation_number.strip().upper()
+
+        # Remove common separators (spaces, dashes, dots)
+        clean_number = re.sub(r"[\s\-\.]", "", clean_number)
+
+        # Check length
+        if len(clean_number) < cls.MIN_LENGTH:
+            return (
+                False,
+                f"Citation number too short (minimum {cls.MIN_LENGTH} characters)",
+            )
+
+        if len(clean_number) > cls.MAX_LENGTH:
+            return (
+                False,
+                f"Citation number too long (maximum {cls.MAX_LENGTH} characters)",
+            )
+
+        # Check if it contains at least some alphanumeric characters
+        if not re.search(r"[A-Z0-9]", clean_number):
+            return False, "Invalid citation number format"
+
+        # Check for suspicious patterns (all same character, sequential, etc.)
+        if clean_number == clean_number[0] * len(clean_number):
+            return False, "Invalid citation number pattern"
+
+        return True, None
+
+    @classmethod
+    def identify_agency(cls, citation_number: str) -> CitationAgency:
+        """
+        Identify the issuing agency based on citation number format.
+
+        Args:
+            citation_number: The cleaned citation number
+
+        Returns:
+            CitationAgency enum
+        """
+        clean_number = re.sub(r"[\s\-\.]", "", citation_number.strip().upper())
+
+        # SFMTA citations typically start with 9 and are 9 digits
+        if cls.SFMTA_PATTERN.match(clean_number):
+            return CitationAgency.SFMTA
+
+        # SFPD citations often have letters and numbers
+        if cls.SFPD_PATTERN.match(clean_number):
+            # Check if it looks like SFPD format
+            if any(c.isalpha() for c in clean_number):
+                return CitationAgency.SFPD
+
+        # Default to SFMTA for numeric citations (most common)
+        if clean_number.isdigit():
+            return CitationAgency.SFMTA
+
+        return CitationAgency.UNKNOWN
+
+    @classmethod
+    def calculate_appeal_deadline(cls, violation_date: str) -> Dict[str, any]:
+        """
+        Calculate appeal deadline (21 days for SF citations).
+
+        Args:
+            violation_date: Date string in YYYY-MM-DD format
+
+        Returns:
+            Dictionary with deadline information
+        """
+        try:
+            violation_dt = datetime.strptime(violation_date, "%Y-%m-%d")
+            deadline_dt = violation_dt + timedelta(days=21)
+            today = datetime.now()
+
+            days_remaining = (deadline_dt - today).days
+
+            return {
+                "violation_date": violation_date,
+                "deadline_date": deadline_dt.strftime("%Y-%m-%d"),
+                "days_remaining": max(0, days_remaining),
+                "is_past_deadline": days_remaining < 0,
+                "is_urgent": 0 <= days_remaining <= 3,
+                "deadline_timestamp": deadline_dt.isoformat(),
+            }
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid date format: {violation_date}. Use YYYY-MM-DD"
+            ) from e
+
+    @classmethod
+    def validate_citation(
+        cls,
+        citation_number: str,
+        violation_date: Optional[str] = None,
+        license_plate: Optional[str] = None,
+    ) -> CitationValidationResult:
+        """
+        Complete citation validation with all checks.
+
+        Args:
+            citation_number: The citation number to validate
+            violation_date: Optional violation date for deadline calculation
+            license_plate: Optional license plate for additional validation
+
+        Returns:
+            CitationValidationResult with all validation details
+        """
+        # Step 1: Format validation
+        is_valid_format, error_msg = cls.validate_citation_format(citation_number)
+
+        if not is_valid_format:
+            return CitationValidationResult(
+                is_valid=False,
+                citation_number=citation_number,
+                agency=CitationAgency.UNKNOWN,
+                error_message=error_msg,
+            )
+
+        # Step 2: Clean and format citation number
+        clean_number = re.sub(r"[\s\-\.]", "", citation_number.strip().upper())
+        formatted_citation = clean_number
+
+        # Add dashes for readability if it's a long number
+        if len(clean_number) >= 9:
+            formatted_citation = (
+                f"{clean_number[:3]}-{clean_number[3:6]}-{clean_number[6:]}"
+            )
+
+        # Step 3: Identify agency
+        agency = cls.identify_agency(clean_number)
+
+        # Step 4: Calculate deadline if violation date provided
+        deadline_date = None
+        days_remaining = None
+        is_past_deadline = False
+        is_urgent = False
+
+        if violation_date:
+            try:
+                deadline_info = cls.calculate_appeal_deadline(violation_date)
+                deadline_date = deadline_info["deadline_date"]
+                days_remaining = deadline_info["days_remaining"]
+                is_past_deadline = deadline_info["is_past_deadline"]
+                is_urgent = deadline_info["is_urgent"]
+            except ValueError as e:
+                # Date format error - citation is still valid, just can't calculate deadline
+                error_msg = str(e)
+
+        # Step 5: Additional validation for license plate (if provided)
+        if license_plate:
+            # Basic license plate validation
+            license_plate_clean = license_plate.strip().upper()
+            if len(license_plate_clean) < 2 or len(license_plate_clean) > 8:
+                error_msg = "Invalid license plate format"
+
+        return CitationValidationResult(
+            is_valid=True,
+            citation_number=citation_number,
+            agency=agency,
+            deadline_date=deadline_date,
+            days_remaining=days_remaining,
+            is_past_deadline=is_past_deadline,
+            is_urgent=is_urgent,
+            error_message=error_msg,
+            formatted_citation=formatted_citation,
+        )
+
+    @classmethod
+    def get_citation_info(
+        cls,
+        citation_number: str,
+        violation_date: Optional[str] = None,
+        license_plate: Optional[str] = None,
+        vehicle_info: Optional[str] = None,
+    ) -> CitationInfo:
+        """
+        Get complete citation information for appeal processing.
+
+        Args:
+            citation_number: The citation number
+            violation_date: Violation date in YYYY-MM-DD format
+            license_plate: Vehicle license plate
+            vehicle_info: Additional vehicle information
+
+        Returns:
+            CitationInfo object with all details
+        """
+        # Validate the citation
+        validation = cls.validate_citation(
+            citation_number, violation_date, license_plate
+        )
+
+        if not validation.is_valid:
+            raise ValueError(f"Invalid citation: {validation.error_message}")
+
+        # Check if within appeal window
+        is_within_appeal_window = (
+            validation.deadline_date is not None and not validation.is_past_deadline
+        )
+
+        # Determine if online appeal is available
+        # SFMTA allows online appeals for most citations
+        can_appeal_online = validation.agency == CitationAgency.SFMTA
+
+        return CitationInfo(
+            citation_number=citation_number,
+            agency=validation.agency,
+            violation_date=violation_date,
+            license_plate=license_plate,
+            vehicle_info=vehicle_info,
+            deadline_date=validation.deadline_date,
+            days_remaining=validation.days_remaining,
+            is_within_appeal_window=is_within_appeal_window,
+            can_appeal_online=can_appeal_online,
+        )
+
+
+# Helper functions for common operations
+def validate_citation_number(citation_number: str) -> Tuple[bool, Optional[str]]:
+    """Simple wrapper for basic citation validation."""
+    return CitationValidator.validate_citation_format(citation_number)
+
+
+def get_appeal_deadline(violation_date: str) -> Dict[str, any]:
+    """Simple wrapper for deadline calculation."""
+    return CitationValidator.calculate_appeal_deadline(violation_date)
+
+
+# Example usage and testing
+if __name__ == "__main__":
+    print("🧪 Testing Citation Validation Service")
+    print("=" * 50)
+
+    # Test cases
+    test_cases = [
+        ("912345678", "2024-01-15", "ABC123"),  # Valid SFMTA
+        ("123456", "2024-01-15", "XYZ789"),  # Too short
+        ("ABCDEFGHIJKLMNOP", "2024-01-15", "TEST"),  # Too long
+        ("9" * 20, "2024-01-15", "PLATE"),  # Suspicious pattern
+        ("", "2024-01-15", "TEST"),  # Empty
+        ("SF123456", "2024-01-15", "TEST123"),  # SFPD-like
+        ("912-345-678", "2024-01-15", "CAL123"),  # With dashes
+    ]
+
+    for citation, date, plate in test_cases:
+        print(f"\n📋 Citation: {citation}")
+        print(f"   Date: {date}, Plate: {plate}")
+
+        try:
+            result = CitationValidator.validate_citation(citation, date, plate)
+            if result.is_valid:
+                print(f"   ✅ VALID - Agency: {result.agency.value}")
+                print(f"      Formatted: {result.formatted_citation}")
+                if result.deadline_date:
+                    print(f"      Deadline: {result.deadline_date}")
+                    print(f"      Days remaining: {result.days_remaining}")
+                    print(f"      Urgent: {result.is_urgent}")
+            else:
+                print(f"   ❌ INVALID - {result.error_message}")
+        except Exception as e:
+            print(f"   ⚠️ ERROR - {str(e)}")
+
+    print("\n" + "=" * 50)
+    print("✅ Citation Validation Service Test Complete")
