@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAppeal } from "../../lib/appeal-context";
 
-export default function CheckoutPage() {
+function CheckoutPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appealType = searchParams.get("type") || "standard";
+  const { state, updateState } = useAppeal();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState(state.userInfo);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const prices = {
     standard: { amount: 9.0, label: "Standard Mail" },
@@ -19,24 +22,46 @@ export default function CheckoutPage() {
 
   const currentPrice = prices[appealType as keyof typeof prices] || prices.standard;
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    if (!userInfo.name.trim()) newErrors.name = "Full name is required";
+    if (!userInfo.addressLine1.trim()) newErrors.addressLine1 = "Address is required";
+    if (!userInfo.city.trim()) newErrors.city = "City is required";
+    if (!userInfo.state.trim() || userInfo.state.length !== 2) newErrors.state = "State code (2 letters) is required";
+    if (!userInfo.zip.trim() || userInfo.zip.length !== 5) newErrors.zip = "Valid 5-digit ZIP code is required";
+    if (!userInfo.email.trim() || !userInfo.email.includes("@")) newErrors.email = "Valid email is required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleCheckout = async () => {
+    if (!validateForm()) return;
+
     setIsLoading(true);
+    // Save user info to context
+    updateState({ userInfo });
+
     try {
       const { createCheckoutSession } = await import("../../lib/api");
-      
-      // TODO: Get form data from context/state
+
       const checkoutData = {
-        citation_number: "912345678", // TODO: Get from context
+        citation_number: state.citationNumber || "912345678",
         appeal_type: appealType as "standard" | "certified",
-        user_name: "John Doe", // TODO: Get from context
-        user_address_line1: "123 Main St", // TODO: Get from context
-        user_city: "San Francisco", // TODO: Get from context
-        user_state: "CA", // TODO: Get from context
-        user_zip: "94102", // TODO: Get from context
-        violation_date: "2024-01-15", // TODO: Get from context
-        vehicle_info: "Honda Civic", // TODO: Get from context
-        appeal_reason: "Sample reason", // TODO: Get from context
-        draft_text: "Sample draft text", // TODO: Get from context
+        user_name: userInfo.name,
+        user_address_line1: userInfo.addressLine1,
+        user_address_line2: userInfo.addressLine2,
+        user_city: userInfo.city,
+        user_state: userInfo.state,
+        user_zip: userInfo.zip,
+        user_email: userInfo.email,
+        violation_date: state.violationDate || "2024-01-15",
+        vehicle_info: state.vehicleInfo || "Honda Civic",
+        appeal_reason: state.transcript || "Sample reason",
+        draft_text: state.draftLetter || "Sample draft text",
+        license_plate: state.licensePlate,
+        selected_evidence: state.photos,
+        signature_data: state.signature || undefined
       };
 
       const result = await createCheckoutSession(checkoutData);
@@ -54,6 +79,18 @@ export default function CheckoutPage() {
           : "Failed to start checkout. Please try again."
       );
       setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setUserInfo(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
     }
   };
 
@@ -135,6 +172,106 @@ export default function CheckoutPage() {
           </div>
         </div>
 
+        {/* User Info Form */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Your Information
+          </h2>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+              <input
+                type="text"
+                name="name"
+                value={userInfo.name}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-2 border rounded-lg ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="Jane Doe"
+              />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+              <input
+                type="email"
+                name="email"
+                value={userInfo.email}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-2 border rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="jane@example.com"
+              />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+              <input
+                type="text"
+                name="addressLine1"
+                value={userInfo.addressLine1}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-2 border rounded-lg ${errors.addressLine1 ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="123 Market St"
+              />
+              {errors.addressLine1 && <p className="text-red-500 text-xs mt-1">{errors.addressLine1}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Address Line 2 (Optional)</label>
+              <input
+                type="text"
+                name="addressLine2"
+                value={userInfo.addressLine2}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                placeholder="Apt 4B"
+              />
+            </div>
+
+            <div className="grid grid-cols-6 gap-4">
+              <div className="col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+                <input
+                  type="text"
+                  name="city"
+                  value={userInfo.city}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-2 border rounded-lg ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
+                  placeholder="San Francisco"
+                />
+                {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+              </div>
+              <div className="col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                <input
+                  type="text"
+                  name="state"
+                  value={userInfo.state}
+                  onChange={(e) => handleInputChange({ ...e, target: { ...e.target, value: e.target.value.toUpperCase().slice(0, 2) } } as any)}
+                  className={`w-full px-4 py-2 border rounded-lg ${errors.state ? 'border-red-500' : 'border-gray-300'}`}
+                  placeholder="CA"
+                  maxLength={2}
+                />
+                {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+              </div>
+              <div className="col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">ZIP</label>
+                <input
+                  type="text"
+                  name="zip"
+                  value={userInfo.zip}
+                  onChange={(e) => handleInputChange({ ...e, target: { ...e.target, value: e.target.value.replace(/\D/g, '').slice(0, 5) } } as any)}
+                  className={`w-full px-4 py-2 border rounded-lg ${errors.zip ? 'border-red-500' : 'border-gray-300'}`}
+                  placeholder="94103"
+                  maxLength={5}
+                />
+                {errors.zip && <p className="text-red-500 text-xs mt-1">{errors.zip}</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Payment Button */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <button
@@ -170,3 +307,10 @@ export default function CheckoutPage() {
   );
 }
 
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CheckoutPageContent />
+    </Suspense>
+  );
+}

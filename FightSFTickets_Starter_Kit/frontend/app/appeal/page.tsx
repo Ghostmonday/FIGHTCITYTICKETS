@@ -1,20 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAppeal } from "../lib/appeal-context";
 
-export default function AppealPage() {
+function AppealPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const appealType = searchParams.get("type") || "standard";
+  const appealType = (searchParams.get("type") as "standard" | "certified") || "standard";
+  const { state, updateState } = useAppeal();
 
   const [formData, setFormData] = useState({
-    citationNumber: "",
-    licensePlate: "",
-    violationDate: "",
-    vehicleInfo: "",
+    citationNumber: state.citationNumber || "",
+    licensePlate: state.licensePlate || "",
+    violationDate: state.violationDate || "",
+    vehicleInfo: state.vehicleInfo || "",
   });
+
+  // Keep local state in sync if context changes externally (optional, but good practice)
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      citationNumber: state.citationNumber || prev.citationNumber,
+      licensePlate: state.licensePlate || prev.licensePlate,
+      violationDate: state.violationDate || prev.violationDate,
+      vehicleInfo: state.vehicleInfo || prev.vehicleInfo,
+    }));
+  }, [state]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,7 +87,14 @@ export default function AppealPage() {
         return;
       }
 
-      // TODO: Store form data in context
+      updateState({
+        citationNumber: formData.citationNumber,
+        violationDate: formData.violationDate,
+        licensePlate: formData.licensePlate,
+        vehicleInfo: formData.vehicleInfo,
+        appealType: appealType,
+      });
+
       router.push(`/appeal/camera?type=${appealType}`);
     } catch (error) {
       console.error("Error validating citation:", error);
@@ -273,3 +293,10 @@ export default function AppealPage() {
   );
 }
 
+export default function AppealPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AppealPageContent />
+    </Suspense>
+  );
+}

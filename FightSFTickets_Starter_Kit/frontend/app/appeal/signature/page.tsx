@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAppeal } from "../../lib/appeal-context";
 
-export default function SignaturePage() {
+function SignaturePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appealType = searchParams.get("type") || "standard";
+  const { updateState } = useAppeal();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -77,7 +79,7 @@ export default function SignaturePage() {
     }
 
     const signatureData = getSignatureData();
-    // TODO: Store signature in context
+    updateState({ signature: signatureData });
     router.push(`/appeal/checkout?type=${appealType}`);
   };
 
@@ -171,3 +173,10 @@ export default function SignaturePage() {
   );
 }
 
+export default function SignaturePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignaturePageContent />
+    </Suspense>
+  );
+}
