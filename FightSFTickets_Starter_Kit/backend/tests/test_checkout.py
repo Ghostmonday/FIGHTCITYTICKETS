@@ -6,7 +6,7 @@ import pytest
 from fastapi import status
 
 
-def test_create_checkout_session_success(client, test_db):
+def test_create_checkout_session_success(client, test_db, mock_stripe_service):
     """Test successful checkout session creation."""
     payload = {
         "citation_number": "912345678",
