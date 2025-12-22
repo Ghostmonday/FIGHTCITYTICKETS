@@ -5,12 +5,14 @@ Handles payment session creation and status checking for appeal processing.
 Uses database for persistent storage before creating Stripe checkout sessions.
 """
 
-from typing import Optional
+from datetime import datetime
+from typing import Optional, List
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field, validator
 
-from ..models import AppealType
+from ..models import AppealType, PaymentStatus
+from ..services.database import get_db_service
 from ..services.stripe_service import (
     CheckoutRequest,
     CheckoutResponse,
@@ -66,6 +68,10 @@ class AppealCheckoutRequest(BaseModel):
         None,
         examples=[["photo1_id", "photo2_id"]],
         description="List of evidence IDs or references",
+    )
+    photos: Optional[List[str]] = Field(
+        None,
+        description="List of base64 encoded photos",
     )
     signature_data: Optional[str] = Field(
         None,
@@ -137,10 +143,41 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
     Database-first approach ensures data persistence before payment.
     """
     try:
-        # Initialize Stripe service
+        # Initialize Services
         stripe_service = StripeService()
+        db_service = get_db_service()
 
-        # Convert request to service object
+        # 1. Save Intake to Database
+        # Use photos if provided, otherwise fallback to selected_evidence
+        evidence_data = request.photos if request.photos else request.selected_evidence
+
+        intake = db_service.create_intake(
+            citation_number=request.citation_number,
+            violation_date=request.violation_date,
+            vehicle_info=request.vehicle_info,
+            license_plate=request.license_plate,
+            user_name=request.user_name,
+            user_address_line1=request.user_address_line1,
+            user_address_line2=request.user_address_line2,
+            user_city=request.user_city,
+            user_state=request.user_state,
+            user_zip=request.user_zip,
+            user_email=request.user_email,
+            appeal_reason=request.draft_text, # Using draft text as reason or separate? Usually draft text is the final output.
+            selected_evidence=evidence_data,
+            signature_data=request.signature_data,
+            status="draft"
+        )
+
+        # 2. Save Draft to Database
+        draft = db_service.create_draft(
+            intake_id=intake.id,
+            draft_text=request.draft_text,
+            appeal_type=request.appeal_type,
+            is_final=True # Assuming checkout means final
+        )
+
+        # 3. Create Stripe Checkout Session
         checkout_request = CheckoutRequest(
             citation_number=request.citation_number,
             violation_date=request.violation_date,
@@ -159,8 +196,17 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
             signature_data=request.signature_data,
         )
 
-        # Create the checkout session (this creates database records first)
         response = stripe_service.create_checkout_session(checkout_request)
+
+        # 4. Create Payment Record
+        payment = db_service.create_payment(
+            intake_id=intake.id,
+            stripe_session_id=response.session_id,
+            amount_total=response.amount_total,
+            appeal_type=request.appeal_type,
+            status=PaymentStatus.PENDING,
+            currency=response.currency
+        )
 
         # Convert to API response
         api_response = AppealCheckoutResponse(
@@ -170,7 +216,7 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
             currency=response.currency,
             appeal_type=request.appeal_type,
             citation_number=request.citation_number,
-            payment_id=response.payment_id,
+            payment_id=payment.id,
         )
 
         return api_response
@@ -182,6 +228,9 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
         )
     except Exception as e:
         # Unexpected error
+        import traceback
+        print(f"Checkout error: {e}")
+        traceback.print_exc()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create checkout session: {str(e)}",
@@ -201,9 +250,30 @@ def get_session_status(session_id: str):
         if not session_id.startswith("cs_"):
             raise ValueError("Invalid session ID format")
 
-        # Initialize Stripe service and get status
+        # Initialize Services
         stripe_service = StripeService()
+        db_service = get_db_service()
+
+        # Get status from Stripe
         status_info = stripe_service.get_session_status(session_id)
+
+        # Get data from DB
+        payment = db_service.get_payment_by_session(session_id)
+
+        intake_id = None
+        draft_id = None
+
+        if payment:
+            # Update payment status if changed
+            if status_info.payment_status == "paid" and payment.status != PaymentStatus.PAID:
+                 db_service.update_payment_status(session_id, PaymentStatus.PAID, paid_at=datetime.utcnow())
+
+            intake_id = payment.intake_id
+            # Try to get draft ID associated with intake
+            intake = db_service.get_intake_with_drafts_and_payments(payment.intake_id)
+            if intake and intake.drafts:
+                # Get the latest draft
+                draft_id = intake.drafts[-1].id
 
         # Convert to API response
         api_response = SessionStatusResponse(
@@ -211,14 +281,14 @@ def get_session_status(session_id: str):
             payment_status=status_info.payment_status,
             amount_total=status_info.amount_total,
             currency=status_info.currency,
-            citation_number=None,  # Would need to fetch from database
+            citation_number=status_info.citation_number,
             appeal_type=(
                 AppealType(status_info.appeal_type) if status_info.appeal_type else None
             ),
-            user_email=None,  # Would need to fetch from database
-            payment_id=status_info.payment_id,
-            intake_id=status_info.intake_id,
-            draft_id=status_info.draft_id,
+            user_email=status_info.user_email,
+            payment_id=payment.id if payment else None,
+            intake_id=intake_id,
+            draft_id=draft_id,
         )
 
         return api_response

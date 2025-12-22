@@ -31,8 +31,8 @@ LOB_API_BASE = "https://api.lob.com/v1"
 class MailingAddress:
     """Address information for mail routing."""
 
-    name: str = "SFMTA Citation Review"
     address_line1: str
+    name: str = "SFMTA Citation Review"
     address_line2: Optional[str] = None
     city: str = "San Francisco"
     state: str = "CA"

@@ -40,6 +40,8 @@ export interface CheckoutData {
   draft_text: string;
   license_plate?: string;
   email?: string;
+  photos?: string[];
+  signature_data?: string | null;
 }
 
 export interface CheckoutResponse {
@@ -252,4 +254,3 @@ export async function refineStatement(
     letter_text: result.letter_text || result.refined_text,
   };
 }
-
