@@ -10,7 +10,7 @@
       "example_numbers": ["912345678", "998765432"]
     },
     {
-      "regex": "^[A-Z0-9]{6,10}$",
+      "regex": "^[A-Z]{2,3}\\d{5,7}$",
       "section_id": "sfpd",
       "description": "SFPD parking citation",
       "example_numbers": ["SF123456", "PD789012"]
