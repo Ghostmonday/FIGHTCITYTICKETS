@@ -1,0 +1,229 @@
+2025-12-24 08:51:38,843 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,103 - stripe - INFO - message='Request to Stripe api' method=get url=https://api.stripe.com/v1/checkout/sessions/cs_test_123
+2025-12-24 08:51:39,501 - stripe - INFO - message='Stripe API response' path=https://api.stripe.com/v1/checkout/sessions/cs_test_123 response_code=401
+2025-12-24 08:51:39,501 - stripe - INFO - error_code=None error_message='Invalid API Key provided: sk_test_*ummy' error_param=None error_type=invalid_request_error message='Stripe v1 API error received'
+2025-12-24 08:51:39,505 - httpx - INFO - HTTP Request: GET http://testserver/checkout/session/cs_test_123 "HTTP/1.1 500 Internal Server Error"
+2025-12-24 08:51:39,510 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:39,510 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:39,512 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:39,512 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:39,514 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:39,514 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:39,515 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:39,515 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:39,517 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:39,517 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:39,520 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:39,520 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:39,525 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,529 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,531 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,533 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,535 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,538 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,540 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,541 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,543 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,545 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,547 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,549 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,550 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,552 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,554 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,556 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,558 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,560 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,562 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,564 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,565 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,567 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,568 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,570 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,572 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,574 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,576 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,578 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,580 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,582 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,583 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,585 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,587 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,589 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,591 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,593 - httpx - INFO - HTTP Request: GET http://testserver/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:39,599 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,602 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,604 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,605 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,607 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,610 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,611 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,613 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,615 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,617 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,619 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,621 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,622 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,624 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,626 - httpx - INFO - HTTP Request: POST http://testserver/checkout/create-session "HTTP/1.1 422 Unprocessable Entity"
+2025-12-24 08:51:39,659 - services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:39,660 - services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:39,665 - src.routes.webhooks - WARNING - Missing Stripe signature in webhook request
+2025-12-24 08:51:39,666 - httpx - INFO - HTTP Request: POST http://testserver/api/webhook/stripe "HTTP/1.1 400 Bad Request"
+2025-12-24 08:51:39,670 - src.routes.webhooks - WARNING - Invalid Stripe webhook signature
+2025-12-24 08:51:39,672 - httpx - INFO - HTTP Request: POST http://testserver/api/webhook/stripe "HTTP/1.1 400 Bad Request"
+2025-12-24 08:51:39,674 - src.routes.webhooks - WARNING - Invalid Stripe webhook signature
+2025-12-24 08:51:39,675 - httpx - INFO - HTTP Request: POST http://testserver/api/webhook/stripe "HTTP/1.1 400 Bad Request"
+2025-12-24 08:51:43,736 - src.services.database - ERROR - Database health check failed: (psycopg.OperationalError) connection failed: connection to server at "127.0.0.1", port 5432 failed: could not receive data from server: Socket is not connected (0x00002749/10057)
+could not send SSL negotiation packet: Socket is not connected (0x00002749/10057)
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-12-24 08:51:43,738 - httpx - INFO - HTTP Request: GET http://testserver/api/webhook/health "HTTP/1.1 200 OK"
+2025-12-24 08:51:53,431 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:53,432 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:53,434 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:53,434 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:53,435 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:53,435 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:53,437 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:53,437 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:53,438 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:53,438 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:51:53,441 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:51:53,441 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 08:52:06,223 - services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 08:52:06,224 - services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 10:43:53,230 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:43:53,231 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 10:43:53,232 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:43:53,232 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 10:43:53,234 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:43:53,234 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 10:43:53,235 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:43:53,235 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 10:43:53,237 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:43:53,237 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 10:43:53,239 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:43:53,239 - src.services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 10:44:07,489 - services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:44:07,489 - services.city_registry - INFO - Loaded 1 city configurations, 0 errors
+2025-12-24 10:47:11,571 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:47:11,571 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:47:11,572 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:47:11,572 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:49:34,812 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:49:34,812 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:49:34,812 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:49:34,814 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:49:34,815 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:49:34,815 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:49:34,815 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:49:34,816 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:49:34,816 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:49:34,816 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:49:34,817 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:49:34,817 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:49:34,818 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:49:34,818 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:49:34,818 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:49:34,818 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:49:34,819 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:49:34,820 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:49:34,820 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:49:34,820 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:49:34,821 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:49:34,821 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:49:34,822 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:49:34,822 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:49:34,822 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:49:34,823 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:49:34,823 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:49:34,823 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:49:34,824 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:49:34,824 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:49:34,824 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:49:34,824 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:49:34,827 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:49:34,827 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:49:34,828 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:49:34,828 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:53:42,109 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:53:42,109 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:53:42,110 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:53:42,110 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:53:42,110 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:53:42,110 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:53:42,110 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:53:42,110 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:53:51,140 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:53:51,141 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:53:51,141 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:53:51,141 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:53:51,142 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:53:51,142 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:53:51,142 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:53:51,142 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:56:52,068 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:56:52,069 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:56:52,069 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:56:52,069 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:56:52,070 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:56:52,071 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:56:52,071 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:56:52,071 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,220 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,221 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,221 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,221 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,222 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,223 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,223 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,223 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,223 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,224 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,224 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,224 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,225 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,225 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,225 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,225 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,226 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,226 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,227 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,227 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,228 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,228 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,228 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,228 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,229 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,229 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,230 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,230 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,231 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,231 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,231 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,231 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,234 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,234 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,234 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,234 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,235 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,235 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,236 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,236 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,237 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,237 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,237 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,238 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,239 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,239 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,239 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,239 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,240 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,240 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,240 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,240 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,354 - src.services.city_registry - INFO - Loaded city configuration: la
+2025-12-24 10:57:00,355 - src.services.city_registry - INFO - Loaded city configuration: nyc
+2025-12-24 10:57:00,355 - src.services.city_registry - INFO - Loaded city configuration: sf
+2025-12-24 10:57:00,355 - src.services.city_registry - INFO - Loaded 3 city configurations, 0 errors
+2025-12-24 10:57:00,356 - src.services.city_registry - WARNING - Cities directory not found: \non\existent\directory

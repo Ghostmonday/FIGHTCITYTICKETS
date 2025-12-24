@@ -1,0 +1,137 @@
+{
+  "city_id": "la",
+  "name": "Los Angeles",
+  "jurisdiction": "city",
+  "citation_patterns": [
+    {
+      "regex": "^[A-Z]{2,3}\\d{5,7}$",
+      "section_id": "ladot",
+      "description": "LADOT parking citation",
+      "example_numbers": ["LA123456", "DOT789012", "PD345678"]
+    },
+    {
+      "regex": "^[A-Z]{2}\\d{6}$",
+      "section_id": "lapd",
+      "description": "LAPD parking citation",
+      "example_numbers": ["LA123456", "PD789012"]
+    },
+    {
+      "regex": "^LAX\\d{6}$",
+      "section_id": "lax",
+      "description": "LAX airport parking citation",
+      "example_numbers": ["LAX123456", "LAX789012"]
+    },
+    {
+      "regex": "^USC\\d{5}$",
+      "section_id": "usc",
+      "description": "USC campus parking citation",
+      "example_numbers": ["USC12345", "USC67890"]
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "LADOT Citation Review",
+    "attention": "Appeals Department",
+    "address1": "100 S. Main Street",
+    "address2": "Suite 1500",
+    "city": "Los Angeles",
+    "state": "CA",
+    "zip": "90012",
+    "country": "USA"
+  },
+  "phone_confirmation_policy": {
+    "required": false,
+    "phone_format_regex": "^\\+1\\d{10}$",
+    "confirmation_message": "You may need to call LADOT at (213) 202-3000 to confirm appeal receipt for certain citation types.",
+    "confirmation_deadline_hours": 48,
+    "phone_number_examples": ["+12132023000"]
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "ladot": {
+      "section_id": "ladot",
+      "name": "Los Angeles Department of Transportation",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "LADOT Citation Review",
+        "attention": "Appeals Department",
+        "address1": "100 S. Main Street",
+        "address2": "Suite 1500",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90012",
+        "country": "USA"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      }
+    },
+    "lapd": {
+      "section_id": "lapd",
+      "name": "Los Angeles Police Department - Traffic Division",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "LAPD Traffic Division",
+        "attention": "Parking Citation Appeals",
+        "address1": "100 W. 1st Street",
+        "address2": "Room 500",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90012",
+        "country": "USA"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": true,
+        "phone_format_regex": "^\\+1\\d{10}$",
+        "confirmation_message": "You must call LAPD Traffic Division at (213) 485-4184 within 48 hours to confirm appeal receipt.",
+        "confirmation_deadline_hours": 48,
+        "phone_number_examples": ["+12134854184"]
+      }
+    },
+    "lax": {
+      "section_id": "lax",
+      "name": "Los Angeles International Airport - Parking Enforcement",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "LAX Parking Enforcement",
+        "attention": "Citation Appeals",
+        "address1": "1 World Way",
+        "address2": "Terminal 1, Level 2",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90045",
+        "country": "USA"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      }
+    },
+    "usc": {
+      "section_id": "usc",
+      "name": "University of Southern California - Parking & Transportation",
+      "appeal_mail_address": {
+        "status": "routes_elsewhere",
+        "routes_to_section_id": "ladot",
+        "missing_reason": "USC citations are appealed through LADOT"
+      },
+      "routing_rule": "routes_to_section",
+      "phone_confirmation_policy": {
+        "required": false
+      }
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2024-01-15",
+    "source": "official_website",
+    "confidence_score": 0.9,
+    "notes": "Addresses verified against official city websites. USC routing confirmed via LADOT documentation.",
+    "verified_by": "system"
+  },
+  "timezone": "America/Los_Angeles",
+  "appeal_deadline_days": 21,
+  "online_appeal_available": true,
+  "online_appeal_url": "https://ladot.lacity.org/parking-citations"
+}

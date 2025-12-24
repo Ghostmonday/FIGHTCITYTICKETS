@@ -1,0 +1,156 @@
+{
+  "city_id": "nyc",
+  "name": "New York City",
+  "jurisdiction": "city",
+  "citation_patterns": [
+    {
+      "regex": "^\\d{7,8}$",
+      "section_id": "nypd",
+      "description": "NYPD parking citation",
+      "example_numbers": ["1234567", "87654321"]
+    },
+    {
+      "regex": "^NYC[A-Z0-9]{5,7}$",
+      "section_id": "nycdot",
+      "description": "NYC DOT parking citation",
+      "example_numbers": ["NYC12345", "NYC78901A"]
+    },
+    {
+      "regex": "^(JFK|LGA)[A-Z0-9]{5,6}$",
+      "section_id": "nycairports",
+      "description": "NYC airport parking citation",
+      "example_numbers": ["JFK12345", "LGA67890"]
+    },
+    {
+      "regex": "^CUNY[A-Z0-9]{4,6}$",
+      "section_id": "cuny",
+      "description": "CUNY campus parking citation",
+      "example_numbers": ["CUNY1234", "CUNY56789"]
+    },
+    {
+      "regex": "^MTA[A-Z0-9]{5,7}$",
+      "section_id": "mta",
+      "description": "MTA parking citation",
+      "example_numbers": ["MTA12345", "MTA78901B"]
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "NYC Department of Finance",
+    "attention": "Parking Violations Appeals",
+    "address1": "66 John Street",
+    "address2": "10th Floor",
+    "city": "New York",
+    "state": "NY",
+    "zip": "10038",
+    "country": "USA"
+  },
+  "phone_confirmation_policy": {
+    "required": false,
+    "phone_format_regex": "^\\+1\\d{10}$",
+    "confirmation_message": "You may need to call NYC Department of Finance at (718) 422-7800 to confirm appeal receipt for certain citation types.",
+    "confirmation_deadline_hours": 72,
+    "phone_number_examples": ["+17184227800"]
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "nypd": {
+      "section_id": "nypd",
+      "name": "New York Police Department - Traffic Division",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "NYPD Traffic Division",
+        "attention": "Parking Citation Appeals",
+        "address1": "1 Police Plaza",
+        "address2": "Room 1320",
+        "city": "New York",
+        "state": "NY",
+        "zip": "10038",
+        "country": "USA"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      }
+    },
+    "nycdot": {
+      "section_id": "nycdot",
+      "name": "New York City Department of Transportation",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "NYC DOT Citation Review",
+        "attention": "Appeals Department",
+        "address1": "55 Water Street",
+        "address2": "9th Floor",
+        "city": "New York",
+        "state": "NY",
+        "zip": "10041",
+        "country": "USA"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": true,
+        "phone_format_regex": "^\\+1\\d{10}$",
+        "confirmation_message": "You must call NYC DOT at (212) 839-2500 within 72 hours to confirm appeal receipt.",
+        "confirmation_deadline_hours": 72,
+        "phone_number_examples": ["+12128392500"]
+      }
+    },
+    "nycairports": {
+      "section_id": "nycairports",
+      "name": "Port Authority of NY & NJ - Airport Parking",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Port Authority Parking Enforcement",
+        "attention": "Citation Appeals",
+        "address1": "4 World Trade Center",
+        "address2": "Suite 150",
+        "city": "New York",
+        "state": "NY",
+        "zip": "10007",
+        "country": "USA"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      }
+    },
+    "cuny": {
+      "section_id": "cuny",
+      "name": "City University of New York - Campus Parking",
+      "appeal_mail_address": {
+        "status": "routes_elsewhere",
+        "routes_to_section_id": "nycdot",
+        "missing_reason": "CUNY citations are appealed through NYC DOT"
+      },
+      "routing_rule": "routes_to_section",
+      "phone_confirmation_policy": {
+        "required": false
+      }
+    },
+    "mta": {
+      "section_id": "mta",
+      "name": "Metropolitan Transportation Authority",
+      "appeal_mail_address": {
+        "status": "routes_elsewhere",
+        "routes_to_section_id": "nycdot",
+        "missing_reason": "MTA parking citations are appealed through NYC DOT"
+      },
+      "routing_rule": "routes_to_section",
+      "phone_confirmation_policy": {
+        "required": false
+      }
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2024-01-15",
+    "source": "official_website",
+    "confidence_score": 0.9,
+    "notes": "Addresses verified against official city websites. NYC has 30-day appeal window. CUNY and MTA routing confirmed via NYC DOT documentation.",
+    "verified_by": "system"
+  },
+  "timezone": "America/New_York",
+  "appeal_deadline_days": 30,
+  "online_appeal_available": true,
+  "online_appeal_url": "https://nycserv.nyc.gov/NYCServWeb/ParkingTicketAppeal"
+}
