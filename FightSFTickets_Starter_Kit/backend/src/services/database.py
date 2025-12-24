@@ -50,6 +50,7 @@ class DatabaseService:
             autocommit=False,
             autoflush=False,
             bind=self.engine,
+            expire_on_commit=False,
         )
 
         logger.info(f"Database service initialized for {self._masked_url()}")

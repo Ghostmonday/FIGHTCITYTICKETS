@@ -4,8 +4,7 @@
  * Based on legacy implementation patterns
  */
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
 // ============================================================
 // TYPES
@@ -63,16 +62,12 @@ export interface SessionStatus {
   user_email?: string;
 }
 
-export interface TranscriptionResponse {
-  transcript: string;
-  duration_seconds: number;
-}
-
 export interface StatementRefinementRequest {
-  transcript: string;
+  original_statement: string;
   citation_number: string;
-  violation_date?: string;
-  vehicle_info?: string;
+  citation_type?: string;
+  desired_tone?: string;
+  max_length?: number;
 }
 
 export interface StatementRefinementResponse {
@@ -193,32 +188,6 @@ export async function getSessionStatus(
 }
 
 /**
- * Transcribe audio file
- */
-export async function transcribeAudio(
-  audioFile: File,
-): Promise<TranscriptionResponse> {
-  const formData = new FormData();
-  formData.append("audio", audioFile);
-
-  const response = await fetch(`${API_URL}/api/transcribe`, {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    try {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || `Request failed: ${response.status}`);
-    } catch {
-      throw new Error(`Request failed: ${response.status}`);
-    }
-  }
-
-  return await response.json();
-}
-
-/**
  * Refine statement using AI
  */
 export async function refineStatement(
@@ -229,7 +198,13 @@ export async function refineStatement(
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify({
+      original_statement: data.original_statement,
+      citation_number: data.citation_number,
+      citation_type: data.citation_type || "parking",
+      desired_tone: data.desired_tone || "professional",
+      max_length: data.max_length || 500,
+    }),
   });
 
   if (!response.ok) {
@@ -250,7 +225,7 @@ export async function refineStatement(
   const result = await response.json();
   return {
     success: true,
-    refined_text: result.refined_text || result.letter_text,
-    letter_text: result.letter_text || result.refined_text,
+    refined_text: result.refined_statement || result.refined_text,
+    letter_text: result.refined_statement || result.refined_text,
   };
 }

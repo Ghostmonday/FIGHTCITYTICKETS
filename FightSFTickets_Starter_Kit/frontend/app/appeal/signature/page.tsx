@@ -9,10 +9,19 @@ function SignaturePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const appealType = searchParams.get("type") || "standard";
-  const { updateState } = useAppeal();
+  const { state, updateState } = useAppeal();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+
+  // Agency display names
+  const agencyDisplayNames: Record<string, string> = {
+    SFMTA: "SFMTA (San Francisco Municipal Transportation Agency)",
+    SFPD: "San Francisco Police Department",
+    SFSU: "San Francisco State University",
+    SFMUD: "San Francisco Municipal Utility District",
+    UNKNOWN: "San Francisco Parking Citation Agency",
+  };
   const [hasSignature, setHasSignature] = useState(false);
   const [attestationChecked, setAttestationChecked] = useState(false);
 
@@ -25,10 +34,7 @@ function SignaturePageContent() {
     if (!ctx) return;
 
     ctx.beginPath();
-    ctx.moveTo(
-      e.clientX - rect.left,
-      e.clientY - rect.top
-    );
+    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
     setIsDrawing(true);
   };
 
@@ -42,10 +48,7 @@ function SignaturePageContent() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.lineTo(
-      e.clientX - rect.left,
-      e.clientY - rect.top
-    );
+    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
     ctx.stroke();
   };
 
@@ -100,6 +103,26 @@ function SignaturePageContent() {
           <p className="text-gray-600 mt-2">
             Step 5 of 5: Sign your appeal letter
           </p>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Citation #{state.citationNumber || "Not provided"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Agency: {agencyDisplayNames[state.agency || "UNKNOWN"]}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">
+                  Appeal type:{" "}
+                  {appealType === "certified"
+                    ? "Certified Mail ($19)"
+                    : "Standard Mail ($9)"}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Signature Pad */}

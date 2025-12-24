@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppeal } from "../lib/appeal-context";
+import { validateCitation } from "../lib/api";
 
 function AppealPageContent() {
   const searchParams = useSearchParams();
@@ -32,23 +33,22 @@ function AppealPageContent() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationWarning, setValidationWarning] = useState<string | null>(
+    null,
+  );
+  const [bypassValidation, setBypassValidation] = useState(false);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.citationNumber.trim()) {
       newErrors.citationNumber = "Citation number is required";
-    } else if (!/^\d{9}$/.test(formData.citationNumber.replace(/\D/g, ""))) {
-      newErrors.citationNumber =
-        "Citation number must be 9 digits (SF citations start with 9)";
+    } else if (formData.citationNumber.trim().length < 5) {
+      newErrors.citationNumber = "Citation number seems too short";
     }
 
     if (!formData.violationDate) {
       newErrors.violationDate = "Violation date is required";
-    }
-
-    if (!formData.vehicleInfo.trim()) {
-      newErrors.vehicleInfo = "Vehicle description is required";
     }
 
     setErrors(newErrors);
@@ -65,40 +65,35 @@ function AppealPageContent() {
     setIsSubmitting(true);
 
     try {
-      const { validateCitation } = await import("../lib/api");
-      const result = await validateCitation({
+      // Validate citation and get agency information
+      const validationResponse = await validateCitation({
         citation_number: formData.citationNumber,
         license_plate: formData.licensePlate || undefined,
         violation_date: formData.violationDate,
       });
 
-      if (!result.is_valid) {
+      if (!validationResponse.is_valid) {
         setErrors({
-          citationNumber: result.error_message || "Invalid citation",
+          citationNumber:
+            validationResponse.error_message || "Invalid citation number",
         });
         setIsSubmitting(false);
         return;
       }
 
-      if (result.is_past_deadline) {
-        setErrors({
-          citationNumber: "This citation is past the appeal deadline.",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
+      // Update state with citation data and agency
       updateState({
         citationNumber: formData.citationNumber,
         violationDate: formData.violationDate,
         licensePlate: formData.licensePlate,
         vehicleInfo: formData.vehicleInfo,
         appealType: appealType,
+        agency: validationResponse.agency,
       });
 
       router.push(`/appeal/camera?type=${appealType}`);
     } catch (error) {
-      console.error("Error validating citation:", error);
+      console.error("Citation validation error:", error);
       setErrors({
         citationNumber: "Failed to validate citation. Please try again.",
       });
@@ -109,13 +104,17 @@ function AppealPageContent() {
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
+    // Clear error and warning when user starts typing
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
       });
+    }
+    if (validationWarning) {
+      setValidationWarning(null);
+      setBypassValidation(false);
     }
   };
 
@@ -171,16 +170,13 @@ function AppealPageContent() {
               id="citationNumber"
               value={formData.citationNumber}
               onChange={(e) =>
-                handleChange(
-                  "citationNumber",
-                  e.target.value.replace(/\D/g, "").slice(0, 9),
-                )
+                handleChange("citationNumber", e.target.value.slice(0, 15))
               }
-              placeholder="912345678"
+              placeholder="Enter your citation number"
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 ${
                 errors.citationNumber ? "border-red-500" : "border-gray-300"
               }`}
-              maxLength={9}
+              maxLength={15}
             />
             {errors.citationNumber && (
               <p className="text-red-500 text-sm mt-1">
@@ -188,7 +184,7 @@ function AppealPageContent() {
               </p>
             )}
             <p className="text-gray-500 text-sm mt-1">
-              Found on your parking ticket (9-digit number starting with 9)
+              Found on your parking ticket
             </p>
           </div>
 
@@ -253,7 +249,7 @@ function AppealPageContent() {
               htmlFor="vehicleInfo"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Vehicle Description <span className="text-red-500">*</span>
+              Vehicle Description (Optional)
             </label>
             <input
               type="text"
@@ -276,6 +272,38 @@ function AppealPageContent() {
             </p>
           </div>
 
+          {/* Validation Warning with Bypass */}
+          {validationWarning && (
+            <div className="mb-6 bg-amber-50 border border-amber-300 rounded-lg p-4">
+              <div className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-amber-500 mt-0.5 mr-3 flex-shrink-0"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                <div className="flex-1">
+                  <p className="text-amber-800 text-sm">{validationWarning}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBypassValidation(true);
+                      setValidationWarning(null);
+                    }}
+                    className="mt-3 text-sm font-medium text-amber-700 hover:text-amber-900 underline"
+                  >
+                    Continue Anyway →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Submit Button */}
           <div className="flex gap-4">
             <Link
@@ -293,15 +321,6 @@ function AppealPageContent() {
             </button>
           </div>
         </form>
-
-        {/* UPL Disclaimer */}
-        <div className="mt-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
-          <p className="text-sm text-gray-700">
-            <strong>Note:</strong> We do not recommend specific evidence or
-            promise outcomes. You are responsible for the content of your
-            appeal.
-          </p>
-        </div>
       </div>
     </div>
   );

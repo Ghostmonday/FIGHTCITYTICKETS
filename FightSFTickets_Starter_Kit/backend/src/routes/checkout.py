@@ -6,7 +6,7 @@ Uses database for persistent storage before creating Stripe checkout sessions.
 """
 
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field, validator
@@ -163,10 +163,10 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
             user_state=request.user_state,
             user_zip=request.user_zip,
             user_email=request.user_email,
-            appeal_reason=request.draft_text, # Using draft text as reason or separate? Usually draft text is the final output.
+            appeal_reason=request.draft_text,  # Using draft text as reason or separate? Usually draft text is the final output.
             selected_evidence=evidence_data,
             signature_data=request.signature_data,
-            status="draft"
+            status="draft",
         )
 
         # 2. Save Draft to Database
@@ -174,7 +174,7 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
             intake_id=intake.id,
             draft_text=request.draft_text,
             appeal_type=request.appeal_type,
-            is_final=True # Assuming checkout means final
+            is_final=True,  # Assuming checkout means final
         )
 
         # 3. Create Stripe Checkout Session
@@ -189,11 +189,9 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
             user_city=request.user_city,
             user_state=request.user_state,
             user_zip=request.user_zip,
-            user_email=request.user_email,
-            draft_text=request.draft_text,
+            email=request.user_email,
+            appeal_reason=request.draft_text,
             appeal_type=request.appeal_type,
-            selected_evidence=request.selected_evidence,
-            signature_data=request.signature_data,
         )
 
         response = stripe_service.create_checkout_session(checkout_request)
@@ -205,7 +203,7 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
             amount_total=response.amount_total,
             appeal_type=request.appeal_type,
             status=PaymentStatus.PENDING,
-            currency=response.currency
+            currency=response.currency,
         )
 
         # Convert to API response
@@ -229,6 +227,7 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
     except Exception as e:
         # Unexpected error
         import traceback
+
         print(f"Checkout error: {e}")
         traceback.print_exc()
         raise HTTPException(
@@ -265,8 +264,13 @@ def get_session_status(session_id: str):
 
         if payment:
             # Update payment status if changed
-            if status_info.payment_status == "paid" and payment.status != PaymentStatus.PAID:
-                 db_service.update_payment_status(session_id, PaymentStatus.PAID, paid_at=datetime.utcnow())
+            if (
+                status_info.payment_status == "paid"
+                and payment.status != PaymentStatus.PAID
+            ):
+                db_service.update_payment_status(
+                    session_id, PaymentStatus.PAID, paid_at=datetime.utcnow()
+                )
 
             intake_id = payment.intake_id
             # Try to get draft ID associated with intake

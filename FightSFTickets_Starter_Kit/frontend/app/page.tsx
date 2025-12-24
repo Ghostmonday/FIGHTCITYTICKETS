@@ -38,12 +38,6 @@ export default function Home() {
             >
               Start Your Appeal
             </Link>
-            <Link
-              href="/how-it-works"
-              className="bg-white hover:bg-gray-50 text-indigo-600 font-semibold py-4 px-8 rounded-lg text-lg transition-colors border-2 border-indigo-600"
-            >
-              How It Works
-            </Link>
           </div>
         </div>
       </section>
@@ -131,9 +125,7 @@ export default function Home() {
               </li>
               <li className="flex items-start">
                 <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Delivery tracking
-                </span>
+                <span className="text-gray-700">Delivery tracking</span>
               </li>
             </ul>
             <Link
@@ -159,9 +151,7 @@ export default function Home() {
             <ul className="space-y-3 mb-6">
               <li className="flex items-start">
                 <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Everything in Standard
-                </span>
+                <span className="text-gray-700">Everything in Standard</span>
               </li>
               <li className="flex items-start">
                 <span className="text-green-500 mr-2">✓</span>
@@ -171,15 +161,11 @@ export default function Home() {
               </li>
               <li className="flex items-start">
                 <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Proof of delivery
-                </span>
+                <span className="text-gray-700">Proof of delivery</span>
               </li>
               <li className="flex items-start">
                 <span className="text-green-500 mr-2">✓</span>
-                <span className="text-gray-700">
-                  Higher success rate
-                </span>
+                <span className="text-gray-700">Higher success rate</span>
               </li>
             </ul>
             <Link

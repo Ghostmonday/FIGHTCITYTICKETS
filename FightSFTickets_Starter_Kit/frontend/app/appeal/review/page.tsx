@@ -15,20 +15,43 @@ function ReviewPageContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [originalText, setOriginalText] = useState("");
+  const [userStory, setUserStory] = useState(state.transcript || "");
+
+  // Agency-specific salutations
+  const agencySalutations: Record<string, string> = {
+    SFMTA: "SFMTA Citation Review",
+    SFPD: "San Francisco Police Department - Traffic Division",
+    SFSU: "San Francisco State University - Parking & Transportation",
+    SFMUD: "San Francisco Municipal Utility District",
+    UNKNOWN: "Citation Review Department",
+  };
+
+  // Agency display names
+  const agencyDisplayNames: Record<string, string> = {
+    SFMTA: "SFMTA (San Francisco Municipal Transportation Agency)",
+    SFPD: "San Francisco Police Department",
+    SFSU: "San Francisco State University",
+    SFMUD: "San Francisco Municipal Utility District",
+    UNKNOWN: "San Francisco Parking Citation Agency",
+  };
+
+  const currentAgency = state.agency || "UNKNOWN";
+  const salutation = agencySalutations[currentAgency];
 
   useEffect(() => {
-    // If draftLetter exists, use it. Otherwise, generate one from transcript and metadata.
+    // If draftLetter exists, use it. Otherwise, generate one from user story and metadata.
     if (state.draftLetter) {
       setDraftText(state.draftLetter);
       setOriginalText(state.draftLetter);
     } else {
-      // Auto-refine if we have a transcript but no draft yet
+      // Auto-refine if we have a user story but no draft yet
       const generateDraft = async () => {
         setIsRefining(true);
         try {
           const { refineStatement } = await import("../../lib/api");
           const result = await refineStatement({
-            transcript: state.transcript || "I am writing to appeal this ticket.",
+            original_statement:
+              userStory || "I am writing to appeal this ticket.",
             citation_number: state.citationNumber || "912345678",
           });
 
@@ -37,55 +60,74 @@ function ReviewPageContent() {
             setOriginalText(result.refined_text);
             updateState({ draftLetter: result.refined_text });
           } else {
-             // Fallback to template if API fails
-            const initialDraft = `Dear SFMTA Citation Review,\n\nI am writing to appeal parking citation #${state.citationNumber || "912345678"}.\n\n${state.transcript || "[YOUR STORY]"}\n\nSincerely,\n[YOUR NAME]`;
+            // Fallback to template if API fails
+            const initialDraft = `Dear SFMTA Citation Review,\n\nI am writing to appeal parking citation #${state.citationNumber || "912345678"}.\n\n${userStory || "[YOUR STORY]"}\n\nSincerely,\n[YOUR NAME]`;
             setDraftText(initialDraft);
+            setOriginalText(initialDraft);
           }
         } catch (e) {
-             // Fallback to template if API fails
-            const initialDraft = `Dear SFMTA Citation Review,\n\nI am writing to appeal parking citation #${state.citationNumber || "912345678"}.\n\n${state.transcript || "[YOUR STORY]"}\n\nSincerely,\n[YOUR NAME]`;
-            setDraftText(initialDraft);
+          console.error("Auto-draft generation error:", e);
+          // Fallback to template if API fails
+          const initialDraft = `Dear ${salutation},\n\nI am writing to appeal parking citation #${state.citationNumber || "912345678"}.\n\n${userStory || "[YOUR STORY]"}\n\nSincerely,\n[YOUR NAME]`;
+          setDraftText(initialDraft);
+          setOriginalText(initialDraft);
         } finally {
           setIsRefining(false);
         }
       };
 
-      if (state.transcript) {
-          generateDraft();
+      if (userStory) {
+        generateDraft();
       } else {
-          // No transcript, just set placeholder
-            const initialDraft = `Dear SFMTA Citation Review,\n\nI am writing to appeal parking citation #${state.citationNumber || "912345678"}.\n\n[YOUR STORY]\n\nSincerely,\n[YOUR NAME]`;
-            setDraftText(initialDraft);
+        // No user story, just set placeholder
+        const initialDraft = `Dear ${salutation},\n\nI am writing to appeal parking citation #${state.citationNumber || "912345678"}.\n\n[YOUR STORY]\n\nSincerely,\n[YOUR NAME]`;
+        setDraftText(initialDraft);
+        setOriginalText(initialDraft);
       }
     }
-  }, [state.draftLetter]); // Only run if draftLetter status changes (or initially) - beware of loops with state.transcript
+  }, [state.draftLetter]); // Only run if draftLetter status changes (or initially)
 
   const handleRefine = async () => {
     setIsRefining(true);
     try {
       const { refineStatement } = await import("../../lib/api");
+
+      // Use userStory if available, otherwise use draftText
+      const textToRefine = userStory.trim() || draftText;
+
       const result = await refineStatement({
-        transcript: draftText,
+        original_statement: textToRefine,
         citation_number: state.citationNumber || "912345678",
       });
 
       if (result.success && result.refined_text) {
         setDraftText(result.refined_text);
+        setOriginalText(result.refined_text);
         updateState({ draftLetter: result.refined_text });
         setIsEditing(false);
+
+        // Also update the transcript if we used userStory
+        if (userStory.trim()) {
+          updateState({ transcript: userStory });
+        }
       } else {
         alert(
           result.error_message ||
-            "Failed to refine letter. You can continue editing manually."
+            "Failed to polish letter. The AI service might be temporarily unavailable. You can continue editing manually.",
         );
       }
     } catch (error) {
       console.error("Refinement error:", error);
-      alert("Failed to refine letter. You can continue editing manually.");
+      alert(
+        "Failed to connect to AI service. This might be a temporary issue. " +
+          "You can continue with the current draft or try again in a moment.",
+      );
     } finally {
       setIsRefining(false);
     }
   };
+
+  // Removed handleUpdateStory function - not needed
 
   const handleReset = () => {
     setDraftText(originalText);
@@ -93,8 +135,17 @@ function ReviewPageContent() {
   };
 
   const handleContinue = () => {
-    updateState({ draftLetter: draftText });
-    router.push(`/appeal/signature?type=${appealType}`);
+    // Always save the current draft text, whether polished or not
+    try {
+      updateState({ draftLetter: draftText });
+      if (userStory.trim()) {
+        updateState({ transcript: userStory });
+      }
+      router.push(`/appeal/signature?type=${appealType}`);
+    } catch (error) {
+      console.error("Continue error:", error);
+      alert("Failed to save draft. Please try again.");
+    }
   };
 
   return (
@@ -103,7 +154,7 @@ function ReviewPageContent() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            href="/appeal/voice"
+            href="/appeal/camera"
             className="text-indigo-600 hover:text-indigo-700 font-medium"
           >
             ← Back
@@ -112,8 +163,54 @@ function ReviewPageContent() {
             Review Your Appeal Letter
           </h1>
           <p className="text-gray-600 mt-2">
-            Step 4 of 5: Review and edit your professionally formatted letter
+            Step 3 of 5: Tell your story and review your appeal letter
           </p>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Citation #{state.citationNumber || "Not provided"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Agency: {agencyDisplayNames[currentAgency]}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">
+                  Appeal type:{" "}
+                  {appealType === "certified"
+                    ? "Certified Mail ($19)"
+                    : "Standard Mail ($9)"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* User Story Input */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Tell Your Story
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Describe what happened and why you believe the citation was issued
+            in error. Most phones have built-in voice-to-text if you prefer to
+            speak.
+          </p>
+          <textarea
+            value={userStory}
+            onChange={(e) => setUserStory(e.target.value)}
+            placeholder="Example: The parking meter was broken and wouldn't accept my payment. I tried multiple times but it kept showing an error message..."
+            className="w-full h-40 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-900 mb-4"
+          />
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-gray-500">
+              {userStory.length} characters
+            </p>
+            <p className="text-sm text-gray-600">
+              Your story will be used for AI refinement
+            </p>
+          </div>
         </div>
 
         {/* Letter Editor */}
@@ -134,7 +231,7 @@ function ReviewPageContent() {
                   <button
                     onClick={handleRefine}
                     disabled={isRefining}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg disabled:opacity-50"
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isRefining ? "Refining..." : "Polish with AI"}
                   </button>
@@ -154,11 +251,17 @@ function ReviewPageContent() {
             value={draftText}
             onChange={(e) => setDraftText(e.target.value)}
             readOnly={!isEditing}
-            className={`w-full h-96 px-4 py-2 border rounded-lg font-mono text-sm ${
+            className={`w-full h-96 px-4 py-2 border rounded-lg font-mono text-sm text-gray-900 ${
               isEditing
-                ? "border-indigo-500 focus:ring-2 focus:ring-indigo-500"
+                ? "border-indigo-500 focus:ring-2 focus:ring-indigo-500 bg-white"
                 : "border-gray-300 bg-gray-50"
             }`}
+            onKeyDown={(e) => {
+              // Prevent form submission on Enter key in textarea
+              if (e.key === "Enter" && e.ctrlKey) {
+                handleContinue();
+              }
+            }}
           />
 
           <div className="mt-4 flex justify-between items-center">
@@ -189,7 +292,7 @@ function ReviewPageContent() {
         {/* Navigation */}
         <div className="flex gap-4">
           <Link
-            href="/appeal/voice"
+            href="/appeal/camera"
             className="flex-1 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium text-center hover:bg-gray-50 transition-colors"
           >
             ← Back

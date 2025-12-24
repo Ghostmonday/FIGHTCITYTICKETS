@@ -14,6 +14,7 @@ from typing import Any, Dict, Optional
 import httpx
 
 from ..config import settings
+from .citation import CitationValidator
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -50,14 +51,15 @@ class DeepSeekService:
         self.api_key = settings.deepseek_api_key
         self.base_url = settings.deepseek_base_url
         self.model = settings.deepseek_model
-        self.client = httpx.AsyncClient(timeout=30.0)
+        # Don't create client here - create fresh client for each request
+        # to avoid "client has been closed" errors
 
         # Check if API key is configured
         self.is_available = bool(self.api_key and self.api_key != "change-me")
 
     async def close(self):
-        """Close HTTP client."""
-        await self.client.aclose()
+        """Close HTTP client - no-op since we create fresh clients."""
+        pass
 
     async def refine_statement_async(
         self, request: StatementRefinementRequest
@@ -79,24 +81,26 @@ class DeepSeekService:
             # Create user prompt with the transcript
             user_prompt = self._create_refinement_prompt(request)
 
-            # Make API call to DeepSeek
-            response = await self.client.post(
-                f"{self.base_url}/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": self.model,
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    "max_tokens": min(request.max_length, 1000),
-                    "temperature": 0.3,  # Low temperature for consistency
-                    "top_p": 0.9,
-                },
-            )
+            # Create fresh HTTP client for each request to avoid lifecycle issues
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # Make API call to DeepSeek
+                response = await client.post(
+                    f"{self.base_url}/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": self.model,
+                        "messages": [
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt},
+                        ],
+                        "max_tokens": min(request.max_length, 1000),
+                        "temperature": 0.3,  # Low temperature for consistency
+                        "top_p": 0.9,
+                    },
+                )
 
             response.raise_for_status()
             data = response.json()
@@ -146,28 +150,41 @@ RULES:
 3. State FACTS, not opinions
 4. Do not editorialize or add emotional language
 5. Do not make claims the user did not make
-6. Format as a formal letter to the citation agency
+6. Format as a formal letter to the appropriate citation agency
 
 INPUT: User transcript about their parking ticket situation
 OUTPUT: A professional appeal letter ready for signature
 
 Structure:
-- Header: Date, Recipient Address placeholder
+- Header: Date, Recipient Address (use agency-specific address placeholder)
+- Salutation: Use appropriate agency name (SFMTA, SFPD, SFSU, or SFMUD)
 - Subject: Citation Number
 - Body: Factual statement of circumstances
 - Closing: Request for review/dismissal
-- Signature block placeholder"""
+- Signature block placeholder
+
+Agency Detection: The citation number will indicate which agency issued the citation. Use the appropriate agency name in the salutation and address."""
 
     def _create_refinement_prompt(self, request: StatementRefinementRequest) -> str:
         """Create the user prompt for statement refinement."""
+        # Detect agency from citation number
+        agency = "SFMTA"  # Default
+        if request.citation_number:
+            try:
+                agency_enum = CitationValidator.identify_agency(request.citation_number)
+                agency = agency_enum.value
+            except Exception:
+                pass  # Keep default if detection fails
+
         return f"""Please convert this informal statement into a professional appeal letter:
 
 "{request.original_statement}"
 
 Citation Number: {request.citation_number or "Not provided"}
+Citation Agency: {agency}
 Citation Type: {request.citation_type or "Parking ticket"}
 
-Please provide a formal, factual appeal letter that states only the facts mentioned by the user, without adding legal advice or recommendations about evidence."""
+Please provide a formal, factual appeal letter addressed to the appropriate agency that states only the facts mentioned by the user, without adding legal advice or recommendations about evidence."""
 
     def _clean_response(self, response: str) -> str:
         """Clean up the AI response to ensure it's appropriate."""
@@ -197,6 +214,25 @@ Please provide a formal, factual appeal letter that states only the facts mentio
         """Provide basic local refinement when AI service is unavailable."""
         original = request.original_statement
 
+        # Detect agency from citation number
+        agency = "SFMTA"  # Default
+        if request.citation_number:
+            try:
+                agency_enum = CitationValidator.identify_agency(request.citation_number)
+                agency = agency_enum.value
+            except Exception:
+                pass  # Keep default if detection fails
+
+        # Agency-specific salutations
+        agency_salutations = {
+            "SFMTA": "SFMTA Citation Review",
+            "SFPD": "San Francisco Police Department - Traffic Division",
+            "SFSU": "San Francisco State University - Parking & Transportation",
+            "SFMUD": "San Francisco Municipal Utility District",
+            "UNKNOWN": "Citation Review Department",
+        }
+        salutation = agency_salutations.get(agency, "Citation Review Department")
+
         # Simple improvements for fallback
         refined = original
 
@@ -222,18 +258,47 @@ Please provide a formal, factual appeal letter that states only the facts mentio
         if refined and not refined.endswith((".", "!", "?")):
             refined += "."
 
+        # Wrap in proper letter format
+        citation_part = (
+            f"Citation #{request.citation_number}"
+            if request.citation_number
+            else "Citation"
+        )
+        date_str = datetime.now().strftime("%B %d, %Y")
+
+        formatted_letter = f"""{date_str}
+
+{salutation}
+
+Subject: Appeal of {citation_part}
+
+Dear Sir or Madam,
+
+I am writing to appeal the parking citation referenced above.
+
+{refined}
+
+I respectfully request that you review this matter and consider dismissing the citation.
+
+Sincerely,
+
+[Your Name]
+[Your Address]"""
+
         logger.info(
-            f"Using local fallback refinement: {len(original)} -> {len(refined)} chars"
+            f"Using local fallback refinement with agency detection ({agency}): {len(original)} -> {len(formatted_letter)} chars"
         )
 
         return StatementRefinementResponse(
             status="fallback",
             original_statement=original,
-            refined_statement=refined,
+            refined_statement=formatted_letter,
             improvements={
                 "basic_cleanup": True,
-                "capitalization": refined[0].isupper(),
-                "punctuation": refined.endswith((".", "!", "?")),
+                "capitalization": True,
+                "punctuation": True,
+                "agency_detected": agency != "SFMTA",
+                "letter_format": True,
             },
             method_used="local_fallback",
         )
@@ -281,14 +346,7 @@ async def refine_statement(
     )
 
     service = get_statement_service()
-    try:
-        return await service.refine_statement_async(request)
-    finally:
-        # Clean up the service instance
-        try:
-            await service.close()
-        except Exception:
-            pass  # Ignore cleanup errors
+    return await service.refine_statement_async(request)
 
 
 # Test function

@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 
 interface UserInfo {
   name: string;
@@ -18,6 +24,7 @@ interface AppealState {
   licensePlate: string;
   vehicleInfo: string;
   appealType: "standard" | "certified";
+  agency?: string;
   // Store base64 strings instead of File objects for sessionStorage persistence
   photos: string[];
   transcript: string;
@@ -48,6 +55,7 @@ const defaultState: AppealState = {
   licensePlate: "",
   vehicleInfo: "",
   appealType: "standard",
+  agency: undefined,
   photos: [],
   transcript: "",
   draftLetter: "",
@@ -57,7 +65,7 @@ const defaultState: AppealState = {
 
 const AppealContext = createContext<AppealContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'fightsftickets_appeal_state';
+const STORAGE_KEY = "fightsftickets_appeal_state";
 
 export function AppealProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppealState>(defaultState);
@@ -89,7 +97,13 @@ export function AppealProvider({ children }: { children: ReactNode }) {
   }, [state, isInitialized]);
 
   return (
-    <AppealContext.Provider value={{ state, updateState: (updates) => setState(prev => ({ ...prev, ...updates })), resetState: () => setState(defaultState) }}>
+    <AppealContext.Provider
+      value={{
+        state,
+        updateState: (updates) => setState((prev) => ({ ...prev, ...updates })),
+        resetState: () => setState(defaultState),
+      }}
+    >
       {children}
     </AppealContext.Provider>
   );
@@ -98,7 +112,7 @@ export function AppealProvider({ children }: { children: ReactNode }) {
 export function useAppeal() {
   const context = useContext(AppealContext);
   if (context === undefined) {
-    throw new Error('useAppeal must be used within an AppealProvider');
+    throw new Error("useAppeal must be used within an AppealProvider");
   }
   return context;
 }

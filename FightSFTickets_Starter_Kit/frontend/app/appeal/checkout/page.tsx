@@ -12,8 +12,34 @@ function CheckoutPageContent() {
   const { state, updateState } = useAppeal();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [userInfo, setUserInfo] = useState(state.userInfo);
+  const [userInfo, setUserInfo] = useState({
+    name: state.userInfo?.name || "",
+    email: state.userInfo?.email || "",
+    addressLine1: state.userInfo?.addressLine1 || "",
+    addressLine2: state.userInfo?.addressLine2 || "",
+    city: state.userInfo?.city || "",
+    state: state.userInfo?.state || "",
+    zip: state.userInfo?.zip || "",
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Agency display names
+  const agencyDisplayNames: Record<string, string> = {
+    SFMTA: "SFMTA (San Francisco Municipal Transportation Agency)",
+    SFPD: "San Francisco Police Department",
+    SFSU: "San Francisco State University",
+    SFMUD: "San Francisco Municipal Utility District",
+    UNKNOWN: "San Francisco Parking Citation Agency",
+  };
+
+  // Agency mailing addresses
+  const agencyAddresses: Record<string, string> = {
+    SFMTA: "1 South Van Ness Avenue, Floor 7\nSan Francisco, CA 94103",
+    SFPD: "850 Bryant Street, Room 500\nSan Francisco, CA 94103",
+    SFSU: "1600 Holloway Avenue, Burk Hall 100\nSan Francisco, CA 94132",
+    SFMUD: "525 Golden Gate Avenue, 12th Floor\nSan Francisco, CA 94102",
+    UNKNOWN: "1 South Van Ness Avenue, Floor 7\nSan Francisco, CA 94103",
+  };
 
   const prices = {
     standard: { amount: 9.0, label: "Standard Mail" },
@@ -22,6 +48,9 @@ function CheckoutPageContent() {
 
   const currentPrice =
     prices[appealType as keyof typeof prices] || prices.standard;
+
+  // Get display name for agency
+  const agencyDisplayName = agencyDisplayNames[state.agency || "UNKNOWN"];
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -115,6 +144,27 @@ function CheckoutPageContent() {
           </h2>
 
           <div className="space-y-4">
+            <div className="flex justify-between">
+              <span className="text-gray-700">Citation Agency</span>
+              <span className="font-medium">{agencyDisplayName}</span>
+            </div>
+            <div className="flex justify-between items-start">
+              <span className="text-gray-700">Mailing Address</span>
+              <div className="text-right font-medium text-sm">
+                <div className="whitespace-pre-line">
+                  {agencyAddresses[state.agency || "UNKNOWN"]}
+                </div>
+                <p className="text-gray-500 text-xs mt-1">
+                  Your appeal will be sent here
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-700">Citation Number</span>
+              <span className="font-medium">
+                {state.citationNumber || "Not provided"}
+              </span>
+            </div>
             <div className="flex justify-between">
               <span className="text-gray-700">Service Type</span>
               <span className="font-medium">{currentPrice.label}</span>

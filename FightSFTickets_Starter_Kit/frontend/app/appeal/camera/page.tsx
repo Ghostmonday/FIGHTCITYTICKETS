@@ -15,6 +15,15 @@ function CameraPageContent() {
   // State now holds base64 strings
   const [photos, setPhotos] = useState<string[]>(state.photos || []);
 
+  // Agency display names
+  const agencyDisplayNames: Record<string, string> = {
+    SFMTA: "SFMTA (San Francisco Municipal Transportation Agency)",
+    SFPD: "San Francisco Police Department",
+    SFSU: "San Francisco State University",
+    SFMUD: "San Francisco Municipal Utility District",
+    UNKNOWN: "San Francisco Parking Citation Agency",
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const imageFiles = files.filter((file) => file.type.startsWith("image/"));
@@ -42,7 +51,7 @@ function CameraPageContent() {
 
   const handleContinue = () => {
     updateState({ photos });
-    router.push(`/appeal/voice?type=${appealType}`);
+    router.push(`/appeal/review?type=${appealType}`);
   };
 
   return (
@@ -62,6 +71,26 @@ function CameraPageContent() {
           <p className="text-gray-600 mt-2">
             Step 2 of 5: Add photos that support your appeal
           </p>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-gray-700">
+                  Citation #{state.citationNumber || "Not provided"}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Agency: {agencyDisplayNames[state.agency || "UNKNOWN"]}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">
+                  Appeal type:{" "}
+                  {appealType === "certified"
+                    ? "Certified Mail ($19)"
+                    : "Standard Mail ($9)"}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Upload Area */}

@@ -20,6 +20,12 @@ from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer
 
 from ..config import settings
 
+# Import citation services for agency routing
+try:
+    from .citation import CitationAgency, CitationValidator
+except ImportError:
+    from citation import CitationAgency, CitationValidator
+
 # Set up logger
 logger = logging.getLogger(__name__)
 
@@ -105,22 +111,49 @@ class LobMailService:
             "Content-Type": "application/json",
         }
 
-    def _get_sfmta_address(self, citation_number: str) -> MailingAddress:
-        """Get the correct SFMTA mailing address for appeals."""
-        # SFMTA Citation Review Department
-        # Address varies slightly based on citation type, but we use a standard address
+    def _get_agency_address(self, citation_number: str) -> MailingAddress:
+        """Get the correct mailing address based on citation agency."""
+        # Identify the agency from citation number
+        agency = CitationValidator.identify_agency(citation_number)
 
-        # Note: In production, you might route different citation types to different addresses
-        # For now, we use the general appeal address
+        # Map agency to correct mailing address
+        agency_addresses = {
+            CitationAgency.SFMTA: MailingAddress(
+                name="SFMTA Citation Review",
+                address_line1="1 South Van Ness Avenue",
+                address_line2="Floor 7",
+                city="San Francisco",
+                state="CA",
+                zip_code="94103",
+            ),
+            CitationAgency.SFPD: MailingAddress(
+                name="San Francisco Police Department - Traffic Division",
+                address_line1="850 Bryant Street",
+                address_line2="Room 500",
+                city="San Francisco",
+                state="CA",
+                zip_code="94103",
+            ),
+            CitationAgency.SFSU: MailingAddress(
+                name="San Francisco State University - Parking & Transportation",
+                address_line1="1600 Holloway Avenue",
+                address_line2="Burk Hall 100",
+                city="San Francisco",
+                state="CA",
+                zip_code="94132",
+            ),
+            CitationAgency.SFMUD: MailingAddress(
+                name="San Francisco Municipal Utility District",
+                address_line1="525 Golden Gate Avenue",
+                address_line2="12th Floor",
+                city="San Francisco",
+                state="CA",
+                zip_code="94102",
+            ),
+        }
 
-        return MailingAddress(
-            name="SFMTA Citation Review",
-            address_line1="1 South Van Ness Avenue",
-            address_line2="Floor 7",
-            city="San Francisco",
-            state="CA",
-            zip_code="94103",
-        )
+        # Return the appropriate address or default to SFMTA
+        return agency_addresses.get(agency, agency_addresses[CitationAgency.SFMTA])
 
     def _generate_appeal_pdf(self, request: AppealLetterRequest) -> bytes:
         """
@@ -243,8 +276,8 @@ class LobMailService:
                     success=False, error_message="Lob API key not configured"
                 )
 
-            # Get SFMTA address
-            sfmta_address = self._get_sfmta_address(request.citation_number)
+            # Get agency-specific address
+            agency_address = self._get_agency_address(request.citation_number)
 
             # User return address
             user_address = MailingAddress(
@@ -263,7 +296,7 @@ class LobMailService:
             mail_type = self._get_mail_type(request.appeal_type)
 
             payload = {
-                "to": sfmta_address.to_lob_dict(),
+                "to": agency_address.to_lob_dict(),
                 "from": user_address.to_lob_dict(),
                 "file": pdf_base64,
                 "file_type": "application/pdf",
