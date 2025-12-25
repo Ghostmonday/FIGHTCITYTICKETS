@@ -1,0 +1,99 @@
+{
+  "city_id": "us-ca-san_francisco",
+  "name": "San Francisco",
+  "state": "CA",
+  "country": "US",
+  "authority": {
+    "section_id": "sfmta",
+    "name": "SFMTA Customer Service Center",
+    "authority_name": "San Francisco Municipal Transportation Agency",
+    "jurisdiction": "city",
+    "abbrev": [
+      "SFMTA",
+      "MT"
+    ],
+    "serves_basis": "issuing_authority",
+    "serves_description": "Most San Francisco parking citations are issued and processed by the San Francisco Municipal Transportation Agency."
+  },
+  "citation_pattern": {
+    "regex": "^(SFMTA|MT)[0-9]{8}$",
+    "description": "San Francisco parking citation format",
+    "example_numbers": [
+      "SFMTA12345678",
+      "MT98765432"
+    ],
+    "confidence": "medium",
+    "visual_markers": [
+      "SFMTA logo",
+      "San Francisco Municipal Transportation Agency"
+    ],
+    "notes": "Standard city parking and transit citations display 'SFMTA' or 'MT' followed by eight digits."
+  },
+  "appeal_address": {
+    "status": "complete",
+    "department": "SFMTA Customer Service Center",
+    "attention": "Citation Review",
+    "address1": "11 South Van Ness Avenue",
+    "city": "San Francisco",
+    "state": "CA",
+    "zip": "94103",
+    "country": "US"
+  },
+  "submission_methods": {
+    "mail_allowed": true,
+    "online_allowed": true,
+    "in_person_allowed": true,
+    "preferred_method": "online",
+    "method_constraints": [],
+    "notes": "Citations can be protested online via the SFMTA website, by mailing a protest form, or by visiting the Customer Service Center."
+  },
+  "phone_confirmation": {
+    "required": true,
+    "when_required": "always",
+    "phone_numbers": [
+      "311"
+    ],
+    "alt_phone_numbers": [
+      "415-701-2311"
+    ],
+    "department": "SFMTA Customer Service Center / Citation Review",
+    "purpose": "Confirm the correct mailing address and procedures for SFMTA citation protests."
+  },
+  "verification": {
+    "status": "verified",
+    "verified_at": "2025-12-24",
+    "source_type": "official_webpage",
+    "source_note": "Protest mailing address and process confirmed on SFMTA's 'Contest a Citation' page【111240306093384†L114-L121】 and contact phone 311 listed for assistance【111240306093384†L99-L101】.",
+    "needs_confirmation": false,
+    "operational_ready": true,
+    "last_checked": "2025-12-24",
+    "last_validated_by": "collector"
+  },
+  "official_confirmation_phone": "311",
+  "official_confirmation_department": "City Services / Parking Citations",
+  "official_confirmation_purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing for San Francisco parking citations.",
+  "appeal_info": {
+    "timezone": "America/Los_Angeles",
+    "appeal_deadline_days": 21,
+    "online_appeal_available": true,
+    "online_appeal_url": null
+  },
+  "routing_rule": "direct",
+  "qa_has_sections": true,
+  "qa_has_city_confirmation_phone": true,
+  "qa_all_sections_have_valid_routing": false,
+  "qa_blocking_issues": [
+    "SFPD routing to SFMTA requires confirmation to ensure all police-issued citations follow this process.",
+    "SFSU, USF, and CCSF sections lack publicly available mailing addresses for appeals; confirmation by phone is needed."
+  ],
+  "qa_known_gaps": [
+    "Citation patterns for campus authorities are inferred and have low confidence.",
+    "Several campus authorities rely on online-only appeal processes; mailing addresses may exist but were not published."
+  ],
+  "_metadata": {
+    "source_format": "phase1",
+    "extracted_at": "2025-12-24T21:02:37.838580",
+    "extracted_by": "extract_city_simple.py",
+    "schema_version": "1.0.0"
+  }
+}

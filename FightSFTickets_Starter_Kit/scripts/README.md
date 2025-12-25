@@ -129,7 +129,7 @@ git clone <repo-url> /var/www/fightsftickets
 
 # 4. Configure environment
 cd /var/www/fightsftickets
-cp .env.example .env
+cp .env.template .env
 nano .env  # Add your API keys
 
 # 5. Deploy
@@ -408,7 +408,7 @@ git log scripts/
 #!/bin/bash
 # Deploy to Hetzner with all services
 
-export HETZNER_API_TOKEN="f9qcQDzE4IWGBgPbsJ9WDOotoNrooAwvAPQD1tztas2ZnTt0PIS0nO476jCzL6c7"
+export HETZNER_API_TOKEN="YOUR_HETZNER_API_TOKEN"
 export DOMAIN="fightsftickets.com"
 export SERVER_TYPE="cx21"
 export SERVER_LOCATION="ash"

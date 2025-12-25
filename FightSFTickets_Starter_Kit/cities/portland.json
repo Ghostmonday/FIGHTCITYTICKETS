@@ -1,0 +1,100 @@
+{
+  "city_id": "us-or-portland",
+  "name": "Portland",
+  "state": "OR",
+  "country": "US",
+  "authority": {
+    "section_id": "pbot",
+    "name": "Portland Bureau of Transportation / Multnomah County Circuit Court",
+    "authority_name": "Portland Bureau of Transportation (PBOT) and Multnomah County Circuit Court",
+    "jurisdiction": "city",
+    "abbrev": [
+      "PBOT",
+      "Multnomah County Circuit Court"
+    ],
+    "serves_basis": "issuing_authority",
+    "serves_description": "Parking citations issued by the City of Portland are processed through the Multnomah County Circuit Court."
+  },
+  "citation_pattern": {
+    "regex": "^HA[0-9]{6,8}$",
+    "description": "Portland parking citation format",
+    "example_numbers": [
+      "HA123456",
+      "HA98765432"
+    ],
+    "confidence": "low",
+    "visual_markers": [
+      "City of Portland logo",
+      "Parking Citation Office",
+      "HA prefix on citation number"
+    ],
+    "notes": "Portland parking citations often begin with the letters 'HA' when viewed online."
+  },
+  "appeal_address": {
+    "status": "complete",
+    "department": "Parking Citation Office",
+    "attention": "Multnomah County Circuit Court",
+    "address1": "P.O. Box 78",
+    "city": "Portland",
+    "state": "OR",
+    "zip": "97207",
+    "country": "US"
+  },
+  "submission_methods": {
+    "mail_allowed": true,
+    "online_allowed": false,
+    "in_person_allowed": true,
+    "preferred_method": "mail",
+    "method_constraints": [],
+    "notes": "To contest a citation, mail a written explanation or request a hearing; in-person hearings are available at the court."
+  },
+  "phone_confirmation": {
+    "required": true,
+    "when_required": "always",
+    "phone_numbers": [
+      "971-274-0590"
+    ],
+    "alt_phone_numbers": [
+      "503-823-4000"
+    ],
+    "department": "Multnomah County Circuit Court Parking Tag Office",
+    "purpose": "Confirm that this is the correct Phase-1 mailing address and procedure for City of Portland parking citation appeals."
+  },
+  "verification": {
+    "status": "verified",
+    "verified_at": "2025-12-24",
+    "source_type": "official_webpage",
+    "source_note": "Mailing address and contest instructions confirmed on Portland.gov – pay and contest parking ticket page, which states that written explanations and payments should be mailed to P.O. Box 78, Portland, OR 97207 and provides the Parking Tag Office phone number【180675364249953†L82-L95】【180675364249953†L115-L150】.",
+    "needs_confirmation": false,
+    "operational_ready": true,
+    "last_checked": "2025-12-24",
+    "last_validated_by": "collector"
+  },
+  "official_confirmation_phone": "971-274-0590",
+  "official_confirmation_department": "Multnomah County Circuit Court Parking Tag Office",
+  "official_confirmation_purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing.",
+  "appeal_info": {
+    "timezone": "America/Los_Angeles",
+    "appeal_deadline_days": 21,
+    "online_appeal_available": false,
+    "online_appeal_url": null
+  },
+  "routing_rule": "direct",
+  "qa_has_sections": true,
+  "qa_has_city_confirmation_phone": true,
+  "qa_all_sections_have_valid_routing": true,
+  "qa_blocking_issues": [],
+  "qa_known_gaps": [
+    "University of Portland citation appeal mailing address is not provided and requires confirmation.",
+    "Portland State University appeals are online only; mailing address is missing and requires confirmation.",
+    "Lewis & Clark College appeal mailing address is not provided and requires confirmation.",
+    "Reed College appeal mailing address is not provided and requires confirmation.",
+    "Portland Community College appeal mailing address is not provided and requires confirmation."
+  ],
+  "_metadata": {
+    "source_format": "phase1",
+    "extracted_at": "2025-12-24T21:02:37.656527",
+    "extracted_by": "extract_city_simple.py",
+    "schema_version": "1.0.0"
+  }
+}

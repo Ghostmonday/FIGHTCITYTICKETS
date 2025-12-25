@@ -36,7 +36,7 @@ Your application is ready for immediate deployment to Hetzner Cloud:
 
 ```bash
 # Step 1: Set your Hetzner API token
-export HETZNER_API_TOKEN="f9qcQDzE4IWGBgPbsJ9WDOotoNrooAwvAPQD1tztas2ZnTt0PIS0nO476jCzL6c7"
+export HETZNER_API_TOKEN="YOUR_HETZNER_API_TOKEN"
 
 # Step 2: Optional - Set your domain
 export DOMAIN="yourdomain.com"
@@ -65,8 +65,7 @@ chmod +x scripts/deploy_hetzner.sh
 - **Quick Start:** `DEPLOY_NOW.md` ⭐ Start here!
 - **Complete Guide:** `docs/DEPLOYMENT_GUIDE.md`
 - **Service Integration:** `docs/SERVICE_INTEGRATION_CHECKLIST.md`
-- **Summary:** `DEPLOYMENT_SUMMARY.md`
-- **Status:** `DEPLOYMENT_COMPLETE.md`
+- **Archived Guides:** See `docs/archive/` for historical documentation
 
 ---
 
@@ -78,9 +77,7 @@ chmod +x scripts/deploy_hetzner.sh
 cd FightSFTickets_Starter_Kit
 
 # Copy environment templates
-cp .env.example .env
-cp .env.production.template .env.production  # For production
-
+cp .env.template .env
 # Edit .env with your API keys (see Configuration section)
 
 # Start all services
@@ -174,13 +171,9 @@ FightSFTickets_Starter_Kit/
 
 ### Environment Setup
 ```bash
-# Development
-cp .env.example .env
-# Edit .env with your development keys
-
-# Production
-cp .env.production.template .env.production
-# Edit .env.production with production keys
+# Development and Production
+cp .env.template .env
+# Edit .env with your API keys for your environment
 ```
 
 ## 🔧 Development
@@ -216,7 +209,7 @@ alembic downgrade -1
 
 **Ready to deploy in 3 commands:**
 ```bash
-export HETZNER_API_TOKEN="f9qcQDzE4IWGBgPbsJ9WDOotoNrooAwvAPQD1tztas2ZnTt0PIS0nO476jCzL6c7"
+export HETZNER_API_TOKEN="YOUR_HETZNER_API_TOKEN"
 cd FightSFTickets_Starter_Kit
 ./scripts/deploy_hetzner.sh
 ```
@@ -374,7 +367,7 @@ FightSFTickets is not a law firm and does not provide legal advice. We are a doc
 
 ### 🚀 Deploy Now
 ```bash
-export HETZNER_API_TOKEN="f9qcQDzE4IWGBgPbsJ9WDOotoNrooAwvAPQD1tztas2ZnTt0PIS0nO476jCzL6c7"
+export HETZNER_API_TOKEN="YOUR_HETZNER_API_TOKEN"
 ./scripts/deploy_hetzner.sh
 ```
 

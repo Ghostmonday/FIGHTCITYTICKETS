@@ -1,0 +1,101 @@
+{
+  "city_id": "us-ca-los_angeles",
+  "name": "Los Angeles",
+  "state": "CA",
+  "country": "US",
+  "authority": {
+    "section_id": "ladot_pvb",
+    "name": "LADOT Parking Violations Bureau",
+    "authority_name": "Los Angeles Department of Transportation Parking Violations Bureau",
+    "jurisdiction": "city",
+    "abbrev": [
+      "LADOT",
+      "PVB"
+    ],
+    "serves_basis": "issuing_authority",
+    "serves_description": "Most parking citations issued within the City of Los Angeles are processed through the LADOT Parking Violations Bureau."
+  },
+  "citation_pattern": {
+    "regex": "^[0-9A-Z]{6,11}$",
+    "description": "Los Angeles parking citation format",
+    "example_numbers": [
+      "12345678901",
+      "LA1234567"
+    ],
+    "confidence": "low",
+    "visual_markers": [
+      "City of Los Angeles",
+      "Parking Violations Bureau",
+      "LADOT logo"
+    ],
+    "notes": "Citation number appears on the ticket and online payment portal; may contain up to 11 alphanumeric characters."
+  },
+  "appeal_address": {
+    "status": "complete",
+    "department": "Parking Violations Bureau",
+    "attention": "Initial Review",
+    "address1": "P.O. Box 30420",
+    "city": "Los Angeles",
+    "state": "CA",
+    "zip": "90030-0968",
+    "country": "US"
+  },
+  "submission_methods": {
+    "mail_allowed": true,
+    "online_allowed": true,
+    "in_person_allowed": true,
+    "preferred_method": "online",
+    "method_constraints": [],
+    "notes": "Initial reviews may be requested by web, mail, phone or in-person; mailing address requires a letter explaining why the citation should be dismissed."
+  },
+  "phone_confirmation": {
+    "required": true,
+    "when_required": "always",
+    "phone_numbers": [
+      "866-561-9742"
+    ],
+    "alt_phone_numbers": [
+      "310-843-5936"
+    ],
+    "department": "Parking Violations Bureau Customer Service",
+    "purpose": "Confirm this is the correct mailing address for your initial review request or to verify that your citation routes to LADOT."
+  },
+  "verification": {
+    "status": "verified",
+    "verified_at": "2025-12-24",
+    "source_type": "official_webpage",
+    "source_note": "Mailing address and instructions confirmed on LADOT PVB correspondence and mail-in payment pages.",
+    "needs_confirmation": false,
+    "operational_ready": true,
+    "last_checked": "2025-12-24",
+    "last_validated_by": "collector"
+  },
+  "official_confirmation_phone": "866-561-9742",
+  "official_confirmation_department": "Parking Violations Bureau / LA County Parking Enforcement",
+  "official_confirmation_purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing.",
+  "appeal_info": {
+    "timezone": "America/Los_Angeles",
+    "appeal_deadline_days": 21,
+    "online_appeal_available": true,
+    "online_appeal_url": null
+  },
+  "routing_rule": "direct",
+  "qa_has_sections": true,
+  "qa_has_city_confirmation_phone": true,
+  "qa_all_sections_have_valid_routing": true,
+  "qa_blocking_issues": [
+    "Need confirmation whether LAPD parking citations always route to LADOT PVB.",
+    "Metro Transit Court mailing address and procedures not confirmed via an official source."
+  ],
+  "qa_known_gaps": [
+    "UCLA section missing confirmed mailing address for Phase-1 protests.",
+    "USC section missing confirmed mailing address for Phase-1 protests.",
+    "Citation patterns for LADOT, LA County, Metro and campus authorities are approximate and require verification."
+  ],
+  "_metadata": {
+    "source_format": "phase1",
+    "extracted_at": "2025-12-24T21:02:37.416737",
+    "extracted_by": "extract_city_simple.py",
+    "schema_version": "1.0.0"
+  }
+}

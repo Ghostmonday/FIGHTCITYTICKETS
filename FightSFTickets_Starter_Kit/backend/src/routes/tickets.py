@@ -4,7 +4,7 @@ Citation and Ticket Routes for FightSFTickets.com
 Handles citation validation and related ticket services.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
@@ -50,6 +50,13 @@ class CitationValidationResponse(BaseModel):
     error_message: Optional[str] = None
     formatted_citation: Optional[str] = None
 
+    # Multi-city metadata
+    city_id: Optional[str] = None
+    section_id: Optional[str] = None
+    appeal_deadline_days: int = 21
+    phone_confirmation_required: bool = False
+    phone_confirmation_policy: Optional[Dict[str, Any]] = None
+
 
 # Legacy ticket inventory (keep for old clients)
 LEGACY_INVENTORY: List[TicketType] = [
@@ -88,6 +95,12 @@ def validate_citation(request: CitationValidationRequest):
             is_urgent=validation.is_urgent,
             error_message=validation.error_message,
             formatted_citation=validation.formatted_citation,
+            # Multi-city metadata
+            city_id=validation.city_id,
+            section_id=validation.section_id,
+            appeal_deadline_days=validation.appeal_deadline_days,
+            phone_confirmation_required=validation.phone_confirmation_required,
+            phone_confirmation_policy=validation.phone_confirmation_policy,
         )
 
     except Exception as e:
@@ -136,7 +149,15 @@ def get_citation_info(citation_number: str):
             "days_remaining": info.days_remaining,
             "is_within_appeal_window": info.is_within_appeal_window,
             "can_appeal_online": info.can_appeal_online,
+            "online_appeal_url": info.online_appeal_url,
             "formatted_citation": validation.formatted_citation,
+            "city_id": info.city_id,
+            "section_id": info.section_id,
+            "appeal_deadline_days": info.appeal_deadline_days,
+            "phone_confirmation_required": info.phone_confirmation_required,
+            "phone_confirmation_policy": info.phone_confirmation_policy,
+            "appeal_mail_address": info.appeal_mail_address,
+            "routing_rule": info.routing_rule,
         }
 
     except HTTPException:

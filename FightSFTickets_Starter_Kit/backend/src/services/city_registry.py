@@ -321,7 +321,7 @@ class CityRegistry:
             logger.warning(f"Cities directory not found: {self.cities_dir}")
             return
 
-        json_files = list(self.cities_dir.glob("*.json"))
+        json_files = list(self.cities_dir.glob("us-*.json"))
         if not json_files:
             logger.warning(f"No JSON files found in {self.cities_dir}")
             return

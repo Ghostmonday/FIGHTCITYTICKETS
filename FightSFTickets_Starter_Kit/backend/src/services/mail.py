@@ -23,8 +23,20 @@ from ..config import settings
 # Import citation services for agency routing
 try:
     from .citation import CitationAgency, CitationValidator
+    from .city_registry import (
+        AppealMailAddress,
+        AppealMailStatus,
+        CityRegistry,
+        get_city_registry,
+    )
 except ImportError:
     from citation import CitationAgency, CitationValidator
+    from city_registry import (
+        AppealMailAddress,
+        AppealMailStatus,
+        CityRegistry,
+        get_city_registry,
+    )
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -96,6 +108,17 @@ class LobMailService:
         self.is_live_mode = settings.lob_mode.lower() == "live"
         self.is_available = bool(self.api_key and self.api_key != "change-me")
 
+        # Initialize city registry for multi-city support
+        self.city_registry = None
+        try:
+            from pathlib import Path
+
+            cities_dir = Path(__file__).parent.parent.parent.parent / "cities"
+            self.city_registry = get_city_registry(cities_dir)
+        except Exception as e:
+            logger.warning(f"CityRegistry initialization failed: {e}")
+            logger.warning("Falling back to SF-only address mapping")
+
         if not self.is_available:
             logger.warning("Lob API key not configured for mail service")
 
@@ -113,7 +136,33 @@ class LobMailService:
 
     def _get_agency_address(self, citation_number: str) -> MailingAddress:
         """Get the correct mailing address based on citation agency."""
-        # Identify the agency from citation number
+        # Try city registry first for multi-city support
+        if self.city_registry:
+            try:
+                match = self.city_registry.match_citation(citation_number)
+                if match:
+                    city_id, section_id = match
+                    mail_address = self.city_registry.get_mail_address(
+                        city_id, section_id
+                    )
+                    if (
+                        mail_address
+                        and mail_address.status == AppealMailStatus.COMPLETE
+                    ):
+                        # Convert AppealMailAddress to MailingAddress
+                        return MailingAddress(
+                            name=mail_address.department or "Citation Review",
+                            address_line1=mail_address.address1,
+                            address_line2=mail_address.address2,
+                            city=mail_address.city,
+                            state=mail_address.state,
+                            zip_code=mail_address.zip,
+                        )
+            except Exception as e:
+                logger.warning(f"CityRegistry address lookup failed: {e}")
+                logger.warning("Falling back to legacy agency mapping")
+
+        # Fall back to legacy SF-only agency mapping
         agency = CitationValidator.identify_agency(citation_number)
 
         # Map agency to correct mailing address

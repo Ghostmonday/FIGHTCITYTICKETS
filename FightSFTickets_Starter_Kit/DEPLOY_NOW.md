@@ -37,7 +37,7 @@ You already have your Hetzner API token. Now get these:
 ### Step 1: Set Your Hetzner Token
 
 ```bash
-export HETZNER_API_TOKEN="f9qcQDzE4IWGBgPbsJ9WDOotoNrooAwvAPQD1tztas2ZnTt0PIS0nO476jCzL6c7"
+export HETZNER_API_TOKEN="YOUR_HETZNER_API_TOKEN"
 ```
 
 ### Step 2: Configure Your Domain (Optional)

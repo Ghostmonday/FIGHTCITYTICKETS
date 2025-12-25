@@ -13,8 +13,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .middleware.rate_limit import limiter
-from .routes.admin import router as admin_router
 from .routes.checkout import router as checkout_router
 from .routes.health import router as health_router
 from .routes.statement import router as statement_router
@@ -22,11 +20,10 @@ from .routes.tickets import router as tickets_router
 from .routes.webhooks import router as webhooks_router
 from .services.database import get_db_service
 
-# Set up logger with file handler
+# Set up logger
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("server.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -113,9 +110,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add rate limiting
-app.state.limiter = limiter
-
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -139,10 +133,10 @@ app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(tickets_router, prefix="/tickets", tags=["tickets"])
 app.include_router(statement_router, prefix="/api/statement", tags=["statement"])
 
+
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
 app.include_router(webhooks_router, prefix="/api/webhook", tags=["webhooks"])
-app.include_router(admin_router, prefix="/admin", tags=["admin"])
 
 
 @app.get("/")
@@ -165,6 +159,7 @@ async def root():
         "endpoints": {
             "citation_validation": "/tickets/validate",
             "statement_refinement": "/api/statement/refine",
+            "audio_transcription": "/api/transcribe",
             "checkout": "/checkout/create-session",
             "webhook": "/api/webhook/stripe",
         },

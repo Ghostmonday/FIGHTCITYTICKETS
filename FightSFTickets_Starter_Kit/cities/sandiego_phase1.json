@@ -1,0 +1,413 @@
+{
+"city_id": "us-ca-san_diego",
+"city": "San Diego",
+"state": "CA",
+"country": "US",
+
+"official_confirmation": {
+"primary_phone": {
+"phone": "866-470-1308",
+"alt_phone": "619-744-1702",
+"department": "San Diego Parking Administration",
+"purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing."
+}
+},
+
+"phase1_routing": {
+"sections": [
+{
+"section_id": "sd_parking_administration",
+"canonical_section_name": "San Diego Parking Administration",
+"section_type": "city_parking_authority",
+"authority_name": "City of San Diego, Parking Administration",
+"jurisdiction": "city",
+"abbrev": ["San Diego Parking", "City of San Diego"],
+
+    "serves": {
+      "basis": "issuing_authority",
+      "description": "Parking citations issued by the City of San Diego for general parking enforcement."
+    },
+
+    "how_to_recognize": {
+      "citation_id_pattern": "^[0-9]{7,10}$",
+      "pattern_confidence": "low",
+      "examples": ["12345678", "9876543210"],
+      "visual_markers": ["City of San Diego logo", "parking citation number"],
+      "notes": "City parking citations typically show a numeric citation number; length may vary."
+    },
+
+    "submission_methods": {
+      "mail_allowed": true,
+      "online_allowed": true,
+      "in_person_allowed": false,
+      "preferred_method": "online",
+      "method_constraints": [],
+      "notes": "Administrative review requests may be filed online or by mail."
+    },
+
+    "appeal_mail_to": {
+      "status": "complete",
+      "department": "Parking Administration",
+      "attention": "Administrative Review",
+      "address1": "PO Box 129038",
+      "address2": null,
+      "city": "San Diego",
+      "state": "CA",
+      "zip": "92112-9038",
+      "country": "US"
+    },
+
+    "routing_rule": "direct",
+
+    "confirm_by_phone": {
+      "required": true,
+      "phone": "866-470-1308",
+      "alt_phone": "619-744-1702",
+      "department": "San Diego Parking Administration",
+      "purpose": "Confirm this is the correct Phase-1 mailing address for City of San Diego parking citations."
+    },
+
+    "verification": {
+      "status": "verified",
+      "needs_confirmation": false,
+      "verified_at": "2025-12-24",
+      "verified_source_type": "official_webpage",
+      "verified_source_note": "Mailing address and instructions from City of San Diego official site:contentReference[oaicite:0]{index=0}.",
+      "verified_source_last_checked": "2025-12-24",
+      "verified_source_page_last_updated": null,
+      "verified_source_publication_date": null,
+      "last_validated_by": "collector"
+    }
+  },
+
+  {
+    "section_id": "port_of_san_diego",
+    "canonical_section_name": "Port of San Diego Harbor Police",
+    "section_type": "special_district",
+    "authority_name": "Port of San Diego Harbor Police",
+    "jurisdiction": "special_district",
+    "abbrev": ["Port of San Diego", "Harbor Police"],
+
+    "serves": {
+      "basis": "issuing_authority",
+      "description": "Parking citations issued on Port of San Diego property by Harbor Police."
+    },
+
+    "how_to_recognize": {
+      "citation_id_pattern": "^[A-Z0-9]{8,10}$",
+      "pattern_confidence": "low",
+      "examples": ["PD12345678", "2012345678"],
+      "visual_markers": ["Port of San Diego", "Harbor Police", "Citation Processing Center"],
+      "notes": "Port citations may include alphanumeric identifiers and reference the Citation Processing Center."
+    },
+
+    "submission_methods": {
+      "mail_allowed": true,
+      "online_allowed": true,
+      "in_person_allowed": true,
+      "preferred_method": "online",
+      "method_constraints": [],
+      "notes": "The Port allows appeals to be submitted online, by mail, or in person at Harbor Police headquarters."
+    },
+
+    "appeal_mail_to": {
+      "status": "complete",
+      "department": "Parking Citation",
+      "attention": "Citation Processing Center",
+      "address1": "PO Box 10479",
+      "address2": null,
+      "city": "Newport Beach",
+      "state": "CA",
+      "zip": "92658",
+      "country": "US"
+    },
+
+    "routing_rule": "direct",
+
+    "confirm_by_phone": {
+      "required": true,
+      "phone": "619-686-6570",
+      "alt_phone": null,
+      "department": "Port of San Diego Harbor Police",
+      "purpose": "Confirm this is the correct address and procedure for Port of San Diego parking citation appeals."
+    },
+
+    "verification": {
+      "status": "verified",
+      "needs_confirmation": false,
+      "verified_at": "2025-12-24",
+      "verified_source_type": "official_webpage",
+      "verified_source_note": "Appeal mailing address and options confirmed from Port of San Diego citations page:contentReference[oaicite:1]{index=1}.",
+      "verified_source_last_checked": "2025-12-24",
+      "verified_source_page_last_updated": null,
+      "verified_source_publication_date": null,
+      "last_validated_by": "collector"
+    }
+  },
+
+  {
+    "section_id": "ucsd",
+    "canonical_section_name": "UC San Diego Transportation Services",
+    "section_type": "campus",
+    "authority_name": "University of California, San Diego",
+    "jurisdiction": "campus",
+    "abbrev": ["UCSD", "UC San Diego"],
+
+    "serves": {
+      "basis": "campus",
+      "description": "Parking citations issued on the UC San Diego campus by Transportation Services."
+    },
+
+    "how_to_recognize": {
+      "citation_id_pattern": "^[0-9]{5,8}$",
+      "pattern_confidence": "low",
+      "examples": ["123456", "7654321"],
+      "visual_markers": ["UC San Diego", "Transportation Services"],
+      "notes": "UCSD citations generally feature a numeric citation number and UC San Diego branding."
+    },
+
+    "submission_methods": {
+      "mail_allowed": true,
+      "online_allowed": true,
+      "in_person_allowed": false,
+      "preferred_method": "online",
+      "method_constraints": [],
+      "notes": "Appeals must be submitted online; supporting documentation may be mailed to the address below."
+    },
+
+    "appeal_mail_to": {
+      "status": "complete",
+      "department": "Office of Citation Administration",
+      "attention": "UCSD Transportation Services",
+      "address1": "9500 Gilman Drive #0042",
+      "address2": null,
+      "city": "La Jolla",
+      "state": "CA",
+      "zip": "92093-0042",
+      "country": "US"
+    },
+
+    "routing_rule": "direct",
+
+    "confirm_by_phone": {
+      "required": true,
+      "phone": "858-534-4223",
+      "alt_phone": null,
+      "department": "UC San Diego Transportation Services",
+      "purpose": "Confirm the correct address and process for UC San Diego parking citation appeals."
+    },
+
+    "verification": {
+      "status": "verified",
+      "needs_confirmation": false,
+      "verified_at": "2025-12-24",
+      "verified_source_type": "official_webpage",
+      "verified_source_note": "Mailing address for appeals confirmed from UC San Diego Transportation Services site:contentReference[oaicite:2]{index=2}.",
+      "verified_source_last_checked": "2025-12-24",
+      "verified_source_page_last_updated": null,
+      "verified_source_publication_date": null,
+      "last_validated_by": "collector"
+    }
+  },
+
+  {
+    "section_id": "sdccd",
+    "canonical_section_name": "SDCCD Parking Services",
+    "section_type": "campus",
+    "authority_name": "San Diego Community College District Parking Services",
+    "jurisdiction": "campus",
+    "abbrev": ["SDCCD"],
+
+    "serves": {
+      "basis": "campus",
+      "description": "Parking citations issued on community college district campuses (City, Mesa, Miramar, Continuing Education) within the San Diego Community College District."
+    },
+
+    "how_to_recognize": {
+      "citation_id_pattern": "^[0-9]{7,9}$",
+      "pattern_confidence": "low",
+      "examples": ["1234567", "987654321"],
+      "visual_markers": ["SDCCD Parking Services", "citation number"],
+      "notes": "SDCCD citations use numeric identifiers and reference the district’s parking services."
+    },
+
+    "submission_methods": {
+      "mail_allowed": true,
+      "online_allowed": true,
+      "in_person_allowed": false,
+      "preferred_method": "online",
+      "method_constraints": [],
+      "notes": "Administrative review requests may be submitted online or by mail within 21 days."
+    },
+
+    "appeal_mail_to": {
+      "status": "complete",
+      "department": "SDCCD Parking Services",
+      "attention": "Administrative Review",
+      "address1": "1536 Frazee Road",
+      "address2": null,
+      "city": "San Diego",
+      "state": "CA",
+      "zip": "92108",
+      "country": "US"
+    },
+
+    "routing_rule": "direct",
+
+    "confirm_by_phone": {
+      "required": true,
+      "phone": "619-388-6416",
+      "alt_phone": null,
+      "department": "SDCCD Parking Services",
+      "purpose": "Confirm this is the correct mailing address for San Diego Community College District parking citation appeals."
+    },
+
+    "verification": {
+      "status": "verified",
+      "needs_confirmation": false,
+      "verified_at": "2025-12-24",
+      "verified_source_type": "official_webpage",
+      "verified_source_note": "Mailing address and instructions confirmed from SDCCD Pay or Appeal citation page:contentReference[oaicite:3]{index=3}.",
+      "verified_source_last_checked": "2025-12-24",
+      "verified_source_page_last_updated": null,
+      "verified_source_publication_date": null,
+      "last_validated_by": "collector"
+    }
+  },
+
+  {
+    "section_id": "usd",
+    "canonical_section_name": "University of San Diego Parking Services",
+    "section_type": "campus",
+    "authority_name": "University of San Diego",
+    "jurisdiction": "campus",
+    "abbrev": ["USD"],
+
+    "serves": {
+      "basis": "campus",
+      "description": "Parking citations issued by the University of San Diego on campus property."
+    },
+
+    "how_to_recognize": {
+      "citation_id_pattern": "^[0-9]{5,7}$",
+      "pattern_confidence": "low",
+      "examples": ["12345", "7654321"],
+      "visual_markers": ["University of San Diego", "Parking Services"],
+      "notes": "USD citations typically include a numeric identifier and USD branding."
+    },
+
+    "submission_methods": {
+      "mail_allowed": false,
+      "online_allowed": true,
+      "in_person_allowed": false,
+      "preferred_method": "online",
+      "method_constraints": [],
+      "notes": "USD requires all appeals to be submitted online via their parking portal; mail appeals are not accepted."
+    },
+
+    "appeal_mail_to": {
+      "status": "missing",
+      "missing_fields": ["department", "address1", "city", "state", "zip"],
+      "missing_reason": "University of San Diego only accepts appeals online and does not provide a mailing address for Phase-1 appeals."
+    },
+
+    "routing_rule": "separate_address_required",
+
+    "confirm_by_phone": {
+      "required": true,
+      "phone": "619-260-4518",
+      "alt_phone": null,
+      "department": "University of San Diego Parking Services",
+      "purpose": "Confirm that appeals must be submitted online and verify there is no mailing address for USD parking citations."
+    },
+
+    "verification": {
+      "status": "incomplete",
+      "needs_confirmation": true,
+      "verified_at": "2025-12-24",
+      "verified_source_type": "official_webpage",
+      "verified_source_note": "USD website states appeals must be submitted online and does not list a mailing address:contentReference[oaicite:4]{index=4}.",
+      "verified_source_last_checked": "2025-12-24",
+      "verified_source_page_last_updated": null,
+      "verified_source_publication_date": null,
+      "last_validated_by": "collector"
+    }
+  },
+
+  {
+    "section_id": "sdsu",
+    "canonical_section_name": "SDSU Parking & Transportation Services",
+    "section_type": "campus",
+    "authority_name": "San Diego State University",
+    "jurisdiction": "campus",
+    "abbrev": ["SDSU"],
+
+    "serves": {
+      "basis": "campus",
+      "description": "Parking citations issued by San Diego State University Transportation Services on SDSU campus property."
+    },
+
+    "how_to_recognize": {
+      "citation_id_pattern": "^[0-9]{8,10}$",
+      "pattern_confidence": "low",
+      "examples": ["12345678", "876543210"],
+      "visual_markers": ["SDSU Parking & Transportation", "San Diego State University"],
+      "notes": "SDSU citations generally display a numeric citation number along with SDSU branding."
+    },
+
+    "submission_methods": {
+      "mail_allowed": false,
+      "online_allowed": true,
+      "in_person_allowed": true,
+      "preferred_method": "online",
+      "method_constraints": [],
+      "notes": "SDSU instructs appellants to submit appeals online or return the Administrative Review form in person to the parking office; no mailing address is provided for initial appeals."
+    },
+
+    "appeal_mail_to": {
+      "status": "missing",
+      "missing_fields": ["department", "address1", "city", "state", "zip"],
+      "missing_reason": "SDSU requires appeals to be submitted online or delivered in person to the Parking Office; a mailing address for initial appeals is not provided."
+    },
+
+    "routing_rule": "separate_address_required",
+
+    "confirm_by_phone": {
+      "required": true,
+      "phone": "619-594-6671",
+      "alt_phone": null,
+      "department": "SDSU Parking & Transportation Services",
+      "purpose": "Confirm the correct procedure for SDSU citation appeals and verify that no mailing address exists for the initial appeal."
+    },
+
+    "verification": {
+      "status": "incomplete",
+      "needs_confirmation": true,
+      "verified_at": "2025-12-24",
+      "verified_source_type": "official_webpage",
+      "verified_source_note": "SDSU appeal process page and administrative review form instruct appellants to submit appeals online or return the form to the parking office; no mailing address provided:contentReference[oaicite:5]{index=5}:contentReference[oaicite:6]{index=6}.",
+      "verified_source_last_checked": "2025-12-24",
+      "verified_source_page_last_updated": null,
+      "verified_source_publication_date": null,
+      "last_validated_by": "collector"
+    }
+  }
+]
+
+},
+
+"qa": {
+"has_sections": true,
+"has_city_confirmation_phone": true,
+"all_sections_have_valid_routing": false,
+
+"blocking_issues": [
+  "University of San Diego and SDSU sections lack confirmed mailing addresses for Phase-1 appeals; both require confirmation of online-only or in-person procedures."
+],
+"known_gaps": [
+  "Citation number patterns across authorities are based on limited information and have low confidence.",
+  "SDSU and USD sections require follow-up phone confirmation to verify appeal routing and absence of mailing addresses."
+]
+
+}
+}

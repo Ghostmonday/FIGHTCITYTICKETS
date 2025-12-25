@@ -25,6 +25,9 @@ interface AppealState {
   vehicleInfo: string;
   appealType: "standard" | "certified";
   agency?: string;
+  cityId?: string;
+  sectionId?: string;
+  appealDeadlineDays?: number;
   // Store base64 strings instead of File objects for sessionStorage persistence
   photos: string[];
   transcript: string;
@@ -56,6 +59,9 @@ const defaultState: AppealState = {
   vehicleInfo: "",
   appealType: "standard",
   agency: undefined,
+  cityId: undefined,
+  sectionId: undefined,
+  appealDeadlineDays: undefined,
   photos: [],
   transcript: "",
   draftLetter: "",

@@ -108,6 +108,7 @@ class CitationInfo:
     days_remaining: Optional[int]
     is_within_appeal_window: bool
     can_appeal_online: bool = False
+    online_appeal_url: Optional[str] = None
 
     # New fields for multi-city support
     city_id: Optional[str] = None
@@ -454,9 +455,14 @@ class CitationValidator:
             validation.deadline_date is not None and not validation.is_past_deadline
         )
 
-        # Determine if online appeal is available
-        # For now, keep SFMTA-only logic for backward compatibility
-        can_appeal_online = validation.agency == CitationAgency.SFMTA
+        # Determine if online appeal is available from city configuration
+        can_appeal_online = False
+        online_appeal_url = None
+        if validation.city_id and self.city_registry:
+            city_config = self.city_registry.get_city_config(validation.city_id)
+            if city_config:
+                can_appeal_online = city_config.online_appeal_available
+                online_appeal_url = city_config.online_appeal_url
 
         # Get additional city-specific information if we have a match
         appeal_mail_address = None
@@ -498,6 +504,7 @@ class CitationValidator:
             days_remaining=validation.days_remaining,
             is_within_appeal_window=is_within_appeal_window,
             can_appeal_online=can_appeal_online,
+            online_appeal_url=online_appeal_url,
             city_id=validation.city_id,
             section_id=validation.section_id,
             appeal_mail_address=appeal_mail_address,
@@ -548,6 +555,73 @@ def validate_citation_number(citation_number: str) -> Tuple[bool, Optional[str]]
 def get_appeal_deadline(violation_date: str) -> Dict[str, Any]:
     """Simple wrapper for deadline calculation."""
     return CitationValidator.calculate_appeal_deadline(violation_date)
+
+
+def get_appeal_method_messaging(
+    city_id: Optional[str],
+    section_id: Optional[str],
+    city_registry: Optional[Any] = None,
+) -> Dict[str, Any]:
+    """
+    Get messaging about appeal methods for a given city/section.
+
+    Returns information about online appeal availability and guidance for users.
+    Even though our service only provides mail appeals, we inform users if the city
+    also accepts online appeals as an alternative option.
+
+    Args:
+        city_id: City identifier (e.g., 'sf', 'la', 'nyc')
+        section_id: Section identifier (e.g., 'sfmta', 'lapd')
+        city_registry: Optional CityRegistry instance
+
+    Returns:
+        Dictionary with messaging and appeal method information
+    """
+    if not city_id or not city_registry:
+        return {
+            "online_appeal_available": False,
+            "message": "Mail appeal required. Our service ensures proper formatting and delivery.",
+            "recommended_method": "mail",
+            "notes": "Most governing bodies require mailed appeals for accessibility.",
+        }
+
+    try:
+        city_config = city_registry.get_city_config(city_id)
+        if not city_config:
+            return {
+                "online_appeal_available": False,
+                "message": "Mail appeal required. Our service ensures proper formatting and delivery.",
+                "recommended_method": "mail",
+                "notes": "Most governing bodies require mailed appeals for accessibility.",
+            }
+
+        online_available = city_config.online_appeal_available
+        online_url = city_config.online_appeal_url
+
+        if online_available:
+            return {
+                "online_appeal_available": True,
+                "online_appeal_url": online_url,
+                "message": f"This city accepts online appeals, but our mail service provides guaranteed delivery and professional formatting.",
+                "recommended_method": "mail",
+                "alternative_method": "online",
+                "notes": "Mail appeals are often given more consideration and have guaranteed delivery confirmation.",
+            }
+        else:
+            return {
+                "online_appeal_available": False,
+                "message": "This city requires mailed appeals. Our service ensures proper formatting and timely delivery.",
+                "recommended_method": "mail",
+                "notes": "Mailed appeals are universally accepted and provide physical proof of submission.",
+            }
+
+    except Exception:
+        return {
+            "online_appeal_available": False,
+            "message": "Mail appeal required. Our service ensures proper formatting and delivery.",
+            "recommended_method": "mail",
+            "notes": "Most governing bodies require mailed appeals for accessibility.",
+        }
 
 
 # Example usage and testing

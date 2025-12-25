@@ -47,8 +47,9 @@ ssh root@178.156.215.100 "curl -s http://localhost:8000/health"
 ## 📁 **CRITICAL FILES**
 
 ### **Backend Services**
-- `backend/src/services/city_registry.py` - ✅ **COMPLETE** (Schema 4.3.0)
-- `backend/src/services/citation.py` - **PRIORITY**: Update to use city registry
+- `backend/src/services/city_registry.py` - ✅ **COMPLETE** (Schema 4.3.0 implemented, tested)
+- `backend/src/services/citation.py` - ✅ **UPDATED** to use CityRegistry (Phase 0.2 complete)
+- `backend/src/services/schema_adapter.py` - ✅ **BUILT** ready for transformation (Phase 0.3 foundation)
 - `backend/src/services/mail.py` - Update for dynamic addresses
 - `backend/src/models/__init__.py` - Database schema with city/section fields
 
@@ -57,9 +58,11 @@ ssh root@178.156.215.100 "curl -s http://localhost:8000/health"
 - `frontend/app/appeal/page.tsx` - Citation form (update for multi-city)
 - `frontend/app/lib/appeal-context.tsx` - State management (add city/section)
 
-### **Configuration**
+### **Configuration & Data**
 - `docker-compose.yml` - Service definitions
-- `cities/` directory - ✅ **EXISTS** with `sf.json` (Schema 4.3.0)
+- `cities/` directory - ✅ **EXISTS** with 11 phase1 JSON files (Chicago, Dallas, Houston, LA, NYC, Philly, Phoenix, SD, SF, Seattle, DC)
+- `scripts/extract_city_simple.py` - ✅ **READY** for city data extraction
+- **Missing**: Simplified Schema 4.3.0 JSON files for cities
 
 ## 🗺️ **ARCHITECTURAL BIBLE REFERENCE**
 
@@ -70,7 +73,8 @@ ssh root@178.156.215.100 "curl -s http://localhost:8000/health"
 - **File Structure** specifications
 - **Session Work Template**
 
-**Current Phase**: **Phase 0: Foundation** - Update Citation Service
+**Current Phase**: **Phase 0: Foundation** - Schema Adaptation & City Data Extraction
+**Progress**: 2/3 core services built (registry + citation), ready for data transformation
 
 ## 🎯 **SESSION WORK FORMAT**
 
@@ -88,12 +92,25 @@ Each session should follow this template:
 
 ## 🔧 **IMMEDIATE PRIORITIES**
 
+### ✅ **Completed:**
 1. ✅ **Complete `city_registry.py`** (Schema 4.3.0 implemented, tested)
 2. ✅ **Create SF JSON file** (`cities/sf.json` created, validated)
-3. ✅ **Add `cities/` directory** (exists, ready for 37-city expansion)
-4. **Update citation service** to use registry (backward compatible) - **PHASE 0.2**
-5. **Test end-to-end** with SF citations (after citation service update)
-6. **Schema Adapter Service** (transform rich JSON → Schema 4.3.0) - **PHASE 0.3**
+3. ✅ **Add `cities/` directory** (exists with 11 phase1 files)
+4. ✅ **Update citation service** to use registry (backward compatible) - **PHASE 0.2 COMPLETE**
+5. ✅ **Schema Adapter Service** (transform rich JSON → Schema 4.3.0) - **PHASE 0.3 FOUNDATION BUILT**
+6. ✅ **Extraction script** (`extract_city_simple.py`) created and ready
+
+### 🚧 **Current Tasks:**
+7. **Transform phase1 → simplified city data** (run extraction script on all 11 cities)
+8. **Test end-to-end** with SF citations (validate citation service integration)
+9. **Generate Schema 4.3.0 JSONs** for all 11 cities
+10. **Validate city registry** with multi-city dataset
+
+### 📋 **Next Steps:**
+11. **Update mail service** for dynamic addresses
+12. **Update frontend** for multi-city detection
+13. **Test 37-city expansion** with remaining cities
+14. **Production deployment** with multi-city support
 
 ## ⚠️ **IMPORTANT NOTES**
 
@@ -105,39 +122,40 @@ Each session should follow this template:
 - **Conversion focus** - Belief-to-completion rate is north star metric
 - **JSON Files**: Place generated JSON in `cities/` as `<city_id>.json`
 
+## 📊 **PROGRESS SUMMARY**
+
+### **Phase 0: Foundation - Multi-City Core**
+- ✅ **0.1**: City Registry Service - COMPLETE
+- ✅ **0.2**: Citation Service Integration - COMPLETE  
+- 🚧 **0.3**: Schema Adapter & Data Extraction - IN PROGRESS
+  - Schema adapter built ✅
+  - Extraction script ready ✅
+  - Phase1 files analyzed ✅ (11 cities)
+  - Simplified JSONs pending 🔄
+
+### **Data Status:**
+- **Phase1 JSONs**: 11/11 loaded (Chicago, Dallas, Houston, LA, NYC, Philly, Phoenix, SD, SF, Seattle, DC)
+- **Schema 4.3.0 JSONs**: 0/11 (need transformation)
+- **Service Integration**: Citation → Registry connected
+- **Testing**: City registry tested, end-to-end pending
+
+### **Next Session Focus:**
+Run extraction script to create simplified city data from phase1 files, test schema adapter, and generate Schema 4.3.0 JSONs for all 11 cities.
+
 ---
 
 **READY FOR SESSION WORK** - What specific task should we tackle today?
-Perfect! Yes, this **Session Starter Prompt** is exactly what we need. It provides all essential context in a compact format (~900 tokens) so I can start working immediately without file searches.
-
-## ✅ **Prompt Effectiveness Check:**
-
-**What this solves:**
-- ✅ No need to list directories each session
-- ✅ No need to read multiple files for context  
-- ✅ No need to check git status/history
-- ✅ Immediate access to deployment commands
-- ✅ Clear reference to Architectural Bible
-- ✅ Structured session work format
-- ✅ Focus on immediate priorities
-
-**Token Savings:**
-- Previously: 2000+ tokens of file reading/searching per session
-- Now: ~900 tokens once at session start
-- **Savings: ~55% token reduction** per session
-
-**Ready for work:** With this prompt, I can immediately begin execution against the Architectural Bible roadmap.
 
 ---
 
 ## 🎯 **CURRENT SESSION TASK PROPOSAL**
 
-### **Session Goal: 0.2 - Update Citation Service with CityRegistry**
-**Reference**: Phase 0: Foundation, Citation Service Integration  
-**Files to Modify**: `backend/src/services/citation.py`  
-**Success Criteria**: Citation service uses CityRegistry for matching, maintains backward compatibility, adds city/section metadata to validation results  
-**Testing Required**: Update existing citation tests, add tests for multi-city matching  
-**Deploy Needed**: No (local development only)  
-**Next Session**: 0.3 - Schema Adapter Service (transform rich JSON → Schema 4.3.0)
+### **Session Goal: 0.3.1 - Extract Simplified City Data from Phase1 Files**
+**Reference**: Phase 0: Schema Adapter & Data Extraction
+**Files to Modify**: Run `scripts/extract_city_simple.py` on all 11 phase1 files
+**Success Criteria**: 11 simplified JSON files created, validated against schema adapter
+**Testing Required**: Test extraction on LA (clean baseline), NYC (complex), SF (production baseline)
+**Deploy Needed**: No (local data transformation only)
+**Next Session**: 0.3.2 - Generate Schema 4.3.0 JSONs for all cities
 
-**Ready to begin?** I'll update `citation.py` to integrate with CityRegistry while preserving existing SF-only functionality.
+**Ready to begin?** I'll run the extraction script to create simplified city data from phase1 files.

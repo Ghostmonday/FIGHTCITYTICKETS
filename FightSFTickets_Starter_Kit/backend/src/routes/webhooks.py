@@ -17,16 +17,9 @@ from ..models import AppealType, PaymentStatus
 from ..services.database import get_db_service
 from ..services.mail import AppealLetterRequest, get_mail_service
 from ..services.stripe_service import StripeService
-from ..services.webhook_errors import (
-    ErrorSeverity,
-    get_error_handler,
-)
 
 # Set up logger
 logger = logging.getLogger(__name__)
-
-# Initialize error handler
-error_handler = get_error_handler()
 
 router = APIRouter()
 
@@ -177,23 +170,9 @@ async def handle_checkout_session_completed(session: Dict[str, Any]) -> Dict[str
             )
 
     except Exception as e:
-        error_message = f"Error processing checkout.session.completed for session {session_id}: {e}"
-        logger.error(error_message)
-        
-        # Log error to error handler
-        event_id = session.get("id", f"session_{session_id}")
-        error_handler.log_error(
-            event_id=event_id,
-            event_type="checkout.session.completed",
-            error_message=str(e),
-            severity=ErrorSeverity.HIGH,
-            error_data={
-                "session_id": session_id,
-                "payment_status": payment_status,
-                "metadata": metadata,
-            },
+        logger.error(
+            f"Error processing checkout.session.completed for session {session_id}: {e}"
         )
-        
         result["message"] = f"Error processing payment: {str(e)}"
 
     return result
@@ -276,7 +255,6 @@ async def handle_stripe_webhook(request: Request):
         # Parse the event
         event_data = json.loads(body.decode("utf-8"))
         event_type = event_data.get("type")
-        event_id = event_data.get("id", "unknown")
         data = event_data.get("data", {})
         object_data = data.get("object", {})
 
@@ -322,25 +300,7 @@ async def handle_stripe_webhook(request: Request):
     except HTTPException:
         raise
     except Exception as e:
-        error_message = f"Unexpected error processing webhook: {str(e)}"
-        logger.error(error_message)
-        
-        # Log critical error
-        try:
-            event_id = event_data.get("id", "unknown") if 'event_data' in locals() else "unknown"
-            error_handler.log_error(
-                event_id=event_id,
-                event_type=event_type if 'event_type' in locals() else "unknown",
-                error_message=str(e),
-                severity=ErrorSeverity.CRITICAL,
-                error_data={
-                    "error_type": type(e).__name__,
-                    "traceback": str(e),
-                },
-            )
-        except Exception as log_error:
-            logger.error(f"Failed to log error to error handler: {log_error}")
-        
+        logger.error(f"Unexpected error processing webhook: {str(e)}")
         # Still return 200 to prevent retries on our end
         # Stripe will interpret as successful processing
         return {
@@ -405,58 +365,16 @@ async def webhook_health():
         mail_service = get_mail_service()
         mail_available = mail_service.is_available
 
-        # Get error handler statistics
-        error_stats = error_handler.get_error_stats()
-
         return {
             "status": "healthy",
             "database": "connected" if db_healthy else "disconnected",
             "mail_service": "available" if mail_available else "unavailable",
-            "error_handler": {
-                "total_errors": error_stats["total_errors"],
-                "dead_letter_count": error_stats["dead_letter_count"],
-                "retryable_count": error_stats["retryable_count"],
-            },
             "timestamp": datetime.utcnow().isoformat(),
         }
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         return {
             "status": "unhealthy",
-            "error": str(e),
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-
-
-@router.get("/errors")
-async def get_webhook_errors():
-    """
-    Get webhook error statistics and dead-letter queue.
-
-    Useful for monitoring and debugging webhook processing issues.
-    """
-    try:
-        stats = error_handler.get_error_stats()
-        dead_letter_queue = error_handler.get_dead_letter_queue()
-        retryable_errors = error_handler.get_errors_for_retry()
-
-        return {
-            "status": "ok",
-            "statistics": stats,
-            "dead_letter_queue_count": len(dead_letter_queue),
-            "retryable_errors_count": len(retryable_errors),
-            "dead_letter_queue": [
-                error.to_dict() for error in dead_letter_queue[-10:]
-            ],  # Last 10 errors
-            "retryable_errors": [
-                error.to_dict() for error in retryable_errors[:10]
-            ],  # First 10 retryable
-            "timestamp": datetime.utcnow().isoformat(),
-        }
-    except Exception as e:
-        logger.error(f"Error retrieving webhook errors: {e}")
-        return {
-            "status": "error",
             "error": str(e),
             "timestamp": datetime.utcnow().isoformat(),
         }

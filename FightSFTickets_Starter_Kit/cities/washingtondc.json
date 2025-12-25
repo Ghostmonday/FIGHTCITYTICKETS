@@ -1,0 +1,99 @@
+{
+  "city_id": "us-dc-washington",
+  "name": "Washington",
+  "state": "DC",
+  "country": "US",
+  "authority": {
+    "section_id": "dc_dmv",
+    "name": "DC DMV Adjudication Services",
+    "authority_name": "District of Columbia Department of Motor Vehicles",
+    "jurisdiction": "city",
+    "abbrev": [
+      "DC DMV"
+    ],
+    "serves_basis": "issuing_authority",
+    "serves_description": "Parking citations issued by District parking enforcement within Washington, DC."
+  },
+  "citation_pattern": {
+    "regex": "^[0-9]{8,10}$",
+    "description": "Washington parking citation format",
+    "example_numbers": [
+      "12345678",
+      "9876543210"
+    ],
+    "confidence": "low",
+    "visual_markers": [
+      "DC DMV",
+      "Parking Ticket",
+      "District of Columbia"
+    ],
+    "notes": "Citation numbers are numeric and printed on official DC DMV parking tickets."
+  },
+  "appeal_address": {
+    "status": "complete",
+    "department": "DMV Adjudication Services",
+    "attention": "Mail Adjudication",
+    "address1": "PO Box 37135",
+    "city": "Washington",
+    "state": "DC",
+    "zip": "20013",
+    "country": "US"
+  },
+  "submission_methods": {
+    "mail_allowed": true,
+    "online_allowed": true,
+    "in_person_allowed": true,
+    "preferred_method": "online",
+    "method_constraints": [],
+    "notes": "Appeals (requests for adjudication) can be submitted online, by mail, or in person at the Adjudication Service Center."
+  },
+  "phone_confirmation": {
+    "required": true,
+    "when_required": "always",
+    "phone_numbers": [
+      "311"
+    ],
+    "alt_phone_numbers": [
+      "202-737-4404"
+    ],
+    "department": "DC DMV Adjudication Services",
+    "purpose": "Confirm the mailing address and procedures for contesting DC parking citations."
+  },
+  "verification": {
+    "status": "verified",
+    "verified_at": "2025-12-24",
+    "source_type": "official_webpage",
+    "source_note": "Mail adjudication address verified from DC DMV contest page【86828217279799†L210-L214】.",
+    "needs_confirmation": false,
+    "operational_ready": true,
+    "last_checked": "2025-12-24",
+    "last_validated_by": "collector"
+  },
+  "official_confirmation_phone": "311",
+  "official_confirmation_department": "DC DMV Adjudication Services",
+  "official_confirmation_purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing for Washington, DC citations.",
+  "appeal_info": {
+    "timezone": "America/Los_Angeles",
+    "appeal_deadline_days": 21,
+    "online_appeal_available": true,
+    "online_appeal_url": null
+  },
+  "routing_rule": "direct",
+  "qa_has_sections": true,
+  "qa_has_city_confirmation_phone": true,
+  "qa_all_sections_have_valid_routing": false,
+  "qa_blocking_issues": [
+    "Metro Transit Police (WMATA) appeal procedures require confirmation; limited information is available on mailing address and online options.",
+    "American University, Howard University, Gallaudet University, and GWU sections lack verified mailing addresses for Phase-1 appeals."
+  ],
+  "qa_known_gaps": [
+    "Citation number patterns for all authorities are approximations with low confidence.",
+    "Some campus and special district authorities require further phone confirmation to verify appeal routing and mailing addresses."
+  ],
+  "_metadata": {
+    "source_format": "phase1",
+    "extracted_at": "2025-12-24T21:02:37.960818",
+    "extracted_by": "extract_city_simple.py",
+    "schema_version": "1.0.0"
+  }
+}

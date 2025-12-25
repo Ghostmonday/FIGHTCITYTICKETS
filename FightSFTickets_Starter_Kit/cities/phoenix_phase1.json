@@ -1,0 +1,341 @@
+{
+  "city_id": "us-az-phoenix",
+  "city": "Phoenix",
+  "state": "AZ",
+  "country": "US",
+
+  "official_confirmation": {
+    "primary_phone": {
+      "phone": "602-262-6421",
+      "alt_phone": "602-262-3111",
+      "department": "Phoenix Municipal Court / City Services",
+      "purpose": "Confirm Phase‑1 appeal mailing address and routing for City of Phoenix parking citations."
+    }
+  },
+
+  "phase1_routing": {
+    "sections": [
+      {
+        "section_id": "phoenix_municipal_court",
+        "canonical_section_name": "Phoenix Municipal Court – Parking Violations",
+        "section_type": "municipal_court",
+        "authority_name": "Phoenix Municipal Court",
+        "jurisdiction": "city",
+        "abbrev": ["Phoenix Municipal Court", "PMC"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations issued by City of Phoenix parking enforcement officers and processed through the Phoenix Municipal Court."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{8}$",
+          "pattern_confidence": "low",
+          "examples": ["12345678", "87654321"],
+          "visual_markers": ["Notice of Violation (NOV) number on ticket", "City of Phoenix or Phoenix Municipal Court branding"],
+          "notes": "City parking citations are printed on a Notice of Violation left on the windshield with payment envelope and instructions for entering a plea. Citation numbers appear as eight‑digit numbers; precise pattern is unconfirmed."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": false,
+          "in_person_allowed": true,
+          "preferred_method": "in_person",
+          "method_constraints": [],
+          "notes": "Parking violation hearings must be requested on or before the court date. Payment or contesting can be done in person at the Phoenix Municipal Court; no official online appeal portal is provided on the city website."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Phoenix Municipal Court",
+          "attention": "Civil Parking Violations Division",
+          "address1": "300 West Washington Street",
+          "address2": null,
+          "city": "Phoenix",
+          "state": "AZ",
+          "zip": "85003",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "602-262-6421",
+          "alt_phone": "602-262-3111",
+          "department": "Phoenix Municipal Court / City Services",
+          "purpose": "Verify that parking citation appeals should be mailed or delivered in person to the Phoenix Municipal Court at 300 W. Washington St."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "City’s parking violation page explains that vehicles with unpaid complaints may be booted and that payment or arrangements must be made at the Phoenix Municipal Court; it lists 300 West Washington Street and provides the court phone number for questions【90091074201057†L533-L548】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "phoenix_police_department",
+        "canonical_section_name": "Phoenix Police Department",
+        "section_type": "police_department",
+        "authority_name": "Phoenix Police Department",
+        "jurisdiction": "city",
+        "abbrev": ["PPD"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations or tow notices explicitly issued by Phoenix Police Department officers. These citations typically route to the Phoenix Municipal Court for adjudication."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^PPD[0-9]{6,8}$",
+          "pattern_confidence": "low",
+          "examples": ["PPD123456", "PPD9876543"],
+          "visual_markers": ["Phoenix Police Department badge or letterhead", "Issued by a police officer"],
+          "notes": "Citation numbers may include the ‘PPD’ prefix followed by six to eight digits; this pattern is unconfirmed and requires verification."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": false,
+          "in_person_allowed": false,
+          "preferred_method": "mail",
+          "method_constraints": [],
+          "notes": "Phoenix Police Department parking citations are adjudicated by the Phoenix Municipal Court; there is no separate police appeal process."
+        },
+
+        "appeal_mail_to": {
+          "status": "routes_elsewhere",
+          "routes_to_section_id": "phoenix_municipal_court"
+        },
+
+        "routing_rule": "routes_to_section",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "602-262-6421",
+          "alt_phone": "602-262-3111",
+          "department": "Phoenix Municipal Court / City Services",
+          "purpose": "Confirm that police‑issued parking citations must be contested through the Phoenix Municipal Court."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": null,
+          "verified_source_type": "phone_confirmation_required",
+          "verified_source_note": "No official webpage detailing police‑issued parking citation appeals was located; citation routing assumed based on city process.",
+          "verified_source_last_checked": null,
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "asu_pts",
+        "canonical_section_name": "Arizona State University Parking & Transportation Services",
+        "section_type": "campus",
+        "authority_name": "Arizona State University Parking and Transportation Services",
+        "jurisdiction": "campus",
+        "abbrev": ["ASU", "PTS"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Citations issued on Arizona State University campuses by ASU Parking & Transportation Services."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^(ASU)?[0-9]{6,7}$",
+          "pattern_confidence": "low",
+          "examples": ["ASU123456", "1234567"],
+          "visual_markers": ["ASU Parking & Transportation Services logo", "Parking Citation"],
+          "notes": "ASU citations may include the prefix ‘ASU’ followed by six or seven digits; pattern unconfirmed. Citations are issued on university property."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "ASU allows appeals through the ASU Transportation Account. Appeals may also be submitted in person, by mail or fax within seven calendar days of the citation issuance【466091262857536†L35-L46】."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Parking and Transportation Services",
+          "attention": "Appeals Office",
+          "address1": "PO Box 875205",
+          "address2": "Mail Code 5205",
+          "city": "Tempe",
+          "state": "AZ",
+          "zip": "85287-5205",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "480-965-6124",
+          "alt_phone": "480-965-0936",
+          "department": "ASU Parking & Transportation Services",
+          "purpose": "Verify the mailing address and options for appealing a citation."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "The ASU appeals page states that first‑level appeals may be submitted through one’s ASU Transportation Account, in person, by mail or fax, and lists the mailing address PO Box 875205, Tempe, AZ 85287‑5205【466091262857536†L35-L46】. The contact information page confirms the mailing address and phone numbers【433634491603459†L52-L58】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "gcu_parking",
+        "canonical_section_name": "Grand Canyon University Parking Enforcement",
+        "section_type": "campus",
+        "authority_name": "Grand Canyon University Public Safety Department",
+        "jurisdiction": "campus",
+        "abbrev": ["GCU", "PSD"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on Grand Canyon University property by campus Public Safety/parking enforcement."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^GCU[0-9]{5,7}$",
+          "pattern_confidence": "low",
+          "examples": ["GCU12345", "GCU7654321"],
+          "visual_markers": ["Grand Canyon University Public Safety", "Parking Citation"],
+          "notes": "GCU citations are typically printed with a GCU prefix and numeric identifier; pattern unconfirmed."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "GCU tickets must be paid or appealed through the Permit Store at gcu.thepermitstore.com; paper appeals are not accepted【839172874765085†L108-L117】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "Grand Canyon University directs all parking ticket appeals to its online Permit Store and does not provide a mailing address for written appeals."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "602-639-8100",
+          "alt_phone": "855-428-5673",
+          "department": "Grand Canyon University Public Safety Department",
+          "purpose": "Confirm whether any mail or in‑person appeal options exist for GCU parking citations."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "A GCU news article notes that tickets can be paid or appealed at gcu.thepermitstore.com【839172874765085†L108-L117】. The Public Safety page lists phone numbers for the department【20914261912388†L1178-L1191】; no mailing address for appeals is provided.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "phx_sky_harbor",
+        "canonical_section_name": "Phoenix Sky Harbor International Airport",
+        "section_type": "airport_authority",
+        "authority_name": "City of Phoenix Aviation Department",
+        "jurisdiction": "airport",
+        "abbrev": ["PHX", "Sky Harbor"],
+
+        "serves": {
+          "basis": "airport",
+          "description": "Parking or curb violation notices issued at Phoenix Sky Harbor International Airport by airport personnel or aviation police."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^PHX[0-9]{5,7}$",
+          "pattern_confidence": "low",
+          "examples": ["PHX12345", "PHX765432"],
+          "visual_markers": ["Phoenix Sky Harbor International Airport", "Notice of Parking Violation"],
+          "notes": "Airport citations may include a ‘PHX’ prefix followed by a numeric identifier; this pattern is speculative and requires confirmation."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": false,
+          "in_person_allowed": false,
+          "preferred_method": "mail",
+          "method_constraints": [],
+          "notes": "Official instructions for contesting a parking violation at Phoenix Sky Harbor were not located. The airport provides phone numbers for information about Notices of Parking Violations【57532608818232†L260-L267】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "The Aviation Department does not publish a mailing address for contesting Notice of Parking Violations; contact phone numbers are provided for information."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "602-273-3300",
+          "alt_phone": "602-273-4545",
+          "department": "Phoenix Sky Harbor Aviation Department",
+          "purpose": "Obtain procedures and address for appealing a parking or curb violation issued at Sky Harbor airport."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "The Sky Harbor department directory lists phone numbers for Notices of Parking Violations and gives the Aviation Department’s address but no appeal mailing address【57532608818232†L260-L288】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      }
+    ]
+  },
+
+  "qa": {
+    "has_sections": true,
+    "has_city_confirmation_phone": true,
+    "all_sections_have_valid_routing": true,
+
+    "blocking_issues": [
+      "Phoenix Municipal Court mailing address and citation number pattern are unconfirmed and require verification.",
+      "Phoenix Police Department citation pattern and routing need confirmation.",
+      "Grand Canyon University and Sky Harbor Airport lack publicly available mailing addresses for Phase‑1 appeals."
+    ],
+    "known_gaps": [
+      "The city’s parking citation page does not provide explicit instructions for contesting by mail; appeal address is inferred from boot and tow information.",
+      "Exact citation formats for Phoenix, ASU, GCU, and Sky Harbor remain unverified."
+    ]
+  }
+}

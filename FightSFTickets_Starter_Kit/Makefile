@@ -3,7 +3,7 @@
 dev: docker-up
 
 docker-up:
-	cp -n .env.example .env || true
+	cp -n .env.template .env || true
 	docker compose up --build
 
 docker-down:
