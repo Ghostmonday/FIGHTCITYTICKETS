@@ -86,6 +86,13 @@ def validate_citation(request: CitationValidationRequest):
     - Appeal deadline calculation
     - Deadline status (urgent/past due)
     """
+    # #region agent log
+    import json, time
+    try:
+        with open(r'c:\Comapnyfiles\provethat.io\.cursor\debug.log', 'a') as f:
+            f.write(json.dumps({"location":"tickets.py:91","message":"validate_citation called","data":{"citation_number":request.citation_number,"city_id":request.city_id},"timestamp":int(time.time()*1000),"sessionId":"debug-session","hypothesisId":"C,E"})+"\n")
+    except: pass
+    # #endregion
     try:
         # Use the citation validation service
         validation = CitationValidator.validate_citation(
@@ -152,6 +159,13 @@ def validate_citation(request: CitationValidationRequest):
         )
 
     except Exception as e:
+        # #region agent log
+        import json, time, traceback
+        try:
+            with open(r'c:\Comapnyfiles\provethat.io\.cursor\debug.log', 'a') as f:
+                f.write(json.dumps({"location":"tickets.py:160","message":"validate_citation exception","data":{"error":str(e),"traceback":traceback.format_exc()},"timestamp":int(time.time()*1000),"sessionId":"debug-session","hypothesisId":"E"})+"\n")
+        except: pass
+        # #endregion
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Citation validation failed: {str(e)}",

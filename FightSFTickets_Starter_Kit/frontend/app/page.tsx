@@ -59,6 +59,9 @@ export default function Home() {
     try {
       const apiBase =
         process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:62',message:'API Base URL',data:{apiBase,envVar:process.env.NEXT_PUBLIC_API_BASE,fullUrl:`${apiBase}/tickets/validate`},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       const response = await fetch(`${apiBase}/tickets/validate`, {
         method: "POST",
         headers: {
@@ -72,7 +75,15 @@ export default function Home() {
         }),
       });
 
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:78',message:'Fetch response received',data:{status:response.status,statusText:response.statusText,ok:response.ok,type:response.type,url:response.url},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D,E'})}).catch(()=>{});
+      // #endregion
+
       if (!response.ok) {
+        // #region agent log
+        const errBody = await response.text().catch(() => 'could not read body');
+        fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:85',message:'Response not OK',data:{status:response.status,statusText:response.statusText,body:errBody},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
         throw new Error(`Validation failed: ${response.statusText}`);
       }
 
@@ -102,6 +113,9 @@ export default function Home() {
         });
       }
     } catch (err) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:115',message:'Catch block error',data:{errorType:err?.constructor?.name,errorMessage:err instanceof Error ? err.message : String(err),errorStack:err instanceof Error ? err.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
+      // #endregion
       setError(
         err instanceof Error ? err.message : "Failed to validate citation",
       );
