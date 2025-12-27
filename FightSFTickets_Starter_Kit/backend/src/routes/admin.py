@@ -7,7 +7,7 @@ Protected by a simple admin secret key header.
 
 import logging
 import os
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
 from pydantic import BaseModel

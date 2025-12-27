@@ -4,7 +4,7 @@ Citation and Ticket Routes for FightSFTickets.com
 Handles citation validation and related ticket services.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel

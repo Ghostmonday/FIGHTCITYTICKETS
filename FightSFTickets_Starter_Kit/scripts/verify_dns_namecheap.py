@@ -3,9 +3,24 @@
 """Verify DNS records for fightcitytickets.com using Namecheap API"""
 
 import requests
-import xml.etree.ElementTree as ET
 import sys
 import os
+import warnings
+# Security: Use defusedxml to prevent XML attacks
+try:
+    from defusedxml.ElementTree import fromstring as safe_fromstring
+    # Defuse the standard library XML parsers as additional protection
+    import defusedxml.ElementTree
+    defusedxml.ElementTree.defuse_stdlib()
+except ImportError:
+    # Fallback: warn if defusedxml not available
+    import xml.etree.ElementTree as ET
+    warnings.warn(
+        "defusedxml not installed. Install with: pip install defusedxml",
+        category=UserWarning,
+        stacklevel=2
+    )
+    safe_fromstring = ET.fromstring
 
 # Get credentials from environment variables
 NAMECHEAP_USERNAME = os.getenv("NAMECHEAP_USERNAME", "")
@@ -49,7 +64,8 @@ def get_dns_hosts(domain):
 def parse_dns_records(xml_response):
     """Parse DNS records from XML response."""
     try:
-        root = ET.fromstring(xml_response)
+        # Security: Use safe XML parser to prevent XXE attacks
+        root = safe_fromstring(xml_response)
 
         # Define namespace (Namecheap uses this namespace)
         ns = {'nc': 'http://api.namecheap.com/xml.response'}

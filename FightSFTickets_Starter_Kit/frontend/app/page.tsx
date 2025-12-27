@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppeal } from "./lib/appeal-context";
 import {
-  CALIFORNIA_CITIES,
+  CITIES,
   getCityDisplayName,
-} from "./lib/california-cities";
+  getCityById,
+} from "./lib/cities";
 import LegalDisclaimer from "../components/LegalDisclaimer";
 
 interface CitationValidationResponse {
@@ -92,12 +93,8 @@ export default function Home() {
       // Check for city mismatch
       if (result.city_id && result.city_id !== selectedCity) {
         result.city_mismatch = true;
-        const detectedCity = CALIFORNIA_CITIES.find(
-          (c) => c.cityId === result.city_id,
-        );
-        const selectedCityName = CALIFORNIA_CITIES.find(
-          (c) => c.cityId === selectedCity,
-        )?.name;
+        const detectedCity = getCityById(result.city_id);
+        const selectedCityName = getCityById(selectedCity)?.name;
         result.selected_city_mismatch_message = `The citation number appears to be from ${detectedCity?.name || result.city_id}, but you selected ${selectedCityName}. Please verify your selection or citation number.`;
       }
 
@@ -132,7 +129,7 @@ export default function Home() {
 
   const formatCityName = (cityId: string | null) => {
     if (!cityId) return "Unknown City";
-    const city = CALIFORNIA_CITIES.find((c) => c.cityId === cityId);
+    const city = getCityById(cityId);
     return city
       ? getCityDisplayName(city)
       : cityId
@@ -170,143 +167,84 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-stone-50">
-      {/* Legal Disclaimer Banner */}
-      <div className="border-b border-gray-400 py-3 px-4 sm:px-6 bg-gray-100">
-        <div className="max-w-6xl mx-auto">
-          <div className="rounded-lg p-3 shadow-sm bg-white border border-gray-400">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
-                <svg
-                  className="w-5 h-5 text-gray-700"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-base font-semibold mb-1 text-gray-700">
-                  Important Legal Notice
-                </h3>
-                <p className="text-xs leading-relaxed text-gray-700">
-                  <strong>
-                    FightCityTickets.com does NOT practice law and does NOT
-                    provide legal advice.
-                  </strong>{" "}
-                  We are a document preparation service that helps you
-                  articulate and format your own reasons for appealing a parking
-                  ticket.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <main className="min-h-screen" style={{ background: 'linear-gradient(180deg, #faf8f5 0%, #f5f2ed 100%)' }}>
       {/* Hero Banner */}
-      <div className="py-10 px-4 sm:px-6 bg-gray-100">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-light mb-4 tracking-tight text-gray-700">
-            Keep Your Money. Get Your Ticket Dismissed.
+      <div 
+        className="py-16 sm:py-20 px-4 sm:px-6"
+        style={{
+          background: 'linear-gradient(180deg, #f7f3ed 0%, #efe9df 40%, #e9e2d6 100%)'
+        }}
+      >
+        <div className="max-w-3xl mx-auto text-center">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extralight mb-8 tracking-tight text-stone-800 leading-tight">
+            Don't Stress.<br className="hidden sm:block" /> Fight Your Ticket.
           </h1>
-          <p className="text-lg sm:text-xl mb-6 font-light text-gray-700">
-            Stop paying unfair parking tickets. Get them dismissed and keep your
-            hard-earned money.
+          <p className="text-xl sm:text-2xl mb-3 font-light text-stone-500 max-w-xl mx-auto tracking-wide">
+            A citation is not a conviction.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-sm sm:text-base text-gray-700">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Keep hundreds of dollars</span>
+          <p className="text-lg sm:text-xl mb-10 text-stone-600 max-w-xl mx-auto">
+            You have the right to respond.<br className="hidden sm:block" />
+            <span className="font-normal text-stone-700">We help you say it clearly.</span>
+          </p>
+          <div className="inline-flex items-center gap-8 px-8 py-4 rounded-full bg-white/60 backdrop-blur-sm border border-stone-200/80 shadow-sm">
+            <div className="text-center">
+              <span className="text-3xl sm:text-4xl font-light text-stone-800">$9</span>
             </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>No points on your record</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Protect your insurance rates</span>
+            <div className="h-8 w-px bg-stone-200"></div>
+            <div className="text-center">
+              <span className="text-lg text-stone-600">5 minutes</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 md:p-8 pt-12 sm:pt-16">
         {/* Header */}
-        <div className="text-center mb-10 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-light mb-3 sm:mb-4 tracking-tight text-gray-700">
-            Stop Paying Unfair Parking Tickets
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extralight mb-4 tracking-tight text-stone-700">
+            Your Appeal, Ready to Send
           </h2>
-          <p className="text-lg sm:text-xl max-w-2xl mx-auto px-2 mb-4 font-light text-gray-700">
-            Get your ticket dismissed. Keep your money. Protect your record.
-          </p>
-          <p className="text-base sm:text-lg max-w-2xl mx-auto px-2 font-light text-gray-700">
-            In just 5 minutes, you can appeal your parking ticket and
-            potentially save hundreds of dollars.
-            <strong className="font-normal">
-              {" "}
-              No legal knowledge needed. No complicated forms. Just results.
-            </strong>
+          <p className="text-base sm:text-lg max-w-lg mx-auto font-light text-stone-500">
+            Appeal your parking ticket and potentially save $100 or more.
+            No legal knowledge needed.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-2 gap-10">
           {/* Left Column: Citation Form */}
-          <div className="rounded-xl shadow-lg p-6 md:p-8 border bg-gray-100 border-gray-400">
-            <h2 className="text-xl font-medium mb-6 text-gray-700">
+          <div className="rounded-2xl shadow-sm p-6 md:p-8 bg-white border border-stone-100">
+            <h2 className="text-lg font-medium mb-6 text-stone-700 tracking-wide">
               Check Your Citation
             </h2>
 
             <form onSubmit={handleValidateCitation} className="space-y-5">
               {/* City Selection Dropdown */}
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">
+                <label className="block text-sm font-medium mb-2 text-stone-600 tracking-wide">
                   City Where Citation Was Issued *
                 </label>
                 <select
                   value={selectedCity}
                   onChange={(e) => setSelectedCity(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg transition bg-white border border-gray-400 text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  className="w-full px-4 py-3.5 rounded-xl transition bg-stone-50/50 border border-stone-200 text-stone-700 focus:border-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-100 focus:bg-white"
                   required
                   disabled={isValidating}
                 >
                   <option value="">Select a city...</option>
-                  {CALIFORNIA_CITIES.map((city) => (
+                  {CITIES.sort((a, b) => a.name.localeCompare(b.name)).map((city) => (
                     <option key={city.cityId} value={city.cityId}>
                       {getCityDisplayName(city)}
                     </option>
                   ))}
                 </select>
-                <p className="mt-2 text-xs text-gray-400">
+                <p className="mt-2 text-xs text-stone-400">
                   Select the city where you received the parking citation.
                 </p>
               </div>
 
               {/* Citation Number */}
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-700">
+                <label className="block text-sm font-medium mb-2 text-stone-600 tracking-wide">
                   Citation Number *
                 </label>
                 <input
@@ -314,11 +252,11 @@ export default function Home() {
                   value={citationNumber}
                   onChange={(e) => setCitationNumber(e.target.value)}
                   placeholder="e.g., 912345678, LA123456, 1234567"
-                  className="w-full px-4 py-3 rounded-lg transition bg-white border border-gray-400 text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-400"
+                  className="w-full px-4 py-3.5 rounded-xl transition bg-stone-50/50 border border-stone-200 text-stone-700 focus:border-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-100 focus:bg-white"
                   required
                   disabled={isValidating}
                 />
-                <p className="mt-2 text-xs text-gray-400">
+                <p className="mt-2 text-xs text-stone-400">
                   Enter your citation number exactly as it appears on your
                   ticket.
                 </p>
@@ -327,7 +265,7 @@ export default function Home() {
               {/* Optional Fields */}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">
+                  <label className="block text-sm font-medium mb-2 text-stone-600 tracking-wide">
                     License Plate (Optional)
                   </label>
                   <input
@@ -337,20 +275,20 @@ export default function Home() {
                       setLicensePlate(e.target.value.toUpperCase())
                     }
                     placeholder="e.g., ABC123"
-                    className="w-full px-4 py-3 rounded-lg transition bg-white border border-gray-400 text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-400"
+                    className="w-full px-4 py-3.5 rounded-xl transition bg-stone-50/50 border border-stone-200 text-stone-700 focus:border-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-100 focus:bg-white"
                     disabled={isValidating}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">
+                  <label className="block text-sm font-medium mb-2 text-stone-600 tracking-wide">
                     Violation Date (Optional)
                   </label>
                   <input
                     type="date"
                     value={violationDate}
                     onChange={(e) => setViolationDate(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg transition bg-white border border-gray-400 text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-400"
+                    className="w-full px-4 py-3.5 rounded-xl transition bg-stone-50/50 border border-stone-200 text-stone-700 focus:border-stone-300 focus:outline-none focus:ring-2 focus:ring-stone-100 focus:bg-white"
                     disabled={isValidating}
                   />
                 </div>
@@ -392,10 +330,10 @@ export default function Home() {
                 disabled={
                   isValidating || !citationNumber.trim() || !selectedCity
                 }
-                className={`w-full py-3 px-4 rounded-lg font-medium transition shadow-sm ${
+                className={`w-full py-3.5 px-4 rounded-xl font-medium transition-all duration-200 ${
                   isValidating
-                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    : "bg-gray-400 text-white hover:bg-gray-500"
+                    ? "bg-stone-200 text-stone-400 cursor-not-allowed"
+                    : "bg-stone-800 text-white hover:bg-stone-900 shadow-sm hover:shadow-md"
                 }`}
               >
                 {isValidating ? (
@@ -433,9 +371,9 @@ export default function Home() {
           <div className="space-y-8">
             {/* Validation Results */}
             {validationResult && (
-              <div className="rounded-xl shadow-lg p-6 md:p-8 border bg-gray-100 border-gray-400">
+              <div className="rounded-xl shadow-lg p-6 md:p-8 border bg-stone-100 border-stone-300">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-medium text-gray-700">
+                  <h2 className="text-xl font-medium text-stone-700">
                     Validation Results
                   </h2>
                   <div
@@ -463,25 +401,25 @@ export default function Home() {
                     {/* Citation Info */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-xs mb-1 text-gray-400">
+                        <p className="text-xs mb-1 text-stone-400">
                           Citation Number
                         </p>
-                        <p className="font-medium text-base text-gray-700">
+                        <p className="font-medium text-base text-stone-700">
                           {validationResult.formatted_citation ||
                             validationResult.citation_number}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs mb-1 text-gray-400">City</p>
-                        <p className="font-medium text-base text-gray-700">
+                        <p className="text-xs mb-1 text-stone-400">City</p>
+                        <p className="font-medium text-base text-stone-700">
                           {formatCityName(
                             validationResult.city_id || selectedCity,
                           )}
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs mb-1 text-gray-400">Agency</p>
-                        <p className="font-medium text-sm text-gray-700">
+                        <p className="text-xs mb-1 text-stone-400">Agency</p>
+                        <p className="font-medium text-sm text-stone-700">
                           {formatAgency(
                             validationResult.agency,
                             validationResult.section_id,
@@ -489,8 +427,8 @@ export default function Home() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-xs mb-1 text-gray-400">Deadline</p>
-                        <p className="font-medium text-sm text-gray-700">
+                        <p className="text-xs mb-1 text-stone-400">Deadline</p>
+                        <p className="font-medium text-sm text-stone-700">
                           {validationResult.days_remaining !== null
                             ? `${validationResult.days_remaining} days`
                             : "Check date"}
@@ -562,7 +500,7 @@ export default function Home() {
                     {/* Start Appeal Button */}
                     <button
                       onClick={handleStartAppeal}
-                      className="w-full py-3 px-6 rounded-lg font-medium transition shadow-sm bg-gray-400 text-white hover:bg-gray-500"
+                      className="w-full py-3.5 px-6 rounded-xl font-medium transition-all duration-200 bg-stone-800 text-white hover:bg-stone-900 shadow-sm hover:shadow-md"
                     >
                       Get My Ticket Dismissed →
                     </button>
@@ -584,11 +522,11 @@ export default function Home() {
                         />
                       </svg>
                     </div>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-stone-700">
                       {validationResult.error_message ||
                         "Invalid citation number format."}
                     </p>
-                    <p className="text-xs mt-2 text-gray-400">
+                    <p className="text-xs mt-2 text-stone-400">
                       Please check your citation number and try again.
                     </p>
                   </div>
@@ -597,15 +535,15 @@ export default function Home() {
             )}
 
             {/* What You Get */}
-            <div className="rounded-xl shadow-lg p-6 md:p-8 border bg-gray-100 border-gray-400">
-              <h2 className="text-xl font-medium mb-6 text-gray-700">
+            <div className="rounded-2xl p-6 md:p-8 bg-stone-50/50 border border-stone-100">
+              <h2 className="text-lg font-medium mb-6 text-stone-700 tracking-wide">
                 What Happens When You Appeal
               </h2>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 bg-gray-400">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 bg-stone-700">
                     <svg
-                      className="w-4 h-4 text-white"
+                      className="w-3 h-3 text-white"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -617,19 +555,19 @@ export default function Home() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-medium text-sm text-gray-700">
+                    <h3 className="font-medium text-sm text-stone-700">
                       You Keep Your Money
                     </h3>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-stone-700">
                       Save $50-$500+ per ticket. That&apos;s money back in your
                       pocket.
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 bg-gray-400">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 bg-stone-700">
                     <svg
-                      className="w-4 h-4 text-white"
+                      className="w-3 h-3 text-white"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -641,19 +579,19 @@ export default function Home() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-medium text-sm text-gray-700">
+                    <h3 className="font-medium text-sm text-stone-700">
                       Your Record Stays Clean
                     </h3>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-stone-700">
                       No points. No insurance rate increases. No future
                       consequences.
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 bg-gray-400">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 bg-stone-700">
                     <svg
-                      className="w-4 h-4 text-white"
+                      className="w-3 h-3 text-white"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
@@ -665,19 +603,19 @@ export default function Home() {
                     </svg>
                   </div>
                   <div>
-                    <h3 className="font-medium text-sm text-gray-700">
+                    <h3 className="font-medium text-sm text-stone-700">
                       You Get Peace of Mind
                     </h3>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-stone-700">
                       Stop worrying about unfair tickets. Take control and fight
                       back.
                     </p>
                   </div>
                 </div>
               </div>
-              <div className="mt-6 p-3 rounded-lg border bg-white border-gray-400">
-                <p className="text-xs text-gray-700">
-                  <strong className="text-gray-700">The math is simple:</strong>{" "}
+              <div className="mt-6 p-3 rounded-lg border bg-white border-stone-300">
+                <p className="text-xs text-stone-700">
+                  <strong className="text-stone-700">The math is simple:</strong>{" "}
                   If you pay a $100 ticket, you lose $100. If you appeal and
                   win, you keep $100. The cost to appeal is a fraction of what
                   you save.

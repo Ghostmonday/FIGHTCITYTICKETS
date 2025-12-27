@@ -7,15 +7,15 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FightCityTickets.com - Appeal Parking Tickets in 15+ Cities",
+  title: "FightCityTickets.com - Appeal Parking Tickets in 23 Cities",
   description:
-    "Fight parking tickets in 15+ cities across the US. Automated appeal system that handles everything including mailing your appeal directly to the city.",
+    "Fight parking tickets in 23 cities across the US. Automated appeal system that handles everything including mailing your appeal directly to the city.",
   keywords:
     "parking ticket appeal, contest parking ticket, fight parking citation, appeal parking violation, parking ticket help",
   authors: [{ name: "FightCityTickets.com" }],
   openGraph: {
     title: "FightCityTickets.com - Appeal Parking Tickets",
-    description: "Automated parking ticket appeals for 15+ US cities",
+    description: "Automated parking ticket appeals for 23 US cities",
     type: "website",
     url: "https://fightcitytickets.com",
     siteName: "FightCityTickets.com",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "FightCityTickets.com - Appeal Parking Tickets",
-    description: "Automated parking ticket appeals for 15+ US cities",
+    description: "Automated parking ticket appeals for 23 US cities",
   },
   robots: {
     index: true,

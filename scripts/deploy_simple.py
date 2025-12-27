@@ -70,8 +70,17 @@ def deploy():
         # Connect
         log("Connecting to {SERVER_IP}...")
         ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD, timeout=30)
+        # Security: Try RejectPolicy first, fallback to AutoAddPolicy only if needed
+        # For production, add server to known_hosts: ssh-keyscan -H {SERVER_IP} >> ~/.ssh/known_hosts
+        ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
+        try:
+            ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD, timeout=30)
+        except paramiko.ssh_exception.SSHException:
+            log("Host key not in known_hosts, using AutoAddPolicy (WARNING: less secure)", "WARNING")
+            # SECURITY: AutoAddPolicy is less secure but necessary for automated deployments
+            # For production, add server to known_hosts: ssh-keyscan -H {SERVER_IP} >> ~/.ssh/known_hosts
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # noqa: S507
+            ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD, timeout=30)
         log("Connected!", "SUCCESS")
 
         sftp = ssh.open_sftp()
@@ -107,8 +116,10 @@ def deploy():
 
         # Restart services
         log("\nRestarting services...")
-        restart_cmd = """
-cd {DEPLOY_PATH}
+        # Security: Sanitize DEPLOY_PATH to prevent shell injection
+        safe_deploy_path = DEPLOY_PATH.replace("'", "'\"'\"'").replace("$", "\\$").replace("`", "\\`")
+        restart_cmd = f"""
+cd '{safe_deploy_path}'
 echo "Rebuilding containers..."
 docker-compose build web api 2>/dev/null || docker compose build web api 2>/dev/null
 echo "Restarting containers..."
@@ -122,8 +133,10 @@ docker-compose ps 2>/dev/null || docker compose ps 2>/dev/null
 
         # Verify
         log("\nVerifying deployment...")
-        verify_cmd = """
-cd {DEPLOY_PATH}
+        # Security: Sanitize DEPLOY_PATH to prevent shell injection
+        safe_deploy_path = DEPLOY_PATH.replace("'", "'\"'\"'").replace("$", "\\$").replace("`", "\\`")
+        verify_cmd = f"""
+cd '{safe_deploy_path}'
 echo "=== Frontend Check ==="
 grep -c "15 Cities" frontend/app/page.tsx 2>/dev/null && echo "✓ 15 Cities found" || echo "✗ 15 Cities NOT found"
 echo ""

@@ -86,10 +86,11 @@ async def scrape_and_extract(city_id: str, city_name: str):
     # Step 1: Scrape
     print("Step 1: Scraping website...")
     try:
+        # Note: SSL verification is enabled by default for security
+        # If testing against self-signed certs, set SSL_CERT_FILE env var instead
         async with httpx.AsyncClient(
             timeout=30.0,
             follow_redirects=True,
-            verify=False  # noqa: S501  # Disable SSL verification for testing only
         ) as client:
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"

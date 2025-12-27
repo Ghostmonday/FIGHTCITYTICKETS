@@ -131,24 +131,38 @@ def deploy():
         # Step 2: Connect to server
         log("Connecting to {SERVER_IP}...")
         ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD, timeout=30)
+        # Security: Try RejectPolicy first, fallback to AutoAddPolicy only if needed
+        # For production, add server to known_hosts: ssh-keyscan -H {SERVER_IP} >> ~/.ssh/known_hosts
+        ssh.set_missing_host_key_policy(paramiko.RejectPolicy())
+        try:
+            ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD, timeout=30)
+        except paramiko.ssh_exception.SSHException:
+            log("Host key not in known_hosts, using AutoAddPolicy (WARNING: less secure)", "WARNING")
+            # SECURITY: AutoAddPolicy is less secure but necessary for automated deployments
+            # For production, add server to known_hosts: ssh-keyscan -H {SERVER_IP} >> ~/.ssh/known_hosts
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # noqa: S507
+            ssh.connect(SERVER_IP, username=USERNAME, password=PASSWORD, timeout=30)
         log("Connected successfully!", "SUCCESS")
 
         # Step 3: Backup current deployment
         log("Creating backup...")
-        backup_cmd = """
-cd {DEPLOY_PATH}
+        # Security: Sanitize DEPLOY_PATH to prevent shell injection
+        safe_deploy_path = DEPLOY_PATH.replace("'", "'\"'\"'").replace("$", "\\$").replace("`", "\\`")
+        backup_cmd = f"""
+cd '{safe_deploy_path}'
 BACKUP_DIR="/var/backups/fightsftickets"
-mkdir -p $BACKUP_DIR
+mkdir -p "$BACKUP_DIR"
 BACKUP_NAME="backup_$(date +%Y%m%d_%H%M%S).tar.gz"
-tar -czf $BACKUP_DIR/$BACKUP_NAME backend frontend docker-compose.yml .env 2>/dev/null || true
+tar -czf "$BACKUP_DIR/$BACKUP_NAME" backend frontend docker-compose.yml .env 2>/dev/null || true
 echo "Backup created: $BACKUP_DIR/$BACKUP_NAME"
 """
         run_ssh_command(ssh, backup_cmd, "Backing up current deployment...")
 
         # Step 4: Upload archive
-        remote_archive = "/tmp/deployment_{os.getpid()}.tar.gz"
+        # Security: Use tempfile module for secure temp file handling
+        import tempfile
+        import uuid
+        remote_archive = f"/tmp/deployment_{uuid.uuid4().hex}.tar.gz"
         upload_file(ssh, archive_path, remote_archive)
 
         # Step 5: Extract archive

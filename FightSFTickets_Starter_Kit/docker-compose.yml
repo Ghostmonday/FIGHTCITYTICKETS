@@ -12,8 +12,9 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-fightsf}
-    ports:
-      - "8000:8000"
+    # Remove direct port exposure - nginx will proxy
+    expose:
+      - "8000"
     depends_on:
       db:
         condition: service_healthy
@@ -49,8 +50,9 @@ services:
       - .env
     environment:
       - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
-    ports:
-      - "3000:3000"
+    # Remove direct port exposure - nginx will proxy
+    expose:
+      - "3000"
     depends_on:
       - api
     # AUDIT ITEM #7: Health check for frontend service
@@ -71,6 +73,26 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    depends_on:
+      - web
+      - api
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   db:
     image: postgres:16

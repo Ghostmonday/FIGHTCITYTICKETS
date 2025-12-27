@@ -1,5 +1,5 @@
 import warnings
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     def debug(self) -> bool:
         return self.app_env == "dev"
 
-    def cors_origin_list(self) -> List[str]:
+    def cors_origin_list(self) -> list[str]:
         # supports comma-separated origins
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
