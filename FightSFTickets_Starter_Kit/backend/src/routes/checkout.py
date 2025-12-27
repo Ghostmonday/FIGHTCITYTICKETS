@@ -5,20 +5,29 @@ Handles payment session creation and status checking for appeal processing.
 Uses database for persistent storage before creating Stripe checkout sessions.
 """
 
-from typing import Optional
+from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status
+import logging
+from typing import Optional  # noqa: F401
+
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field, validator
+from slowapi import Limiter
 
 from ..models import AppealType
+from ..services.database import get_db_service
 from ..services.stripe_service import (
     CheckoutRequest,
-    CheckoutResponse,
-    SessionStatus,
     StripeService,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+# Rate limiter - will be set from app.py after app initialization
+# This is a placeholder that will be replaced by the shared limiter instance
+limiter: Optional[Limiter] = None
 
 
 class AppealCheckoutRequest(BaseModel):
@@ -73,6 +82,29 @@ class AppealCheckoutRequest(BaseModel):
         description="Base64-encoded signature image",
     )
 
+    # BACKLOG PRIORITY 3: Multi-city support
+    city_id: Optional[str] = Field(
+        None,
+        examples=["s", "la", "nyc"],
+        description="City identifier from citation validation",
+    )
+    section_id: Optional[str] = Field(
+        None,
+        examples=["sfmta", "lapd", "nydot"],
+        description="Section/agency identifier from citation validation",
+    )
+
+    @validator("city_id")
+    def validate_city_id(cls, v):
+        """AUDIT FIX: Validate city_id format."""
+        if v is None:
+            return v
+        # City IDs should be lowercase alphanumeric with underscores
+        import re
+        if not re.match(r"^[a-z0-9_]+$", v.lower()):
+            raise ValueError("city_id must be lowercase alphanumeric with underscores only")
+        return v.lower()
+
     @validator("user_state")
     def validate_state(cls, v):
         if len(v.strip()) != 2:
@@ -124,7 +156,7 @@ class SessionStatusResponse(BaseModel):
 
 
 @router.post("/create-session", response_model=AppealCheckoutResponse)
-def create_appeal_checkout(request: AppealCheckoutRequest):
+def create_appeal_checkout(request: Request, appeal_request: AppealCheckoutRequest):
     """
     Create a Stripe checkout session for parking ticket appeal payment.
 
@@ -135,6 +167,7 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
     4. Returns the checkout URL
 
     Database-first approach ensures data persistence before payment.
+    Rate limited to 10 requests per minute per IP address.
     """
     try:
         # Initialize Stripe service
@@ -142,25 +175,90 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
 
         # Convert request to service object
         checkout_request = CheckoutRequest(
-            citation_number=request.citation_number,
-            violation_date=request.violation_date,
-            vehicle_info=request.vehicle_info,
-            license_plate=request.license_plate,
-            user_name=request.user_name,
-            user_address_line1=request.user_address_line1,
-            user_address_line2=request.user_address_line2,
-            user_city=request.user_city,
-            user_state=request.user_state,
-            user_zip=request.user_zip,
-            user_email=request.user_email,
-            draft_text=request.draft_text,
-            appeal_type=request.appeal_type,
-            selected_evidence=request.selected_evidence,
-            signature_data=request.signature_data,
+            citation_number=appeal_request.citation_number,
+            violation_date=appeal_request.violation_date,
+            vehicle_info=appeal_request.vehicle_info,
+            license_plate=appeal_request.license_plate,
+            user_name=appeal_request.user_name,
+            user_address_line1=appeal_request.user_address_line1,
+            user_address_line2=appeal_request.user_address_line2,
+            user_city=appeal_request.user_city,
+            user_state=appeal_request.user_state,
+            user_zip=appeal_request.user_zip,
+            user_email=appeal_request.user_email,
+            draft_text=appeal_request.draft_text,
+            appeal_type=appeal_request.appeal_type,
+            selected_evidence=appeal_request.selected_evidence,
+            signature_data=appeal_request.signature_data,
+            city_id=appeal_request.city_id,  # BACKLOG PRIORITY 3: Multi-city support
+            section_id=appeal_request.section_id,  # BACKLOG PRIORITY 3: Multi-city support
         )
 
-        # Create the checkout session (this creates database records first)
-        response = stripe_service.create_checkout_session(checkout_request)
+        # AUDIT FIX: Database-first approach - create DB records BEFORE Stripe session
+        db_service = get_db_service()
+
+        # Create intake record
+        intake = db_service.create_intake(
+            citation_number=appeal_request.citation_number,
+            violation_date=appeal_request.violation_date,
+            vehicle_info=appeal_request.vehicle_info,
+            license_plate=appeal_request.license_plate,
+            user_name=appeal_request.user_name,
+            user_address_line1=appeal_request.user_address_line1,
+            user_address_line2=appeal_request.user_address_line2,
+            user_city=appeal_request.user_city,
+            user_state=appeal_request.user_state,
+            user_zip=appeal_request.user_zip,
+            user_email=appeal_request.user_email,
+            appeal_reason=appeal_request.draft_text[:5000] if appeal_request.draft_text else None,
+            selected_evidence=appeal_request.selected_evidence,
+            signature_data=appeal_request.signature_data,
+            city=appeal_request.city_id or "s",  # Default to SF if not provided
+        )
+
+        # Create draft record
+        draft = db_service.create_draft(
+            intake_id=intake.id,
+            appeal_type=appeal_request.appeal_type,
+            draft_text=appeal_request.draft_text,
+        )
+
+        # Now create Stripe checkout session with IDs in metadata
+        # Note: We'll create payment record AFTER Stripe session to get accurate amount
+        checkout_request.intake_id = intake.id
+        checkout_request.draft_id = draft.id
+
+        try:
+            # Create Stripe checkout session first to get accurate amount
+            response = stripe_service.create_checkout_session(checkout_request)
+
+            # AUDIT FIX: Create payment record AFTER Stripe session with accurate amount
+            # Note: payment_id won't be in metadata, but webhook can find by session_id
+            payment = db_service.create_payment(
+                intake_id=intake.id,
+                stripe_session_id=response.session_id,
+                amount_total=response.amount_total,  # Use amount from Stripe response
+                appeal_type=appeal_request.appeal_type,
+            )
+
+            # Update checkout request with payment_id for response (not metadata)
+            checkout_request.payment_id = payment.id
+
+            logger.info(
+                f"Created payment {payment.id} for intake {intake.id} "
+                "with Stripe session {response.session_id}"
+            )
+        except Exception as stripe_error:
+            # AUDIT FIX: If Stripe fails, we have intake and draft records saved
+            # This is acceptable - user can retry payment later
+            logger.error(
+                "Stripe session creation failed after DB records created [intake_id={intake.id}]: {stripe_error}",
+                exc_info=True
+            )
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Payment gateway error: {str(stripe_error)}. Your appeal has been saved (intake_id: {intake.id}).",
+            ) from stripe_error
 
         # Convert to API response
         api_response = AppealCheckoutResponse(
@@ -168,8 +266,8 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
             session_id=response.session_id,
             amount_total=response.amount_total,
             currency=response.currency,
-            appeal_type=request.appeal_type,
-            citation_number=request.citation_number,
+            appeal_type=appeal_request.appeal_type,
+            citation_number=appeal_request.citation_number,
             payment_id=response.payment_id,
         )
 
@@ -177,15 +275,24 @@ def create_appeal_checkout(request: AppealCheckoutRequest):
 
     except ValueError as e:
         # Validation error from our service
+        logger.warning(f"Checkout validation error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid request: {str(e)}"
-        )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid request: {str(e)}"
+        ) from e
+    except HTTPException:
+        # Re-raise HTTP exceptions (e.g., from Stripe error handler)
+        raise
     except Exception as e:
-        # Unexpected error
+        # Unexpected error - log with request context
+        logger.error(
+            f"Unexpected error creating checkout session: {e}",
+            exc_info=True
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create checkout session: {str(e)}",
-        )
+            detail="Failed to create checkout session. Please try again.",
+        ) from e
 
 
 @router.get("/session/{session_id}", response_model=SessionStatusResponse)
@@ -227,12 +334,12 @@ def get_session_status(session_id: str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid session ID: {str(e)}",
-        )
+        ) from e
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retrieve session status: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/test-checkout")

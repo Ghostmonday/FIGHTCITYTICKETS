@@ -13,7 +13,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from .config import settings
-from .models import Base, create_all_tables, drop_all_tables
+from .models import create_all_tables, drop_all_tables
 
 # Set up logger
 logging.basicConfig(
@@ -43,7 +43,7 @@ def create_database_if_not_exists(database_url: str) -> bool:
         # Parse the URL to get database name
         parts = database_url.split("/")
         if len(parts) < 4:
-            logger.error(f"Invalid database URL format: {database_url}")
+            logger.error("Invalid database URL format: {database_url}")
             return False
 
         db_name = parts[-1]
@@ -51,7 +51,7 @@ def create_database_if_not_exists(database_url: str) -> bool:
         base_url = "/".join(parts[:-1])
 
         # Connect to postgres database to create our database
-        engine = create_engine(f"{base_url}/postgres")
+        engine = create_engine("{base_url}/postgres")
 
         with engine.connect() as conn:
             # Check if database exists
@@ -61,18 +61,18 @@ def create_database_if_not_exists(database_url: str) -> bool:
             ).fetchone()
 
             if not result:
-                logger.info(f"Creating database: {db_name}")
+                logger.info("Creating database: {db_name}")
                 # Create database with UTF-8 encoding
-                conn.execute(text(f"CREATE DATABASE {db_name} ENCODING 'UTF8'"))
+                conn.execute(text("CREATE DATABASE {db_name} ENCODING 'UTF8'"))
                 conn.commit()
-                logger.info(f"Database {db_name} created successfully")
+                logger.info("Database {db_name} created successfully")
             else:
-                logger.info(f"Database {db_name} already exists")
+                logger.info("Database {db_name} already exists")
 
         return True
 
     except SQLAlchemyError as e:
-        logger.error(f"Failed to create database: {e}")
+        logger.error("Failed to create database: {e}")
         return False
 
 
@@ -93,7 +93,7 @@ def check_database_connection(database_url: str) -> bool:
         logger.info("Database connection successful")
         return True
     except SQLAlchemyError as e:
-        logger.error(f"Database connection failed: {e}")
+        logger.error("Database connection failed: {e}")
         return False
 
 
@@ -137,15 +137,15 @@ def create_tables(database_url: str, drop_existing: bool = False) -> bool:
             missing_tables = expected_tables - created_tables
 
             if missing_tables:
-                logger.error(f"Missing tables: {missing_tables}")
+                logger.error("Missing tables: {missing_tables}")
                 return False
 
-            logger.info(f"Tables created: {', '.join(sorted(created_tables))}")
+            logger.info("Tables created: {', '.join(sorted(created_tables))}")
 
         return True
 
     except SQLAlchemyError as e:
-        logger.error(f"Failed to create tables: {e}")
+        logger.error("Failed to create tables: {e}")
         return False
 
 
@@ -182,7 +182,7 @@ def create_indexes(database_url: str) -> bool:
         return True
 
     except SQLAlchemyError as e:
-        logger.error(f"Failed to create indexes: {e}")
+        logger.error("Failed to create indexes: {e}")
         return False
 
 
@@ -217,7 +217,7 @@ def seed_initial_data(database_url: str) -> bool:
         return True
 
     except SQLAlchemyError as e:
-        logger.error(f"Failed to seed data: {e}")
+        logger.error("Failed to seed data: {e}")
         return False
 
 
@@ -247,10 +247,10 @@ def run_migrations(
     logger.info("=" * 60)
     logger.info("Starting Database Migration")
     logger.info(
-        f"Database: {database_url.split('@')[-1] if '@' in database_url else database_url}"
+        "Database: {database_url.split('@')[-1] if '@' in database_url else database_url}"
     )
-    logger.info(f"Drop existing: {drop_existing}")
-    logger.info(f"Seed data: {seed_data}")
+    logger.info("Drop existing: {drop_existing}")
+    logger.info("Seed data: {seed_data}")
     logger.info("=" * 60)
 
     # Step 1: Create database if it doesn't exist
@@ -314,7 +314,7 @@ def main():
         logger.info("Migration interrupted by user")
         sys.exit(1)
     except Exception as e:
-        logger.error(f"Unexpected error during migration: {e}")
+        logger.error("Unexpected error during migration: {e}")
         sys.exit(1)
 
 

@@ -1,0 +1,100 @@
+{
+  "city_id": "us-az-phoenix",
+  "name": "Phoenix",
+  "state": "AZ",
+  "country": "US",
+  "authority": {
+    "section_id": "phoenix_municipal_court",
+    "name": "Phoenix Municipal Court – Parking Violations",
+    "authority_name": "Phoenix Municipal Court",
+    "jurisdiction": "city",
+    "abbrev": [
+      "Phoenix Municipal Court",
+      "PMC"
+    ],
+    "serves_basis": "issuing_authority",
+    "serves_description": "Parking citations issued by City of Phoenix parking enforcement officers and processed through the Phoenix Municipal Court."
+  },
+  "citation_pattern": {
+    "regex": "^[0-9]{8}$",
+    "description": "Phoenix parking citation format",
+    "example_numbers": [
+      "12345678",
+      "87654321"
+    ],
+    "confidence": "low",
+    "visual_markers": [
+      "Notice of Violation (NOV) number on ticket",
+      "City of Phoenix or Phoenix Municipal Court branding"
+    ],
+    "notes": "City parking citations are printed on a Notice of Violation left on the windshield with payment envelope and instructions for entering a plea. Citation numbers appear as eight‑digit numbers; precise pattern is unconfirmed."
+  },
+  "appeal_address": {
+    "status": "complete",
+    "department": "Phoenix Municipal Court",
+    "attention": "Civil Parking Violations Division",
+    "address1": "300 West Washington Street",
+    "city": "Phoenix",
+    "state": "AZ",
+    "zip": "85003",
+    "country": "US"
+  },
+  "submission_methods": {
+    "mail_allowed": true,
+    "online_allowed": false,
+    "in_person_allowed": true,
+    "preferred_method": "in_person",
+    "method_constraints": [],
+    "notes": "Parking violation hearings must be requested on or before the court date. Payment or contesting can be done in person at the Phoenix Municipal Court; no official online appeal portal is provided on the city website."
+  },
+  "phone_confirmation": {
+    "required": true,
+    "when_required": "always",
+    "phone_numbers": [
+      "602-262-6421"
+    ],
+    "alt_phone_numbers": [
+      "602-262-3111"
+    ],
+    "department": "Phoenix Municipal Court / City Services",
+    "purpose": "Verify that parking citation appeals should be mailed or delivered in person to the Phoenix Municipal Court at 300 W. Washington St."
+  },
+  "verification": {
+    "status": "incomplete",
+    "verified_at": "2025-12-24",
+    "source_type": "official_webpage",
+    "source_note": "City’s parking violation page explains that vehicles with unpaid complaints may be booted and that payment or arrangements must be made at the Phoenix Municipal Court; it lists 300 West Washington Street and provides the court phone number for questions【90091074201057†L533-L548】.",
+    "needs_confirmation": true,
+    "operational_ready": false,
+    "last_checked": "2025-12-24",
+    "last_validated_by": "collector"
+  },
+  "official_confirmation_phone": "602-262-6421",
+  "official_confirmation_department": "Phoenix Municipal Court / City Services",
+  "official_confirmation_purpose": "Confirm Phase‑1 appeal mailing address and routing for City of Phoenix parking citations.",
+  "appeal_info": {
+    "timezone": "America/Los_Angeles",
+    "appeal_deadline_days": 21,
+    "online_appeal_available": false,
+    "online_appeal_url": null
+  },
+  "routing_rule": "direct",
+  "qa_has_sections": true,
+  "qa_has_city_confirmation_phone": true,
+  "qa_all_sections_have_valid_routing": true,
+  "qa_blocking_issues": [
+    "Phoenix Municipal Court mailing address and citation number pattern are unconfirmed and require verification.",
+    "Phoenix Police Department citation pattern and routing need confirmation.",
+    "Grand Canyon University and Sky Harbor Airport lack publicly available mailing addresses for Phase‑1 appeals."
+  ],
+  "qa_known_gaps": [
+    "The city’s parking citation page does not provide explicit instructions for contesting by mail; appeal address is inferred from boot and tow information.",
+    "Exact citation formats for Phoenix, ASU, GCU, and Sky Harbor remain unverified."
+  ],
+  "_metadata": {
+    "source_format": "phase1",
+    "extracted_at": "2025-12-25T03:35:51.559433",
+    "extracted_by": "extract_city_simple.py",
+    "schema_version": "1.0.0"
+  }
+}

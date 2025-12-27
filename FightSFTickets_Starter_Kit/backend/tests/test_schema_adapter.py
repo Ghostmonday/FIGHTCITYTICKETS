@@ -303,7 +303,7 @@ class TestSchemaAdapter:
         assert "agency2" in sections
         assert sections["agency2"]["name"] == "Second Agency"
         assert sections["agency2"]["appeal_mail_address"]["status"] == "complete"
-        assert sections["agency2"]["phone_confirmation_policy"]["required"] == True
+        assert sections["agency2"]["phone_confirmation_policy"]["required"]
 
         assert len(result.warnings) > 0, "Expected warnings for section transformations"
 
@@ -402,9 +402,9 @@ class TestSchemaAdapter:
 
         result_dict = result.to_dict()
 
-        assert result_dict["success"] == True
-        assert result_dict["has_warnings"] == True
-        assert result_dict["has_errors"] == False
+        assert result_dict["success"]
+        assert result_dict["has_warnings"]
+        assert not result_dict["has_errors"]
         assert len(result_dict["warnings"]) == 2
         assert len(result_dict["errors"]) == 0
         assert result_dict["data"] == {"test": "data"}
@@ -418,8 +418,8 @@ class TestSchemaAdapter:
         )
 
         error_dict = result_with_errors.to_dict()
-        assert error_dict["success"] == False
-        assert error_dict["has_errors"] == True
+        assert not error_dict["success"]
+        assert error_dict["has_errors"]
         assert error_dict["data"] is None
 
     def test_convenience_functions(self):

@@ -1,0 +1,459 @@
+{
+  "city_id": "us-or-portland",
+  "city": "Portland",
+  "state": "OR",
+  "country": "US",
+
+  "official_confirmation": {
+    "primary_phone": {
+      "phone": "971-274-0590",
+      "alt_phone": "503-823-4000",
+      "department": "Multnomah County Circuit Court Parking Tag Office",
+      "purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing."
+    }
+  },
+
+  "phase1_routing": {
+    "sections": [
+      {
+        "section_id": "pbot",
+        "canonical_section_name": "Portland Bureau of Transportation / Multnomah County Circuit Court",
+        "section_type": "city_parking_authority",
+        "authority_name": "Portland Bureau of Transportation (PBOT) and Multnomah County Circuit Court",
+        "jurisdiction": "city",
+        "abbrev": ["PBOT", "Multnomah County Circuit Court"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations issued by the City of Portland are processed through the Multnomah County Circuit Court."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^HA[0-9]{6,8}$",
+          "pattern_confidence": "low",
+          "examples": ["HA123456", "HA98765432"],
+          "visual_markers": ["City of Portland logo", "Parking Citation Office", "HA prefix on citation number"],
+          "notes": "Portland parking citations often begin with the letters 'HA' when viewed online."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": false,
+          "in_person_allowed": true,
+          "preferred_method": "mail",
+          "method_constraints": [],
+          "notes": "To contest a citation, mail a written explanation or request a hearing; in-person hearings are available at the court."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Parking Citation Office",
+          "attention": "Multnomah County Circuit Court",
+          "address1": "P.O. Box 78",
+          "address2": null,
+          "city": "Portland",
+          "state": "OR",
+          "zip": "97207",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "971-274-0590",
+          "alt_phone": "503-823-4000",
+          "department": "Multnomah County Circuit Court Parking Tag Office",
+          "purpose": "Confirm that this is the correct Phase-1 mailing address and procedure for City of Portland parking citation appeals."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "Mailing address and contest instructions confirmed on Portland.gov – pay and contest parking ticket page, which states that written explanations and payments should be mailed to P.O. Box 78, Portland, OR 97207 and provides the Parking Tag Office phone number【180675364249953†L82-L95】【180675364249953†L115-L150】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "psu",
+        "canonical_section_name": "Portland State University Transportation & Parking Services",
+        "section_type": "campus",
+        "authority_name": "Portland State University Transportation & Parking Services",
+        "jurisdiction": "campus",
+        "abbrev": ["PSU"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on Portland State University campus property by Transportation & Parking Services."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{5,7}$",
+          "pattern_confidence": "low",
+          "examples": ["123456", "7654321"],
+          "visual_markers": ["Portland State University", "Transportation & Parking Services", "PSU"],
+          "notes": "PSU citations typically show a numeric citation number with PSU branding."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "PSU requires citation appeals to be submitted via their online appeal form within 14 days; no mail appeals are accepted."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "Portland State University directs appellants to submit appeals through its online portal and does not provide a mailing address for appeals."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "503-725-3000",
+          "alt_phone": null,
+          "department": "PSU Transportation & Parking Services",
+          "purpose": "Confirm that appeals must be submitted online and verify no mailing address exists for PSU parking citations."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "PSU citations page explains that appeals must be submitted online within 14 calendar days and no mailing address is provided【807513719294425†L129-L139】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "university_of_portland",
+        "canonical_section_name": "University of Portland Campus Safety",
+        "section_type": "campus",
+        "authority_name": "University of Portland Department of Campus Safety",
+        "jurisdiction": "campus",
+        "abbrev": ["UP"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued by the University of Portland Department of Campus Safety on campus property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{3,7}$",
+          "pattern_confidence": "low",
+          "examples": ["12345", "987654"],
+          "visual_markers": ["University of Portland", "Campus Safety"],
+          "notes": "University of Portland citations generally show a numeric identifier and campus safety branding."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": false,
+          "in_person_allowed": true,
+          "preferred_method": "in_person",
+          "method_constraints": [],
+          "notes": "The University of Portland instructs citations to be paid or appealed through the Department of Campus Safety within 14 days; appeals are typically submitted in person."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "University of Portland does not provide a mailing address for citation appeals; appeals are submitted through Campus Safety in person."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "503-943-7161",
+          "alt_phone": "503-943-8000",
+          "department": "University of Portland Campus Safety",
+          "purpose": "Confirm whether a mail address exists for University of Portland citation appeals and verify procedures."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "University of Portland parking regulations page states fines must be paid or appealed through Campus Safety within 14 days but does not list a mailing address【961841516160671†L325-L352】; campus safety contact phone from campus safety info page【503746221128473†L99-L102】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "ohsu",
+        "canonical_section_name": "OHSU Transportation & Parking",
+        "section_type": "campus",
+        "authority_name": "Oregon Health & Science University Transportation & Parking",
+        "jurisdiction": "campus",
+        "abbrev": ["OHSU"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on Oregon Health & Science University property by Transportation & Parking."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{4,8}$",
+          "pattern_confidence": "low",
+          "examples": ["123456", "4321"],
+          "visual_markers": ["OHSU", "Transportation & Parking", "Parking Citation"],
+          "notes": "OHSU citations often list a numeric identifier and reference OHSU Transportation & Parking."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Appeals may be filed online or by mailing a completed appeal form within 30 days."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Transportation & Parking Ticket Appeals",
+          "attention": "Mail Code PP22A",
+          "address1": "3181 SW Sam Jackson Park Road",
+          "address2": null,
+          "city": "Portland",
+          "state": "OR",
+          "zip": "97239-3011",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "503-494-8283",
+          "alt_phone": null,
+          "department": "OHSU Transportation & Parking",
+          "purpose": "Confirm mailing address and procedures for OHSU parking citation appeals."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "The OHSU ticket appeal form instructs appellants to mail the form to OHSU Transportation & Parking, Mail Code PP22A, 3181 SW Sam Jackson Park Road, Portland, OR 97239-3011【162833343162346†L17-L22】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "lewis_and_clark",
+        "canonical_section_name": "Lewis & Clark College Transportation and Parking",
+        "section_type": "campus",
+        "authority_name": "Lewis & Clark College Transportation and Parking",
+        "jurisdiction": "campus",
+        "abbrev": ["Lewis & Clark"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on Lewis & Clark College property by Transportation and Parking."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{4,7}$",
+          "pattern_confidence": "low",
+          "examples": ["12345", "7654321"],
+          "visual_markers": ["Lewis & Clark College", "Transportation and Parking"],
+          "notes": "Lewis & Clark citations typically list a numeric identifier and college branding."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Lewis & Clark requires citation appeals to be submitted through its online parking portal; no mail appeals are accepted."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "Lewis & Clark College directs appellants to submit appeals via the online parking portal; no mailing address is provided."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "503-768-7857",
+          "alt_phone": null,
+          "department": "Lewis & Clark Transportation and Parking",
+          "purpose": "Confirm that appeals must be submitted online and verify no mailing address exists for Lewis & Clark parking citations."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "The Lewis & Clark citation appeals page instructs individuals to appeal citations through the online parking portal and does not provide a mailing address【962570306592351†L108-L127】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "reed_college",
+        "canonical_section_name": "Reed College Community Safety",
+        "section_type": "campus",
+        "authority_name": "Reed College Community Safety",
+        "jurisdiction": "campus",
+        "abbrev": ["Reed College"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued by Reed College Community Safety on campus property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{3,7}$",
+          "pattern_confidence": "low",
+          "examples": ["1234", "67890"],
+          "visual_markers": ["Reed College", "Community Safety"],
+          "notes": "Reed College citations typically include a numeric identifier and the college name."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Reed College requires appeals to be made within a week via email to the director of community safety or in person; there is no dedicated mailing address for appeals."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "Reed College instructs appellants to submit appeals by email or in person; a mailing address for appeal submissions is not provided."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "503-771-1112",
+          "alt_phone": null,
+          "department": "Reed College Community Safety",
+          "purpose": "Confirm that appeals are accepted via email or in person and verify no mailing address exists for Reed College citation appeals."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "Reed College parking guide indicates appeals must be made within one week to the director of community safety and can be submitted in person or by email; no mailing address is provided【621418894752101†L172-L179】【621418894752101†L194-L196】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "pcc",
+        "canonical_section_name": "Portland Community College Transportation and Parking",
+        "section_type": "campus",
+        "authority_name": "Portland Community College Transportation and Parking",
+        "jurisdiction": "campus",
+        "abbrev": ["PCC"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on Portland Community College campuses by the Transportation and Parking department."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{4,8}$",
+          "pattern_confidence": "low",
+          "examples": ["12345", "98765432"],
+          "visual_markers": ["Portland Community College", "PCC", "Transportation and Parking"],
+          "notes": "PCC citations typically show a numeric identifier and may reference PCC Transportation and Parking."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "PCC requires citation appeals to be submitted through its online appeal form within 30 days; appeals cannot be made by mail or phone."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "Portland Community College directs appellants to use an online appeal form for citation appeals and does not provide a mailing address."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "971-722-8181",
+          "alt_phone": null,
+          "department": "PCC Transportation and Parking",
+          "purpose": "Confirm that PCC citation appeals must be submitted online and verify no mailing address exists for appeals."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "PCC parking regulations page instructs that citation appeals must be filed using the online appeal form and cannot be submitted by email or phone; payments can be mailed but no mailing address is provided for appeals【780165827368928†L70-L83】. Contact information lists phone 971-722-8181 for the transportation office【225967013184938†L96-L100】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      }
+    ]
+  },
+
+  "qa": {
+    "has_sections": true,
+    "has_city_confirmation_phone": true,
+    "all_sections_have_valid_routing": true,
+
+    "blocking_issues": [],
+    "known_gaps": [
+      "University of Portland citation appeal mailing address is not provided and requires confirmation.",
+      "Portland State University appeals are online only; mailing address is missing and requires confirmation.",
+      "Lewis & Clark College appeal mailing address is not provided and requires confirmation.",
+      "Reed College appeal mailing address is not provided and requires confirmation.",
+      "Portland Community College appeal mailing address is not provided and requires confirmation."
+    ]
+  }
+}

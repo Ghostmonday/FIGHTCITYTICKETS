@@ -5,15 +5,12 @@ Handles Stripe checkout session creation, webhook verification, and payment stat
 Integrates with citation validation and mail fulfillment.
 """
 
-import os
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Dict, Optional, Tuple
 
 import stripe
 
 from ..config import settings
-from .citation import CitationValidationResult, CitationValidator
 
 
 @dataclass
@@ -33,6 +30,12 @@ class CheckoutRequest:
     appeal_reason: str = ""
     email: Optional[str] = None
     license_plate: Optional[str] = None
+    city_id: Optional[str] = None  # BACKLOG PRIORITY 3: Multi-city support
+    section_id: Optional[str] = None  # BACKLOG PRIORITY 3: Multi-city support
+    # AUDIT FIX: Database-first - IDs from pre-created records
+    payment_id: Optional[int] = None
+    intake_id: Optional[int] = None
+    draft_id: Optional[int] = None
 
 
 @dataclass
@@ -92,7 +95,7 @@ class StripeService:
         appeal_type = appeal_type.lower()
         if appeal_type not in self.price_ids:
             raise ValueError(
-                f"Invalid appeal type: {appeal_type}. Must be 'standard' or 'certified'"
+                "Invalid appeal type: {appeal_type}. Must be 'standard' or 'certified'"
             )
 
         return self.price_ids[appeal_type]
@@ -165,26 +168,24 @@ class StripeService:
         # Validate request
         is_valid, error_msg = self.validate_checkout_request(request)
         if not is_valid:
-            raise ValueError(f"Invalid checkout request: {error_msg}")
+            raise ValueError("Invalid checkout request: {error_msg}")
 
         # Get price ID for appeal type
         price_id = self.get_price_id(request.appeal_type)
 
         # Prepare metadata for webhook
+        # AUDIT FIX: Database-first - store only IDs in metadata, not full data
         metadata = {
+            # Only store IDs for webhook lookup (database-first approach)
+            "payment_id": str(request.payment_id) if request.payment_id else "",
+            "intake_id": str(request.intake_id) if request.intake_id else "",
+            "draft_id": str(request.draft_id) if request.draft_id else "",
+            # Minimal citation info for logging/debugging
             "citation_number": request.citation_number[:100],
             "appeal_type": request.appeal_type,
-            "user_name": request.user_name[:100],
-            "user_address_line1": request.user_address_line1[:200],
-            "user_address_line2": (request.user_address_line2 or "")[:200],
-            "user_city": request.user_city[:50],
-            "user_state": request.user_state[:2],
-            "user_zip": request.user_zip[:10],
-            "violation_date": request.violation_date[:20],
-            "vehicle_info": request.vehicle_info[:200],
-            "appeal_reason": request.appeal_reason[:500],
-            "license_plate": (request.license_plate or "")[:20],
-            "created_at": datetime.now().isoformat(),
+            # BACKLOG PRIORITY 3: Multi-city support - store city_id in metadata
+            "city_id": (request.city_id or "")[:50],
+            "section_id": (request.section_id or "")[:50],
         }
 
         try:
@@ -199,8 +200,8 @@ class StripeService:
                     }
                 ],
                 metadata=metadata,
-                success_url=f"{self.base_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{self.base_url}/appeal",
+                success_url="{self.base_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url="{self.base_url}/appeal",
                 customer_email=request.email,
                 billing_address_collection="required",
                 shipping_address_collection={
@@ -216,9 +217,9 @@ class StripeService:
             )
 
         except stripe.error.StripeError as e:
-            raise Exception(f"Stripe error creating checkout session: {str(e)}")
+            raise Exception(f"Stripe error creating checkout session: {str(e)}") from e
         except Exception as e:
-            raise Exception(f"Error creating checkout session: {str(e)}")
+            raise Exception(f"Error creating checkout session: {str(e)}") from e
 
     def get_session_status(self, session_id: str) -> SessionStatus:
         """
@@ -244,7 +245,7 @@ class StripeService:
             )
 
         except stripe.error.StripeError as e:
-            raise Exception(f"Stripe error retrieving session: {str(e)}")
+            raise Exception(f"Stripe error retrieving session: {str(e)}") from e
 
     def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
         """
@@ -258,7 +259,7 @@ class StripeService:
             True if signature is valid
         """
         try:
-            event = stripe.Webhook.construct_event(
+            stripe.Webhook.construct_event(
                 payload, signature, settings.stripe_webhook_secret
             )
             return True
@@ -308,7 +309,7 @@ class StripeService:
                 # 4. Database update
 
             else:
-                result["message"] = f"Payment not completed: {payment_status}"
+                result["message"] = "Payment not completed: {payment_status}"
 
         # Handle payment_intent.succeeded (backup)
         elif event_type == "payment_intent.succeeded":

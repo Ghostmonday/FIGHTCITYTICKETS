@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 # Configuration
 PROJECT_NAME="fightsftickets"
 SERVER_NAME="${PROJECT_NAME}-prod"
-DOMAIN="${DOMAIN:-fightsftickets.com}"
+DOMAIN="${DOMAIN:-fightcitytickets.com}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
 DEPLOY_PATH="/var/www/${PROJECT_NAME}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/id_rsa}"

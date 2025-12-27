@@ -1,5 +1,10 @@
 services:
   api:
+    # ============================================
+    # COORDINATION NOTE: Added by AI Assistant #1 (Auto)
+    # Working backwards through audit items - Issue #7: Docker Health Checks
+    # Added health check, restart policy, and resource limits
+    # ============================================
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -12,17 +17,60 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # AUDIT ITEM #7: Health check for API service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Restart policy for production reliability
+    restart: unless-stopped
+    # Resource limits to prevent resource exhaustion
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   web:
+    # ============================================
+    # COORDINATION NOTE: Added by AI Assistant #1 (Auto)
+    # Working backwards through audit items - Issue #7: Docker Health Checks
+    # Added health check, restart policy, and resource limits for frontend
+    # ============================================
     build:
       context: .
       dockerfile: frontend/Dockerfile
+    env_file:
+      - .env
     environment:
-      - NEXT_PUBLIC_API_BASE=https://fightsftickets.com
+      - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
     ports:
       - "3000:3000"
     depends_on:
       - api
+    # AUDIT ITEM #7: Health check for frontend service
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s  # Next.js needs more time to start
+    # Restart policy for production reliability
+    restart: unless-stopped
+    # Resource limits to prevent resource exhaustion
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   db:
     image: postgres:16
@@ -30,8 +78,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-fightsf}
-    ports:
-      - "5432:5432"
+    # SECURITY: Database port NOT exposed externally - only accessible via Docker network
+    # Remove port mapping for production security
+    # ports:
+    #   - "5432:5432"
     volumes:
       - fightsf_db:/var/lib/postgresql/data
     healthcheck:

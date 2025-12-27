@@ -62,11 +62,11 @@ def repair_json_syntax(filepath: Path) -> bool:
         with open(filepath, "r", encoding="utf-8") as f:
             json.load(f)
 
-        print(f"  ✅ Repaired JSON syntax: {filepath.name}")
+        print("  ✅ Repaired JSON syntax: {filepath.name}")
         return True
 
     except Exception as e:
-        print(f"  ❌ Failed to repair {filepath.name}: {e}")
+        print("  ❌ Failed to repair {filepath.name}: {e}")
         return False
 
 
@@ -76,12 +76,12 @@ def extract_simplified_city(phase1_file: Path, output_dir: Path) -> Optional[Pat
         # Check if extraction script exists
         extract_script = Path(__file__).parent / "extract_city_simple.py"
         if not extract_script.exists():
-            print(f"  ❌ Extraction script not found: {extract_script}")
+            print("  ❌ Extraction script not found: {extract_script}")
             return None
 
         # Generate output filename
         city_name = phase1_file.stem.replace("_phase1", "")
-        output_file = output_dir / f"{city_name}.json"
+        output_file = output_dir / "{city_name}.json"
 
         # Run extraction
         import subprocess
@@ -99,18 +99,18 @@ def extract_simplified_city(phase1_file: Path, output_dir: Path) -> Optional[Pat
         )
 
         if result.returncode == 0:
-            print(f"  ✅ Extracted: {phase1_file.name} → {output_file.name}")
+            print("  ✅ Extracted: {phase1_file.name} → {output_file.name}")
             return output_file
         else:
-            print(f"  ❌ Extraction failed for {phase1_file.name}:")
+            print("  ❌ Extraction failed for {phase1_file.name}:")
             if result.stdout:
-                print(f"    stdout: {result.stdout[:200]}...")
+                print("    stdout: {result.stdout[:200]}...")
             if result.stderr:
-                print(f"    stderr: {result.stderr[:200]}...")
+                print("    stderr: {result.stderr[:200]}...")
             return None
 
     except Exception as e:
-        print(f"  ❌ Error extracting {phase1_file.name}: {e}")
+        print("  ❌ Error extracting {phase1_file.name}: {e}")
         return None
 
 
@@ -122,7 +122,7 @@ def transform_to_schema_4_3_0(
         # Check if transformation script exists
         transform_script = Path(__file__).parent / "transform_simplified_to_schema.py"
         if not transform_script.exists():
-            print(f"  ❌ Transformation script not found: {transform_script}")
+            print("  ❌ Transformation script not found: {transform_script}")
             return None
 
         # Load simplified data to get city_id for filename
@@ -131,12 +131,12 @@ def transform_to_schema_4_3_0(
 
         city_id = simplified_data.get("city_id", "")
         if not city_id:
-            print(f"  ❌ No city_id found in {simplified_file.name}")
+            print("  ❌ No city_id found in {simplified_file.name}")
             return None
 
         # Generate output filename from city_id
         clean_city_id = city_id.replace("us-", "").replace("-", "_")
-        output_file = output_dir / f"{city_id}.json"
+        output_file = output_dir / "{city_id}.json"
 
         # Run transformation
         import subprocess
@@ -156,24 +156,24 @@ def transform_to_schema_4_3_0(
         )
 
         if result.returncode == 0:
-            print(f"  ✅ Transformed: {simplified_file.name} → {output_file.name}")
+            print("  ✅ Transformed: {simplified_file.name} → {output_file.name}")
 
             # Validate the generated schema
             if validate_schema_file(output_file):
                 return output_file
             else:
-                print(f"  ⚠️  Schema validation warnings for {output_file.name}")
+                print("  ⚠️  Schema validation warnings for {output_file.name}")
                 return output_file  # Return anyway, but with warning
         else:
-            print(f"  ❌ Transformation failed for {simplified_file.name}:")
+            print("  ❌ Transformation failed for {simplified_file.name}:")
             if result.stdout:
-                print(f"    stdout: {result.stdout[:200]}...")
+                print("    stdout: {result.stdout[:200]}...")
             if result.stderr:
-                print(f"    stderr: {result.stderr[:200]}...")
+                print("    stderr: {result.stderr[:200]}...")
             return None
 
     except Exception as e:
-        print(f"  ❌ Error transforming {simplified_file.name}: {e}")
+        print("  ❌ Error transforming {simplified_file.name}: {e}")
         return None
 
 
@@ -202,7 +202,7 @@ def validate_schema_file(schema_file: Path) -> bool:
                 missing_fields.append(field)
 
         if missing_fields:
-            print(f"    ❌ Missing required fields: {missing_fields}")
+            print("    ❌ Missing required fields: {missing_fields}")
             return False
 
         # Validate phone_confirmation_policy structure
@@ -218,28 +218,28 @@ def validate_schema_file(schema_file: Path) -> bool:
         invalid_policy_fields = set(policy.keys()) - allowed_policy_fields
         if invalid_policy_fields:
             print(
-                f"    ❌ Invalid phone_confirmation_policy fields: {invalid_policy_fields}"
+                "    ❌ Invalid phone_confirmation_policy fields: {invalid_policy_fields}"
             )
             return False
 
         # Validate citation patterns
         for i, pattern in enumerate(schema_data["citation_patterns"]):
             if "regex" not in pattern or "section_id" not in pattern:
-                print(f"    ❌ Citation pattern {i} missing regex or section_id")
+                print("    ❌ Citation pattern {i} missing regex or section_id")
                 return False
 
             # Check regex compiles
             try:
                 re.compile(pattern["regex"])
             except re.error as e:
-                print(f"    ❌ Invalid regex in pattern {i}: {e}")
+                print("    ❌ Invalid regex in pattern {i}: {e}")
                 return False
 
             # Check section_id exists in sections
             section_id = pattern["section_id"]
             if section_id not in schema_data["sections"]:
                 print(
-                    f"    ❌ Citation pattern references non-existent section: {section_id}"
+                    "    ❌ Citation pattern references non-existent section: {section_id}"
                 )
                 return False
 
@@ -247,24 +247,24 @@ def validate_schema_file(schema_file: Path) -> bool:
         appeal_status = schema_data["appeal_mail_address"].get("status", "")
         valid_statuses = {"complete", "routes_elsewhere", "missing"}
         if appeal_status not in valid_statuses:
-            print(f"    ❌ Invalid appeal_mail_address status: {appeal_status}")
+            print("    ❌ Invalid appeal_mail_address status: {appeal_status}")
             return False
 
-        print(f"    ✅ Schema validation passed")
+        print("    ✅ Schema validation passed")
         return True
 
     except json.JSONDecodeError as e:
-        print(f"    ❌ Invalid JSON: {e}")
+        print("    ❌ Invalid JSON: {e}")
         return False
     except Exception as e:
-        print(f"    ❌ Validation error: {e}")
+        print("    ❌ Validation error: {e}")
         return False
 
 
 def validate_with_city_registry(schema_file: Path, cities_dir: Path) -> bool:
     """Validate schema file can be loaded by CityRegistry."""
     if not CITY_REGISTRY_AVAILABLE:
-        print(f"    ⚠️  CityRegistry not available, skipping registry validation")
+        print("    ⚠️  CityRegistry not available, skipping registry validation")
         return True
 
     try:
@@ -279,14 +279,14 @@ def validate_with_city_registry(schema_file: Path, cities_dir: Path) -> bool:
         # Try to get city config
         config = registry.get_city_config(city_id)
         if config is None:
-            print(f"    ❌ CityRegistry failed to load configuration for {city_id}")
+            print("    ❌ CityRegistry failed to load configuration for {city_id}")
             return False
 
-        print(f"    ✅ CityRegistry successfully loaded {city_id}")
+        print("    ✅ CityRegistry successfully loaded {city_id}")
         return True
 
     except Exception as e:
-        print(f"    ❌ CityRegistry validation failed: {e}")
+        print("    ❌ CityRegistry validation failed: {e}")
         return False
 
 
@@ -313,9 +313,9 @@ def cleanup_duplicates(cities_dir: Path, keep_schema_files: bool = True):
                     filename.replace("us-", "").replace(".json", "").replace("-", "_")
                 )
                 possible_duplicates = [
-                    f"{city_name}.json",
-                    f"{city_name.replace('_', '')}.json",
-                    f"{city_name.split('_')[-1]}.json",
+                    "{city_name}.json",
+                    "{city_name.replace('_', '')}.json",
+                    "{city_name.split('_')[-1]}.json",
                 ]
                 for dup in possible_duplicates:
                     dup_path = cities_dir / dup
@@ -326,8 +326,8 @@ def cleanup_duplicates(cities_dir: Path, keep_schema_files: bool = True):
         if not filename.startswith("us-") and "_phase1" not in filename:
             # Try to find corresponding Schema 4.3.0 file
             possible_schema_names = [
-                f"us-{filename.replace('.json', '').replace('_', '-')}.json",
-                f"us-{filename.replace('.json', '').split('_')[-1]}.json",
+                "us-{filename.replace('.json', '').replace('_', '-')}.json",
+                "us-{filename.replace('.json', '').split('_')[-1]}.json",
             ]
 
             has_schema = False
@@ -343,9 +343,9 @@ def cleanup_duplicates(cities_dir: Path, keep_schema_files: bool = True):
     for filepath in files_to_remove:
         try:
             filepath.unlink()
-            print(f"  🗑️  Removed: {filepath.name}")
+            print("  🗑️  Removed: {filepath.name}")
         except Exception as e:
-            print(f"  ❌ Failed to remove {filepath.name}: {e}")
+            print("  ❌ Failed to remove {filepath.name}: {e}")
 
     return len(files_to_remove)
 
@@ -380,24 +380,32 @@ def main():
 
     args = parser.parse_args()
 
+    # Fix Unicode encoding on Windows
+    if sys.platform == "win32":
+        import io
+
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.buffer, encoding="utf-8", errors="replace"
+        )
+
     # Set up paths
     script_dir = Path(__file__).parent
     cities_dir = script_dir.parent / "cities"
 
     if not cities_dir.exists():
-        print(f"❌ Cities directory not found: {cities_dir}")
+        print("❌ Cities directory not found: {cities_dir}")
         sys.exit(1)
 
     print("=" * 70)
     print("BATCH PROCESS CITIES FOR SCHEMA 4.3.0")
     print("=" * 70)
-    print(f"Cities directory: {cities_dir}")
-    print(f"Total phase1 files: {len(list(cities_dir.glob('*_phase1.json')))}")
+    print("Cities directory: {cities_dir}")
+    print("Total phase1 files: {len(list(cities_dir.glob('*_phase1.json')))}")
     print()
 
     if args.cleanup_only:
         removed_count = cleanup_duplicates(cities_dir, keep_schema_files=True)
-        print(f"\n✅ Cleanup complete. Removed {removed_count} files.")
+        print("\n✅ Cleanup complete. Removed {removed_count} files.")
         return
 
     if args.validate_only:
@@ -410,7 +418,7 @@ def main():
 
         valid_count = 0
         for schema_file in schema_files:
-            print(f"\n📄 Validating: {schema_file.name}")
+            print("\n📄 Validating: {schema_file.name}")
             if validate_schema_file(schema_file):
                 if CITY_REGISTRY_AVAILABLE:
                     if validate_with_city_registry(schema_file, cities_dir):
@@ -419,7 +427,7 @@ def main():
                     valid_count += 1
 
         print(
-            f"\n✅ Validation complete. {valid_count}/{len(schema_files)} files valid."
+            "\n✅ Validation complete. {valid_count}/{len(schema_files)} files valid."
         )
         return
 
@@ -434,13 +442,13 @@ def main():
             try:
                 with open(phase1_file, "r", encoding="utf-8") as f:
                     json.load(f)
-                print(f"  ✅ Valid JSON: {phase1_file.name}")
+                print("  ✅ Valid JSON: {phase1_file.name}")
             except json.JSONDecodeError:
-                print(f"  🔧 Repairing: {phase1_file.name}")
+                print("  🔧 Repairing: {phase1_file.name}")
                 if repair_json_syntax(phase1_file):
                     repaired_count += 1
 
-        print(f"✅ Repaired {repaired_count} files")
+        print("✅ Repaired {repaired_count} files")
 
         if args.repair_only:
             return
@@ -453,14 +461,14 @@ def main():
     skipped_files = []
 
     for phase1_file in phase1_files:
-        print(f"\n📄 Processing: {phase1_file.name}")
+        print("\n📄 Processing: {phase1_file.name}")
 
         # Skip files that still have JSON errors
         try:
             with open(phase1_file, "r", encoding="utf-8") as f:
                 json.load(f)
         except json.JSONDecodeError as e:
-            print(f"  ❌ Skipping due to JSON error: {e}")
+            print("  ❌ Skipping due to JSON error: {e}")
             skipped_files.append(phase1_file.name)
             continue
 
@@ -470,10 +478,10 @@ def main():
             simplified_files.append(simplified_file)
 
     print(
-        f"\n✅ Extraction complete. {len(simplified_files)} files extracted, {len(skipped_files)} skipped"
+        "\n✅ Extraction complete. {len(simplified_files)} files extracted, {len(skipped_files)} skipped"
     )
     if skipped_files:
-        print(f"📝 Skipped files: {', '.join(skipped_files)}")
+        print("📝 Skipped files: {', '.join(skipped_files)}")
 
     # Step 3: Transform to Schema 4.3.0
     print("\n🔄 Step 3: Transforming simplified data to Schema 4.3.0...")
@@ -482,7 +490,7 @@ def main():
     failed_files = []
 
     for simplified_file in simplified_files:
-        print(f"\n📄 Transforming: {simplified_file.name}")
+        print("\n📄 Transforming: {simplified_file.name}")
 
         schema_file = transform_to_schema_4_3_0(simplified_file, cities_dir)
         if schema_file:
@@ -491,10 +499,10 @@ def main():
             failed_files.append(simplified_file.name)
 
     print(
-        f"\n✅ Transformation complete. {len(schema_files)} Schema 4.3.0 files created"
+        "\n✅ Transformation complete. {len(schema_files)} Schema 4.3.0 files created"
     )
     if failed_files:
-        print(f"📝 Failed transformations: {', '.join(failed_files)}")
+        print("📝 Failed transformations: {', '.join(failed_files)}")
 
     # Step 4: Validate with CityRegistry
     if CITY_REGISTRY_AVAILABLE and schema_files:
@@ -502,34 +510,34 @@ def main():
 
         registry_valid_count = 0
         for schema_file in schema_files:
-            print(f"\n📄 Validating: {schema_file.name}")
+            print("\n📄 Validating: {schema_file.name}")
             if validate_with_city_registry(schema_file, cities_dir):
                 registry_valid_count += 1
 
         print(
-            f"\n✅ Registry validation complete. {registry_valid_count}/{len(schema_files)} files load successfully"
+            "\n✅ Registry validation complete. {registry_valid_count}/{len(schema_files)} files load successfully"
         )
 
     # Step 5: Cleanup
     if not args.keep_intermediate:
         print("\n🧹 Step 5: Cleaning up intermediate files...")
         removed_count = cleanup_duplicates(cities_dir, keep_schema_files=True)
-        print(f"✅ Cleanup complete. Removed {removed_count} files")
+        print("✅ Cleanup complete. Removed {removed_count} files")
 
     # Summary
     print("\n" + "=" * 70)
     print("BATCH PROCESSING COMPLETE")
     print("=" * 70)
-    print(f"Total phase1 files processed: {len(phase1_files)}")
-    print(f"Simplified files created: {len(simplified_files)}")
-    print(f"Schema 4.3.0 files created: {len(schema_files)}")
-    print(f"Files skipped: {len(skipped_files)}")
-    print(f"Transformations failed: {len(failed_files)}")
+    print("Total phase1 files processed: {len(phase1_files)}")
+    print("Simplified files created: {len(simplified_files)}")
+    print("Schema 4.3.0 files created: {len(schema_files)}")
+    print("Files skipped: {len(skipped_files)}")
+    print("Transformations failed: {len(failed_files)}")
 
     if schema_files:
         print("\n📁 Generated Schema 4.3.0 files:")
         for schema_file in schema_files:
-            print(f"  • {schema_file.name}")
+            print("  • {schema_file.name}")
 
     # Check for missing cities
     expected_cities = [
@@ -548,13 +556,13 @@ def main():
 
     missing_cities = []
     for city in expected_cities:
-        schema_pattern = f"us-*{city}*.json"
+        schema_pattern = "us-*{city}*.json"
         matching_files = list(cities_dir.glob(schema_pattern))
         if not matching_files:
             missing_cities.append(city)
 
     if missing_cities:
-        print(f"\n⚠️  Missing Schema 4.3.0 files for: {', '.join(missing_cities)}")
+        print("\n⚠️  Missing Schema 4.3.0 files for: {', '.join(missing_cities)}")
 
     print("\n✅ READY FOR DATA COLLECTION")
     print(

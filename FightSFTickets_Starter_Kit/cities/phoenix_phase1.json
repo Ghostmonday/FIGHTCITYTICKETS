@@ -18,7 +18,7 @@
       {
         "section_id": "phoenix_municipal_court",
         "canonical_section_name": "Phoenix Municipal Court – Parking Violations",
-        "section_type": "municipal_court",
+        "section_type": "city_parking_authority",
         "authority_name": "Phoenix Municipal Court",
         "jurisdiction": "city",
         "abbrev": ["Phoenix Municipal Court", "PMC"],
@@ -32,7 +32,10 @@
           "citation_id_pattern": "^[0-9]{8}$",
           "pattern_confidence": "low",
           "examples": ["12345678", "87654321"],
-          "visual_markers": ["Notice of Violation (NOV) number on ticket", "City of Phoenix or Phoenix Municipal Court branding"],
+          "visual_markers": [
+            "Notice of Violation (NOV) number on ticket",
+            "City of Phoenix or Phoenix Municipal Court branding"
+          ],
           "notes": "City parking citations are printed on a Notice of Violation left on the windshield with payment envelope and instructions for entering a plea. Citation numbers appear as eight‑digit numbers; precise pattern is unconfirmed."
         },
 
@@ -97,7 +100,10 @@
           "citation_id_pattern": "^PPD[0-9]{6,8}$",
           "pattern_confidence": "low",
           "examples": ["PPD123456", "PPD9876543"],
-          "visual_markers": ["Phoenix Police Department badge or letterhead", "Issued by a police officer"],
+          "visual_markers": [
+            "Phoenix Police Department badge or letterhead",
+            "Issued by a police officer"
+          ],
           "notes": "Citation numbers may include the ‘PPD’ prefix followed by six to eight digits; this pattern is unconfirmed and requires verification."
         },
 
@@ -155,7 +161,10 @@
           "citation_id_pattern": "^(ASU)?[0-9]{6,7}$",
           "pattern_confidence": "low",
           "examples": ["ASU123456", "1234567"],
-          "visual_markers": ["ASU Parking & Transportation Services logo", "Parking Citation"],
+          "visual_markers": [
+            "ASU Parking & Transportation Services logo",
+            "Parking Citation"
+          ],
           "notes": "ASU citations may include the prefix ‘ASU’ followed by six or seven digits; pattern unconfirmed. Citations are issued on university property."
         },
 
@@ -220,7 +229,10 @@
           "citation_id_pattern": "^GCU[0-9]{5,7}$",
           "pattern_confidence": "low",
           "examples": ["GCU12345", "GCU7654321"],
-          "visual_markers": ["Grand Canyon University Public Safety", "Parking Citation"],
+          "visual_markers": [
+            "Grand Canyon University Public Safety",
+            "Parking Citation"
+          ],
           "notes": "GCU citations are typically printed with a GCU prefix and numeric identifier; pattern unconfirmed."
         },
 
@@ -279,7 +291,10 @@
           "citation_id_pattern": "^PHX[0-9]{5,7}$",
           "pattern_confidence": "low",
           "examples": ["PHX12345", "PHX765432"],
-          "visual_markers": ["Phoenix Sky Harbor International Airport", "Notice of Parking Violation"],
+          "visual_markers": [
+            "Phoenix Sky Harbor International Airport",
+            "Notice of Parking Violation"
+          ],
           "notes": "Airport citations may include a ‘PHX’ prefix followed by a numeric identifier; this pattern is speculative and requires confirmation."
         },
 

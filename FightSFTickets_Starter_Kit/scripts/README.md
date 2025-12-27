@@ -8,7 +8,7 @@ This directory contains all deployment and automation scripts for FightSFTickets
 
 ### 1. `deploy_hetzner.sh` ⭐ **RECOMMENDED**
 
-**Automated Hetzner Cloud Deployment**
+#### Automated Hetzner Cloud Deployment
 
 Fully automated deployment that provisions a server, installs all dependencies, and deploys your application in one command.
 
@@ -36,7 +36,7 @@ export DOMAIN="yourdomain.com"  # Optional
 
 ### 2. `update_deployment.sh`
 
-**Update Existing Deployment**
+#### Update Existing Deployment
 
 Updates code on an already-deployed server without reprovisioning infrastructure.
 
@@ -61,7 +61,7 @@ SERVER_IP=xxx.xxx.xxx.xxx ./scripts/update_deployment.sh
 
 ### 3. `deploy_prod.sh`
 
-**Original Production Deployment**
+#### Original Production Deployment
 
 Simple production deployment script for manual server setup.
 
@@ -355,11 +355,9 @@ echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
 
 ## 📚 Additional Documentation
 
-- **Quick Start:** `../DEPLOY_NOW.md`
 - **Complete Guide:** `../docs/DEPLOYMENT_GUIDE.md`
-- **Integration:** `../docs/SERVICE_INTEGRATION_CHECKLIST.md`
-- **Operations:** `../RUNBOOK.md`
-- **Summary:** `../DEPLOYMENT_SUMMARY.md`
+- **Operations:** `../docs/RUNBOOK.md`
+- **Documentation Index:** `../docs/README.md`
 
 ---
 

@@ -1,0 +1,451 @@
+{
+  "city_id": "us-tx-houston",
+  "city": "Houston",
+  "state": "TX",
+  "country": "US",
+
+  "official_confirmation": {
+    "primary_phone": {
+      "phone": "832-393-8690",
+      "alt_phone": "713-837-0311",
+      "department": "ParkHouston / Parking Customer Service",
+      "purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing."
+    }
+  },
+
+  "phase1_routing": {
+    "sections": [
+      {
+        "section_id": "parkhouston",
+        "canonical_section_name": "ParkHouston Parking Management Division",
+        "section_type": "city_parking_authority",
+        "authority_name": "City of Houston ParkHouston (Parking Management Division)",
+        "jurisdiction": "city",
+        "abbrev": ["ParkHouston"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Most City of Houston parking citations are issued and processed through ParkHouston, the city's Parking Management Division."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^(HX|P|V)[0-9]{6,8}$",
+          "pattern_confidence": "medium",
+          "examples": ["HX1234567", "P7654321", "V12345678"],
+          "visual_markers": ["City of Houston ParkHouston", "pink parking citation", "HX, P or V prefix near the citation number"],
+          "notes": "City citations often begin with prefixes HX, P or V as indicated on the ParkHouston payment site; numbers follow the prefix【222206061973774†L252-L257】."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "You may contest your citation online within seven days via the HoustonParking T2 portal or in person at the Parking Adjudication Office within 30 days; the city does not provide a mailing address for initial hearings【222206061973774†L252-L272】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1"],
+          "missing_reason": "ParkHouston allows online or in-person hearings; a mailing address for Phase‑1 appeals is not published and must be confirmed."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "832-393-8690",
+          "alt_phone": "713-837-0311",
+          "department": "ParkHouston / Parking Adjudication Office",
+          "purpose": "Confirm that there is no mailing address for ParkHouston Phase‑1 appeals and verify contest procedures."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "ParkHouston’s resolve a citation page provides contest timelines and contact details but does not list a mailing address【222206061973774†L252-L272】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "hpd",
+        "canonical_section_name": "Houston Police Department Parking Enforcement",
+        "section_type": "police_department",
+        "authority_name": "Houston Police Department",
+        "jurisdiction": "city",
+        "abbrev": ["HPD"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations that explicitly list the Houston Police Department as the issuing authority."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Z]{2}[0-9]{4,8}$",
+          "pattern_confidence": "low",
+          "examples": ["HPD123456", "HP1234567"],
+          "visual_markers": ["Houston Police Department badge", "HPD"],
+          "notes": "HPD-issued citations may include the department name and an officer’s badge or citation number; format is not formally published."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": false,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "HPD citations route to ParkHouston for contesting; HPD does not process appeals directly."
+        },
+
+        "appeal_mail_to": {
+          "status": "routes_elsewhere",
+          "routes_to_section_id": "parkhouston"
+        },
+
+        "routing_rule": "routes_to_section",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "832-393-8690",
+          "alt_phone": "713-837-0311",
+          "department": "ParkHouston / Parking Adjudication Office",
+          "purpose": "Confirm routing for HPD-issued parking citations and verify that appeals are handled by ParkHouston."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": null,
+          "verified_source_type": "phone_confirmation_required",
+          "verified_source_note": "Assumed routing to ParkHouston; must confirm with ParkHouston customer service.",
+          "verified_source_last_checked": null,
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "uh",
+        "canonical_section_name": "University of Houston Parking & Transportation Services",
+        "section_type": "campus",
+        "authority_name": "University of Houston",
+        "jurisdiction": "campus",
+        "abbrev": ["UH", "University of Houston"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Citations issued for parking violations on the University of Houston campuses."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{5,8}$",
+          "pattern_confidence": "low",
+          "examples": ["1234567", "7654321"],
+          "visual_markers": ["University of Houston Parking & Transportation", "UH Parking"],
+          "notes": "UH citations contain numeric citation numbers; appeals must be submitted through the myParking portal within 10 days【617789092808993†L176-L186】."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Appeals can only be filed online via the myParking account; they cannot be submitted by mail or by phone【617789092808993†L176-L186】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "The University of Houston requires all appeals to be submitted online; no mailing address for appeals is published【617789092808993†L176-L186】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "832-842-1097",
+          "alt_phone": null,
+          "department": "UH Parking & Transportation Services",
+          "purpose": "Confirm that there is no mailing address for UH parking citation appeals."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "UH appeals page states that appeals can only be done online and not by mail or phone【617789092808993†L176-L186】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "rice_university",
+        "canonical_section_name": "Rice University Police Department Parking Enforcement",
+        "section_type": "campus",
+        "authority_name": "Rice University",
+        "jurisdiction": "campus",
+        "abbrev": ["RUPD", "Rice University"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on Rice University campus for students, faculty, staff, visitors and outside-unregistered visitors."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{6,9}$",
+          "pattern_confidence": "low",
+          "examples": ["123456", "9876543"],
+          "visual_markers": ["Rice University Police Department", "RUPD", "Parking Citation"],
+          "notes": "Rice citations use numeric identifiers; appeals require a $10 deposit for visitors and are processed through an online portal【341288102620812†L118-L125】."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Appeals must be submitted through the online portal. A $10 appeal deposit is required; the deposit can be mailed or paid in person to the Rice University Police Department【341288102620812†L118-L125】."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Rice University Police Department",
+          "attention": "Parking Enforcement / Citation Appeals",
+          "address1": "6100 Main St. MS-551",
+          "address2": null,
+          "city": "Houston",
+          "state": "TX",
+          "zip": "77005",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "713-348-3956",
+          "alt_phone": null,
+          "department": "RUPD Parking Enforcement Office",
+          "purpose": "Confirm the mailing address for sending the appeal deposit."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "Rice University parking enforcement page lists the address for mailing appeal deposits and details of the appeal process【341288102620812†L118-L125】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "hcu",
+        "canonical_section_name": "Houston Christian University Police Department",
+        "section_type": "campus",
+        "authority_name": "Houston Christian University",
+        "jurisdiction": "campus",
+        "abbrev": ["HCU"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking and traffic citations issued on Houston Christian University property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{4,7}$",
+          "pattern_confidence": "low",
+          "examples": ["12345", "678901"],
+          "visual_markers": ["Houston Christian University Police Department", "HCU"],
+          "notes": "HCU citations are numeric; appeals must be filed by completing a written form obtained from the University Police Department within 10 working days【631378729922510†L293-L305】."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": false,
+          "in_person_allowed": true,
+          "preferred_method": "in_person",
+          "method_constraints": [],
+          "notes": "Appeal forms must be obtained and submitted at the HCU Police Department; no online or mail submissions are offered【631378729922510†L293-L305】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "zip"],
+          "missing_reason": "Appeal procedures require an in-person written form at the University Police Department; the university does not publish a mailing address for appeals【631378729922510†L293-L305】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "281-649-3000",
+          "alt_phone": null,
+          "department": "HCU Police Department",
+          "purpose": "Confirm whether appeals may be mailed and obtain mailing address if applicable."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "HCU traffic and parking page describes appeal procedures but does not list a mailing address【631378729922510†L293-L305】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "uhd",
+        "canonical_section_name": "University of Houston-Downtown Parking & Transportation Services",
+        "section_type": "campus",
+        "authority_name": "University of Houston-Downtown",
+        "jurisdiction": "campus",
+        "abbrev": ["UHD"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking violations issued on University of Houston-Downtown property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{5,9}$",
+          "pattern_confidence": "low",
+          "examples": ["123456", "987654321"],
+          "visual_markers": ["UHD Parking & Transportation"],
+          "notes": "UHD citations are numeric; appeals must be filed online via Manage My Account or in person within 10 days【776620137317759†L226-L233】."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "You can appeal a citation within 10 days online through the Manage My Account portal or in person at the Parking & Transportation Services office; mail appeals are not described【776620137317759†L226-L233】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "zip"],
+          "missing_reason": "UHD handles appeals online or in person; a mailing address for Phase‑1 appeals is not provided【776620137317759†L226-L233】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "713-221-8127",
+          "alt_phone": null,
+          "department": "UHD Parking & Transportation Services",
+          "purpose": "Confirm that there is no mailing address for UHD citation appeals."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "UHD resolution of citation page explains that appeals are made online or in person and does not provide a mailing address【776620137317759†L226-L233】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "uhcl",
+        "canonical_section_name": "University of Houston-Clear Lake Parking & Transportation",
+        "section_type": "campus",
+        "authority_name": "University of Houston-Clear Lake",
+        "jurisdiction": "campus",
+        "abbrev": ["UHCL"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking violations issued on University of Houston-Clear Lake property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{5,8}$",
+          "pattern_confidence": "low",
+          "examples": ["123456", "6543210"],
+          "visual_markers": ["UHCL Parking", "University of Houston-Clear Lake"],
+          "notes": "UHCL citation numbers are numeric; appeals must be submitted through the online Parking Portal within 14 days【229409297006850†L239-L245】."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Appeals must be submitted and received within 14 days through the UHCL Parking Portal; other methods are not accepted【229409297006850†L239-L245】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1"],
+          "missing_reason": "UHCL directs all appeals through its parking portal and does not publish a mailing address for Phase‑1 appeals【229409297006850†L239-L245】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "281-283-2277",
+          "alt_phone": null,
+          "department": "UHCL Parking and Transportation",
+          "purpose": "Confirm absence of a mailing address for appeals."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "UHCL citations and appeals page states appeals must be submitted through the parking portal within 14 days and provides contact information【229409297006850†L239-L245】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      }
+    ]
+  },
+
+  "qa": {
+    "has_sections": true,
+    "has_city_confirmation_phone": true,
+    "all_sections_have_valid_routing": true,
+
+    "blocking_issues": [
+      "ParkHouston does not publish a mailing address for Phase‑1 appeals; confirmation by phone is required."
+    ],
+    "known_gaps": [
+      "Houston Police Department routing to ParkHouston needs confirmation.",
+      "University of Houston, Houston Christian University, University of Houston-Downtown and UH-Clear Lake sections missing confirmed mailing addresses for appeals."
+    ]
+  }
+}

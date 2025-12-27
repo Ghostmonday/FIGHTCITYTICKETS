@@ -249,10 +249,10 @@ After SSL setup:
 
 | Service | URL | Purpose |
 |---------|-----|---------|
-| Frontend | https://yourdomain.com | Main application |
-| Backend API | https://yourdomain.com/api | REST API |
-| Health Check | https://yourdomain.com/health | Service status |
-| Stripe Webhook | https://yourdomain.com/api/webhooks/stripe | Payment events |
+| Frontend | <https://yourdomain.com> | Main application |
+| Backend API | <https://yourdomain.com/api> | REST API |
+| Health Check | <https://yourdomain.com/health> | Service status |
+| Stripe Webhook | <https://yourdomain.com/api/webhooks/stripe> | Payment events |
 
 ---
 

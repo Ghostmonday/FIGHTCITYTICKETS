@@ -1,0 +1,471 @@
+{
+  "city_id": "us-ca-los_angeles",
+  "city": "Los Angeles",
+  "state": "CA",
+  "country": "US",
+
+  "official_confirmation": {
+    "primary_phone": {
+      "phone": "866-561-9742",
+      "alt_phone": "800-637-0392",
+      "department": "Parking Violations Bureau / LA County Parking Enforcement",
+      "purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing."
+    }
+  },
+
+  "phase1_routing": {
+    "sections": [
+      {
+        "section_id": "ladot_pvb",
+        "canonical_section_name": "LADOT Parking Violations Bureau",
+        "section_type": "city_parking_authority",
+        "authority_name": "Los Angeles Department of Transportation Parking Violations Bureau",
+        "jurisdiction": "city",
+        "abbrev": ["LADOT", "PVB"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Most parking citations issued within the City of Los Angeles are processed through the LADOT Parking Violations Bureau."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9A-Z]{6,11}$",
+          "pattern_confidence": "low",
+          "examples": ["12345678901", "LA1234567"],
+          "visual_markers": ["City of Los Angeles", "Parking Violations Bureau", "LADOT logo"],
+          "notes": "Citation number appears on the ticket and online payment portal; may contain up to 11 alphanumeric characters."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Initial reviews may be requested by web, mail, phone or in-person; mailing address requires a letter explaining why the citation should be dismissed."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Parking Violations Bureau",
+          "attention": "Initial Review",
+          "address1": "P.O. Box 30420",
+          "address2": null,
+          "city": "Los Angeles",
+          "state": "CA",
+          "zip": "90030-0968",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "866-561-9742",
+          "alt_phone": "310-843-5936",
+          "department": "Parking Violations Bureau Customer Service",
+          "purpose": "Confirm this is the correct mailing address for your initial review request or to verify that your citation routes to LADOT."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "Mailing address and instructions confirmed on LADOT PVB correspondence and mail-in payment pages.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "lapd",
+        "canonical_section_name": "Los Angeles Police Department",
+        "section_type": "police_department",
+        "authority_name": "Los Angeles Police Department",
+        "jurisdiction": "city",
+        "abbrev": ["LAPD"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Citations issued by LAPD parking enforcement or officers may list the department but are processed through the LADOT Parking Violations Bureau."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^LAPD[0-9]{6,10}$",
+          "pattern_confidence": "low",
+          "examples": ["LAPD123456", "LAPD0987654"],
+          "visual_markers": ["LAPD badge", "Los Angeles Police Department"],
+          "notes": "Often handwritten or printed by LAPD officers; may route to LADOT for processing."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": false,
+          "in_person_allowed": false,
+          "preferred_method": "mail",
+          "method_constraints": [],
+          "notes": "Citations issued by LAPD must be appealed through the Parking Violations Bureau; LAPD does not accept direct appeals."
+        },
+
+        "appeal_mail_to": {
+          "status": "routes_elsewhere",
+          "routes_to_section_id": "ladot_pvb"
+        },
+
+        "routing_rule": "routes_to_section",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "866-561-9742",
+          "alt_phone": null,
+          "department": "Parking Violations Bureau",
+          "purpose": "Confirm that LAPD-issued parking citations route to the LADOT Parking Violations Bureau for initial review."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": null,
+          "verified_source_type": "phone_confirmation_required",
+          "verified_source_note": "Must confirm whether LAPD parking citations always route to LADOT PVB; official confirmation required.",
+          "verified_source_last_checked": null,
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "ucla",
+        "canonical_section_name": "UCLA Citation Review & Adjudication",
+        "section_type": "campus",
+        "authority_name": "University of California, Los Angeles Transportation Services",
+        "jurisdiction": "campus",
+        "abbrev": ["UCLA"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on the UCLA campus by UCLA Parking Services."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Za-z0-9]{5,8}$",
+          "pattern_confidence": "low",
+          "examples": ["UCLA1234", "1234567"],
+          "visual_markers": ["UCLA Transportation", "Citation Review & Adjudication"],
+          "notes": "Issued on UCLA property; citation includes campus-specific codes."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "All citation appeals must be completed online through pticket.ucla.edu; no mail or in-person option is available."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "zip"],
+          "missing_reason": "UCLA requires that all parking citation appeals be filed online; no mailing address is provided for initial review."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "310-825-2029",
+          "alt_phone": null,
+          "department": "UCLA Citation Review & Adjudication",
+          "purpose": "Confirm procedure for contesting UCLA parking citations and whether any mailing address exists."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "UCLA Transportation site states that all appeals must be submitted online; no mailing address listed.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "usc",
+        "canonical_section_name": "USC Transportation Citation Appeals",
+        "section_type": "campus",
+        "authority_name": "University of Southern California Transportation Services",
+        "jurisdiction": "campus",
+        "abbrev": ["USC"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Citations issued by USC Transportation on university property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{8,10}$",
+          "pattern_confidence": "low",
+          "examples": ["12345678", "1234567890"],
+          "visual_markers": ["USC Transportation", "Citation", "Parking"],
+          "notes": "Citation numbers can be looked up using your USCID or cell phone number."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "All citation appeals must be completed online via USC Transportation portal within 21 days."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "zip"],
+          "missing_reason": "USC Transportation requires appeals to be submitted online; no mailing address is provided for initial review."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "213-740-3575",
+          "alt_phone": null,
+          "department": "USC Transportation",
+          "purpose": "Confirm procedure for contesting USC parking citations and confirm no mail-in option."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "USC Transportation appeal page states all appeals must be completed online; contact details provided.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "cal_state_la",
+        "canonical_section_name": "Cal State LA Parking Services",
+        "section_type": "campus",
+        "authority_name": "California State University, Los Angeles",
+        "jurisdiction": "campus",
+        "abbrev": ["Cal State LA", "CSULA"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on the Cal State LA campus."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Za-z0-9]{5,8}$",
+          "pattern_confidence": "low",
+          "examples": ["CSULA123", "1234567"],
+          "visual_markers": ["Cal State LA Parking Services", "Parking Citation"],
+          "notes": "Citations display Cal State LA branding; number appears near the barcode."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Initial review requests can be submitted online via the AIMS portal or by mailing a contest form."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Cal State LA Parking Services",
+          "attention": "Parking Citation Service Center",
+          "address1": "5151 State University Drive, Public Safety Building",
+          "address2": null,
+          "city": "Los Angeles",
+          "state": "CA",
+          "zip": "90032",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "323-343-6118",
+          "alt_phone": "323-343-3594",
+          "department": "Cal State LA Parking Services",
+          "purpose": "Confirm mailing address for contesting Cal State LA parking citations."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "Cal State LA Parking citation information page lists mailing address for contest forms and online submission instructions.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "la_county_parking_enforcement",
+        "canonical_section_name": "LA County Parking Enforcement Detail",
+        "section_type": "county",
+        "authority_name": "Los Angeles County Parking Enforcement Detail",
+        "jurisdiction": "county",
+        "abbrev": ["LA County", "County of Los Angeles"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations issued in unincorporated areas of Los Angeles County or by County agencies, processed by LA County Parking Enforcement Detail."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{8,10}$",
+          "pattern_confidence": "low",
+          "examples": ["12345678", "87654321"],
+          "visual_markers": ["Los Angeles County", "Parking Enforcement Detail"],
+          "notes": "Citation numbers appear near the top of the notice; LA County citations may reference LASD (Los Angeles County Sheriff’s Department)."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": false,
+          "in_person_allowed": true,
+          "preferred_method": "mail",
+          "method_constraints": [],
+          "notes": "To contest a citation, you must write to the Parking Enforcement Detail or visit a Public Service Center."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "County of Los Angeles Parking Enforcement Detail",
+          "attention": null,
+          "address1": "P.O. Box 30629",
+          "address2": null,
+          "city": "Los Angeles",
+          "state": "CA",
+          "zip": "90030-0629",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "800-637-0392",
+          "alt_phone": null,
+          "department": "LA County Parking Enforcement Detail",
+          "purpose": "Confirm the mailing address and process for contesting LA County parking citations."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_pdf",
+          "verified_source_note": "PDF FAQ from LA County Parking Enforcement Detail lists mailing address for payments and contest requests.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": "2015-05-01",
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "metro_transit_court",
+        "canonical_section_name": "Metro Transit Court",
+        "section_type": "regional",
+        "authority_name": "Los Angeles County Metropolitan Transportation Authority (Metro) Transit Court",
+        "jurisdiction": "regional",
+        "abbrev": ["Metro", "LACMTA"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking and fare citations issued by Metro at transit stations or facilities."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[TP][0-9]{7,8}$",
+          "pattern_confidence": "low",
+          "examples": ["T1234567", "P7654321"],
+          "visual_markers": ["Metro Transit Court", "Citation with 'T' or 'P' prefix"],
+          "notes": "Citations include a leading 'T' or 'P' followed by digits; used for Metro transit or parking violations."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": ["Include the letter 'T' or 'P' when entering citation number online"],
+          "notes": "Online portal allows you to pay or contest citations; correspondence and initial review requests may be mailed."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Metro Transit Court",
+          "attention": null,
+          "address1": "P.O. Box 866015",
+          "address2": null,
+          "city": "Los Angeles",
+          "state": "CA",
+          "zip": "90086-6015",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "213-922-6878",
+          "alt_phone": "323-466-3876",
+          "department": "Metro Transit Court",
+          "purpose": "Confirm mailing address and procedures for contesting Metro parking or transit citations."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "news_article",
+          "verified_source_note": "Pasadena Now article reports Metro Transit Court address and indicates that correspondence may be sent there; official site not accessible.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": "2020-03-20",
+          "verified_source_publication_date": "2020-03-20",
+          "last_validated_by": "collector"
+        }
+      }
+    ]
+  },
+
+  "qa": {
+    "has_sections": true,
+    "has_city_confirmation_phone": true,
+    "all_sections_have_valid_routing": true,
+
+    "blocking_issues": [
+      "Need confirmation whether LAPD parking citations always route to LADOT PVB.",
+      "Metro Transit Court mailing address and procedures not confirmed via an official source."
+    ],
+    "known_gaps": [
+      "UCLA section missing confirmed mailing address for Phase-1 protests.",
+      "USC section missing confirmed mailing address for Phase-1 protests.",
+      "Citation patterns for LADOT, LA County, Metro and campus authorities are approximate and require verification."
+    ]
+  }
+}

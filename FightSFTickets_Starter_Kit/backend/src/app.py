@@ -1,5 +1,5 @@
 """
-Main FastAPI Application for FightSFTickets.com (Database-First Approach)
+Main FastAPI Application for FightCityTickets.com (Database-First Approach)
 
 This is the updated main application file that uses the database-first approach.
 All data is persisted in PostgreSQL before creating Stripe checkout sessions.
@@ -7,25 +7,47 @@ Only IDs are stored in Stripe metadata for webhook processing.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
+from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
+from .logging_config import setup_logging
+from .sentry_config import init_sentry
+from .middleware.request_id import RequestIDMiddleware, get_request_id
+from .middleware.rate_limit import (
+    get_rate_limiter,
+    _rate_limit_exceeded_handler,
+    RateLimitExceeded,
+)
+from .routes.admin import router as admin_router
 from .routes.checkout import router as checkout_router
 from .routes.health import router as health_router
 from .routes.statement import router as statement_router
+from .routes.status import router as status_router
 from .routes.tickets import router as tickets_router
 from .routes.webhooks import router as webhooks_router
 from .services.database import get_db_service
 
-# Set up logger
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+# Set up structured logging
+use_json_logging = os.getenv("JSON_LOGGING", "true").lower() == "true"
+log_file = os.getenv("LOG_FILE", "server.log")
+setup_logging(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    use_json=use_json_logging,
+    log_file=log_file if not use_json_logging else None  # JSON logs go to stdout
 )
 logger = logging.getLogger(__name__)
+
+# Initialize Sentry error tracking (if DSN is configured)
+sentry_enabled = init_sentry(environment=settings.app_env)
+if sentry_enabled:
+    logger.info("✅ Sentry error tracking initialized")
+else:
+    logger.info("ℹ️  Sentry not configured (set SENTRY_DSN to enable)")
 
 
 @asynccontextmanager
@@ -43,10 +65,10 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info("=" * 60)
-    logger.info("Starting FightSFTickets API (Database-First Approach)")
-    logger.info(f"Environment: {settings.app_env}")
-    logger.info(f"API URL: {settings.api_url}")
-    logger.info(f"App URL: {settings.app_url}")
+    logger.info("Starting FightCityTickets API (Database-First Approach)")
+    logger.info("Environment: {settings.app_env}")
+    logger.info("API URL: {settings.api_url}")
+    logger.info("App URL: {settings.app_url}")
     logger.info("=" * 60)
 
     try:
@@ -65,25 +87,25 @@ async def lifespan(app: FastAPI):
             logger.warning("API will start but database operations will fail")
 
     except Exception as e:
-        logger.error(f"❌ Startup error: {e}")
+        logger.error("❌ Startup error: {e}")
         # Continue startup - some features may work without database
 
     yield
 
     # Shutdown
-    logger.info("Shutting down FightSFTickets API")
+    logger.info("Shutting down FightCityTickets API")
     # Database connections are cleaned up automatically by SQLAlchemy
 
 
 # Create FastAPI app with lifespan
 app = FastAPI(
-    title="FightSFTickets API",
+    title="FightCityTickets API",
     description="""
     ## Database-First Parking Ticket Appeal System
 
-    This API handles the complete workflow for appealing San Francisco parking tickets:
+    This API handles the complete workflow for appealing parking tickets across multiple cities:
 
-    1. **Citation Validation** - Validate SFMTA citation numbers and deadlines
+    1. **Citation Validation** - Validate citation numbers and deadlines
     2. **Statement Refinement** - AI-assisted appeal letter writing (UPL-compliant)
     3. **Audio Transcription** - Convert voice memos to text for appeals
     4. **Checkout & Payment** - Database-first Stripe integration
@@ -99,16 +121,42 @@ app = FastAPI(
     """,
     version="1.0.0",
     contact={
-        "name": "FightSFTickets Support",
-        "url": "https://fightsftickets.com",
-        "email": "support@fightsftickets.com",
+        "name": "FightCityTickets Support",
+        "url": "https://fightcitytickets.com",
+        "email": "support@fightcitytickets.com",
     },
     license_info={
         "name": "Proprietary",
-        "url": "https://fightsftickets.com/terms",
+        "url": "https://fightcitytickets.com/terms",
     },
     lifespan=lifespan,
 )
+
+
+# ============================================
+# BACKLOG PRIORITY 1: Middleware Integration
+# ============================================
+
+# Request ID Middleware - adds unique ID to every request for tracking
+app.add_middleware(RequestIDMiddleware)
+
+# Rate Limiting - initialize limiter and exception handler
+# BACKLOG PRIORITY 1: Rate limiting middleware integration
+limiter_instance = get_rate_limiter()
+app.state.limiter = limiter_instance
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Share limiter instance with route modules
+# Rate limiting - share limiter with all route modules
+# Note: This must be called after routers are included
+def _share_limiter():
+    """Share limiter instance with route modules."""
+    from .routes import checkout, webhooks, admin, tickets, statement
+    checkout.limiter = limiter_instance
+    webhooks.limiter = limiter_instance
+    admin.limiter = limiter_instance
+    tickets.limiter = limiter_instance
+    statement.limiter = limiter_instance
 
 # Configure CORS
 app.add_middleware(
@@ -123,20 +171,30 @@ app.add_middleware(
         "Accept",
         "Origin",
         "Stripe-Signature",  # For webhook verification
+        "X-Request-ID",  # For request ID propagation
     ],
-    expose_headers=["Content-Disposition"],
+    expose_headers=["X-Request-ID", "Content-Disposition"],
     max_age=600,  # 10 minutes
 )
 
 # Include routers with updated database-first routes
+# NOTE: Nginx strips /api/ prefix, so routes mounted at /api/* should be registered without /api/
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(tickets_router, prefix="/tickets", tags=["tickets"])
-app.include_router(statement_router, prefix="/api/statement", tags=["statement"])
+# Statement router: nginx strips /api/, so mount at /statement (not /api/statement)
+app.include_router(statement_router, prefix="/statement", tags=["statement"])
 
 
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
-app.include_router(webhooks_router, prefix="/api/webhook", tags=["webhooks"])
+# Webhook router: nginx strips /api/, so mount at /webhook (not /api/webhook)
+app.include_router(webhooks_router, prefix="/webhook", tags=["webhooks"])
+app.include_router(status_router, prefix="/status", tags=["status"])
+app.include_router(admin_router, prefix="/admin", tags=["admin"])
+
+# Share limiter instance with route modules
+# BACKLOG PRIORITY 1: Rate limiting integration
+_share_limiter()
 
 
 @app.get("/")
@@ -147,7 +205,7 @@ async def root():
     Returns basic API information and links to documentation.
     """
     return {
-        "name": "FightSFTickets API",
+        "name": "FightCityTickets API",
         "version": "1.0.0",
         "description": "Database-first parking ticket appeal system for San Francisco",
         "environment": settings.app_env,
@@ -156,13 +214,13 @@ async def root():
         "webhook_approach": "Idempotent processing with database lookups",
         "documentation": "/docs",
         "health_check": "/health",
-        "endpoints": {
+            "endpoints": {
             "citation_validation": "/tickets/validate",
             "statement_refinement": "/api/statement/refine",
-            "audio_transcription": "/api/transcribe",
             "checkout": "/checkout/create-session",
-            "webhook": "/api/webhook/stripe",
+            "webhook": "/api/webhook/stripe",  # Public URL (nginx adds /api/ prefix)
         },
+        "note": "Audio transcription endpoint removed - not implemented",
         "compliance": {
             "upl": "UPL-compliant: Never provides legal advice",
             "data_persistence": "All data stored in database before payment",
@@ -172,7 +230,7 @@ async def root():
 
 
 @app.get("/status")
-async def status():
+async def status(request: Request):
     """
     Comprehensive status endpoint.
 
@@ -190,7 +248,7 @@ async def status():
 
         return {
             "status": "operational",
-            "timestamp": "2024-01-01T00:00:00Z",  # Would use actual timestamp in production
+            "timestamp": datetime.utcnow().isoformat() + "Z",
             "services": {
                 "database": {
                     "status": "connected" if db_healthy else "disconnected",
@@ -230,10 +288,12 @@ async def status():
         }
 
     except Exception as e:
+        logger.error("Status endpoint error: {e}")
         return {
             "status": "degraded",
             "error": str(e),
-            "timestamp": "2024-01-01T00:00:00Z",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "request_id": get_request_id(request),
         }
 
 
@@ -252,9 +312,12 @@ async def docs_redirect():
 
 # Error handlers
 @app.exception_handler(404)
-async def not_found_handler(request, exc):
+async def not_found_handler(request: Request, exc):
     """Custom 404 handler."""
     from fastapi.responses import JSONResponse
+
+    request_id = get_request_id(request)
+    logger.warning("404 Not Found [request_id={request_id}]: {request.url.path}")
 
     return JSONResponse(
         status_code=404,
@@ -262,6 +325,7 @@ async def not_found_handler(request, exc):
             "error": "Not Found",
             "message": "The requested resource was not found",
             "path": request.url.path,
+            "request_id": request_id,
             "suggestions": [
                 "Check the API documentation at /docs",
                 "Verify the endpoint URL",
@@ -272,14 +336,17 @@ async def not_found_handler(request, exc):
 
 
 @app.exception_handler(500)
-async def internal_error_handler(request, exc):
+async def internal_error_handler(request: Request, exc):
     """Custom 500 handler."""
     import traceback
 
     from fastapi.responses import JSONResponse
 
-    # Log the full error
-    logger.error(f"Internal server error: {exc}")
+    # Get request ID from request state using helper function
+    request_id = get_request_id(request)
+
+    # Log the full error with request ID
+    logger.error("Internal server error [request_id={request_id}]: {exc}")
     logger.error(traceback.format_exc())
 
     return JSONResponse(
@@ -287,8 +354,8 @@ async def internal_error_handler(request, exc):
         content={
             "error": "Internal Server Error",
             "message": "An unexpected error occurred",
-            "request_id": "N/A",  # Would use actual request ID in production
-            "support": "contact support@fightsftickets.com",
+            "request_id": request_id,
+            "support": "contact support@fightcitytickets.com",
         },
     )
 
@@ -298,12 +365,12 @@ if __name__ == "__main__":
     Run the application directly (for development).
 
     In production, use uvicorn or another ASGI server:
-    uvicorn app_fixed:app --host 0.0.0.0 --port 8000
+    uvicorn src.app:app --host 0.0.0.0 --port 8000
     """
     import uvicorn
 
     uvicorn.run(
-        "app_fixed:app",
+        "src.app:app",
         host=settings.backend_host,
         port=settings.backend_port,
         reload=settings.app_env == "dev",

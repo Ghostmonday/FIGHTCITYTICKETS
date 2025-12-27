@@ -1,0 +1,93 @@
+{
+  "city_id": "us-pa-philadelphia",
+  "name": "Philadelphia",
+  "jurisdiction": "city",
+  "citation_patterns": [
+    {
+      "regex": "^\\d{9}$",
+      "section_id": "philadelphia_baa",
+      "description": "Philadelphia parking citation format",
+      "example_numbers": [
+        "123456789",
+        "987654321"
+      ],
+      "visual_markers": [
+        "Philadelphia Parking Authority",
+        "Bureau of Administrative Adjudication",
+        "bar‑coded nine‑digit number"
+      ],
+      "notes": "Parking tickets issued in Philadelphia use a bar‑coded nine‑digit ticket number.",
+      "confidence_score": 0.9
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "Bureau of Administrative Adjudication",
+    "attention": "Hearing by Mail",
+    "address1": "48 N. 8th Street",
+    "city": "Philadelphia",
+    "state": "PA",
+    "zip": "19107-3117",
+    "country": "US"
+  },
+  "phone_confirmation_policy": {
+    "required": true,
+    "phone_format_regex": "^\\(?[0-9]{3}\\)?[-.\\s]?[0-9]{3}[-.\\s]?[0-9]{4}$",
+    "confirmation_message": "Call Parking Violations Branch / BAA to confirm the correct mailing address for appeals.",
+    "confirmation_deadline_hours": 24,
+    "phone_number_examples": [
+      "215-683-9580",
+      "1-888-591-3636"
+    ]
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "philadelphia_baa": {
+      "name": "Bureau of Administrative Adjudication",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Bureau of Administrative Adjudication",
+        "attention": "Hearing by Mail",
+        "address1": "48 N. 8th Street",
+        "city": "Philadelphia",
+        "state": "PA",
+        "zip": "19107-3117",
+        "country": "US"
+      },
+      "phone_confirmation_policy": {
+        "required": true,
+        "phone_format_regex": "^\\(?[0-9]{3}\\)?[-.\\s]?[0-9]{3}[-.\\s]?[0-9]{4}$",
+        "confirmation_message": "Call Parking Violations Branch / BAA to confirm the correct mailing address for appeals.",
+        "confirmation_deadline_hours": 24,
+        "phone_number_examples": [
+          "215-683-9580",
+          "1-888-591-3636"
+        ]
+      },
+      "routing_rule": "direct"
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2025-12-24",
+    "source": "official_webpage",
+    "confidence_score": 0.9,
+    "notes": "PPA dispute page and BAA contact page list the BAA mailing address and instructions for contesting tickets.",
+    "verified_by": "collector"
+  },
+  "timezone": "America/New_York",
+  "appeal_deadline_days": 21,
+  "online_appeal_available": true,
+  "_original_state": "PA",
+  "_original_country": "US",
+  "_original_official_confirmation": {
+    "phone": "1-888-591-3636",
+    "department": "Parking Violations Branch / Bureau of Administrative Adjudication",
+    "purpose": "Confirm Phase‑1 appeal mailing addresses and issuing authority routing for Philadelphia parking citations."
+  },
+  "_metadata": {
+    "transformed_at": "2025-12-25T03:35:52.521734",
+    "transformed_by": "transform_simplified_to_schema.py",
+    "source_format": "simplified_city_json",
+    "schema_version": "4.3.0"
+  }
+}

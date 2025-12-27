@@ -21,6 +21,31 @@ credentials/*.json
 credentials/*.key
 credentials/*.pem
 
+# DNS setup scripts with credentials (DO NOT COMMIT)
+scripts/setup_dns_namecheap.sh
+
+# Scripts with hardcoded credentials (now use env vars, but keep in gitignore for safety)
+scripts/check_server.py
+scripts/check_server.ps1
+scripts/check_deployed_code.py
+scripts/deploy_multi_city.py
+scripts/deploy_simple.py
+scripts/configure_dns_api.py
+scripts/diagnose_api_issue.py
+scripts/setup_dns_complete.py
+
+# Secrets files (NEVER COMMIT)
+secrets-to-remove.txt
+*secrets*.txt
+*credentials*.txt
+*api_key*.txt
+
+# Temporary files
+scripts/temp_ssh_key
+*.key
+*.pem
+*_ssh_key
+
 # OS
 .DS_Store
 Thumbs.db

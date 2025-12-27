@@ -25,11 +25,10 @@
     "department": "Parking Violations Bureau",
     "attention": "Initial Review",
     "address1": "P.O. Box 30420",
-    "city_id": "Los Angeles",
+    "city": "Los Angeles",
     "state": "CA",
     "zip": "90030-0968",
-    "country": "US",
-    "city": "Unknown City"
+    "country": "US"
   },
   "phone_confirmation_policy": {
     "required": true,
@@ -37,8 +36,8 @@
     "confirmation_message": "Call Parking Violations Bureau Customer Service to confirm the correct mailing address for appeals.",
     "confirmation_deadline_hours": 24,
     "phone_number_examples": [
-      "310-843-5936",
-      "866-561-9742"
+      "866-561-9742",
+      "310-843-5936"
     ]
   },
   "routing_rule": "direct",
@@ -50,11 +49,10 @@
         "department": "Parking Violations Bureau",
         "attention": "Initial Review",
         "address1": "P.O. Box 30420",
-        "city_id": "Los Angeles",
+        "city": "Los Angeles",
         "state": "CA",
         "zip": "90030-0968",
-        "country": "US",
-        "city": "Unknown City"
+        "country": "US"
       },
       "phone_confirmation_policy": {
         "required": true,
@@ -62,12 +60,11 @@
         "confirmation_message": "Call Parking Violations Bureau Customer Service to confirm the correct mailing address for appeals.",
         "confirmation_deadline_hours": 24,
         "phone_number_examples": [
-          "310-843-5936",
-          "866-561-9742"
+          "866-561-9742",
+          "310-843-5936"
         ]
       },
-      "routing_rule": "direct",
-      "section_id": "ladot_pvb"
+      "routing_rule": "direct"
     }
   },
   "verification_metadata": {
@@ -88,10 +85,9 @@
     "purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing."
   },
   "_metadata": {
-    "transformed_at": "2025-12-24T20:58:16.558566",
+    "transformed_at": "2025-12-25T03:35:52.387418",
     "transformed_by": "transform_simplified_to_schema.py",
     "source_format": "simplified_city_json",
     "schema_version": "4.3.0"
-  },
-  "online_appeal_url": null
+  }
 }

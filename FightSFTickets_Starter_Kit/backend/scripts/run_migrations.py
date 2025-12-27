@@ -35,10 +35,10 @@ sys.path.insert(0, str(backend_dir))
 
 def load_environment(env: str) -> None:
     """Load environment variables for the specified environment."""
-    env_file = backend_dir / f".env.{env}"
+    env_file = backend_dir / ".env.{env}"
 
     if env_file.exists():
-        print(f"Loading environment from: {env_file}")
+        print("Loading environment from: {env_file}")
         # Load environment variables from file
         with open(env_file, "r") as f:
             for line in f:
@@ -47,26 +47,26 @@ def load_environment(env: str) -> None:
                     key, value = line.split("=", 1)
                     os.environ[key.strip()] = value.strip()
     else:
-        print(f"Warning: Environment file {env_file} not found")
+        print("Warning: Environment file {env_file} not found")
         print("Using existing environment variables")
 
 
 def run_alembic_command(args: list) -> int:
     """Run an alembic command and return the exit code."""
     cmd = [sys.executable, "-m", "alembic"] + args
-    print(f"Running: {' '.join(cmd)}")
+    print("Running: {' '.join(cmd)}")
 
     try:
         result = subprocess.run(cmd, cwd=backend_dir, capture_output=True, text=True)
         print(result.stdout)
         if result.stderr:
-            print(f"Errors:\n{result.stderr}", file=sys.stderr)
+            print("Errors:\n{result.stderr}", file=sys.stderr)
         return result.returncode
     except FileNotFoundError:
         print("Error: alembic not found. Make sure it's installed.", file=sys.stderr)
         return 1
     except Exception as e:
-        print(f"Error running alembic: {e}", file=sys.stderr)
+        print("Error running alembic: {e}", file=sys.stderr)
         return 1
 
 

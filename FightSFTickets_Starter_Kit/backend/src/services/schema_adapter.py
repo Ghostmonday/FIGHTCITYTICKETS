@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 class AddressStatus(Enum):
@@ -104,6 +104,7 @@ class SchemaAdapter:
         "municipality": "jurisdiction",
         "location": "jurisdiction",
         # Citation patterns
+        "citation_pattern": "citation_patterns",  # Old format singular -> new format plural
         "patterns": "citation_patterns",
         "citation_regex": "regex",
         "regex_pattern": "regex",
@@ -196,7 +197,7 @@ class SchemaAdapter:
                 else:
                     warnings.extend(
                         [
-                            f"Validation issue (auto-fixed): {err}"
+                            "Validation issue (auto-fixed): {err}"
                             for err in validation_errors
                         ]
                     )
@@ -208,7 +209,7 @@ class SchemaAdapter:
                     # Re-validate after fixes
                     remaining_errors = self._validate_schema(transformed)
                     if remaining_errors:
-                        errors.extend([f"Unfixable: {err}" for err in remaining_errors])
+                        errors.extend(["Unfixable: {err}" for err in remaining_errors])
                         return TransformationResult(
                             success=False,
                             transformed_data={},
@@ -227,7 +228,7 @@ class SchemaAdapter:
             )
 
         except Exception as e:
-            errors.append(f"Transformation failed: {str(e)}")
+            errors.append("Transformation failed: {str(e)}")
             return TransformationResult(
                 success=False, transformed_data={}, warnings=warnings, errors=errors
             )
@@ -282,13 +283,46 @@ class SchemaAdapter:
             elif jurisdiction in ["federal", "national"]:
                 result["jurisdiction"] = "federal"
 
+        # Handle old format: authority field -> convert to section and extract section_id for citation patterns
+        authority_section_id = None
+        if "authority" in result and isinstance(result["authority"], dict):
+            authority = result["authority"]
+            authority_section_id = authority.get("section_id")
+
+            # Convert authority to a section if sections don't exist or don't have this section
+            if "sections" not in result:
+                result["sections"] = {}
+
+            if authority_section_id and authority_section_id not in result["sections"]:
+                # Create section from authority object
+                section_data = {
+                    "name": authority.get("name", authority.get("authority_name", authority_section_id.upper())),
+                    "routing_rule": "direct",
+                    "phone_confirmation_policy": {"required": False},
+                }
+                # Copy appeal_mail_address from top level if present
+                if "appeal_mail_address" in result:
+                    section_data["appeal_mail_address"] = result["appeal_mail_address"]
+
+                result["sections"][authority_section_id] = section_data
+                warnings.append(f"Authority: Converted authority object to section '{authority_section_id}'")
+
+            # Remove authority field as it's been converted
+            del result["authority"]
+
         # Transform citation patterns
-        if "citation_patterns" in result and isinstance(
-            result["citation_patterns"], list
-        ):
-            result["citation_patterns"] = self._transform_citation_patterns(
-                result["citation_patterns"], warnings
-            )
+        if "citation_patterns" in result:
+            # Handle old format: citation_pattern (singular object) -> citation_patterns (array)
+            if isinstance(result["citation_patterns"], dict):
+                # Old format has single citation_pattern object, convert to array
+                warnings.append("Citation pattern: Converting singular citation_pattern to citation_patterns array")
+                result["citation_patterns"] = [result["citation_patterns"]]
+
+            if isinstance(result["citation_patterns"], list):
+                # Pass authority_section_id to use as default for patterns missing section_id
+                result["citation_patterns"] = self._transform_citation_patterns(
+                    result["citation_patterns"], warnings, default_section_id=authority_section_id
+                )
 
         # Transform appeal mail address
         if "appeal_mail_address" in result:
@@ -315,7 +349,7 @@ class SchemaAdapter:
         return result
 
     def _transform_citation_patterns(
-        self, patterns: List[Any], warnings: List[str]
+        self, patterns: List[Any], warnings: List[str], default_section_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """Transform citation patterns to Schema 4.3.0 format."""
         transformed = []
@@ -323,16 +357,17 @@ class SchemaAdapter:
         for i, pattern in enumerate(patterns):
             if isinstance(pattern, str):
                 # Convert string pattern to dict
+                section_id = default_section_id if default_section_id else "default"
                 transformed.append(
                     {
                         "regex": pattern,
-                        "section_id": "default",
-                        "description": f"Citation pattern {i + 1}",
+                        "section_id": section_id,
+                        "description": "Citation pattern {i + 1}",
                         "example_numbers": [],
                     }
                 )
                 warnings.append(
-                    f"Pattern {i + 1}: Converted string pattern to dict with section_id='default'"
+                    "Pattern {i + 1}: Converted string pattern to dict with section_id='{section_id}'"
                 )
 
             elif isinstance(pattern, dict):
@@ -344,19 +379,20 @@ class SchemaAdapter:
                         pattern_dict["regex"] = pattern_dict.pop("pattern")
                     else:
                         warnings.append(
-                            f"Pattern {i + 1}: Missing regex, using default"
+                            "Pattern {i + 1}: Missing regex, using default"
                         )
                         pattern_dict["regex"] = "^[A-Z0-9]{6,12}$"
 
                 if "section_id" not in pattern_dict:
-                    pattern_dict["section_id"] = "default"
+                    # Use default_section_id from authority if available, otherwise "default"
+                    pattern_dict["section_id"] = default_section_id if default_section_id else "default"
                     warnings.append(
-                        f"Pattern {i + 1}: Missing section_id, using 'default'"
+                        "Pattern {i + 1}: Missing section_id, using '{pattern_dict['section_id']}'"
                     )
 
                 if "description" not in pattern_dict:
                     pattern_dict["description"] = (
-                        f"Citation pattern for {pattern_dict.get('section_id', 'unknown')}"
+                        "Citation pattern for {pattern_dict.get('section_id', 'unknown')}"
                     )
 
                 # Validate regex
@@ -364,7 +400,7 @@ class SchemaAdapter:
                     re.compile(pattern_dict["regex"])
                 except re.error as e:
                     warnings.append(
-                        f"Pattern {i + 1}: Invalid regex '{pattern_dict['regex']}': {e}"
+                        "Pattern {i + 1}: Invalid regex '{pattern_dict['regex']}': {e}"
                     )
                     # Use a safe default
                     pattern_dict["regex"] = "^[A-Z0-9]{6,12}$"
@@ -373,7 +409,7 @@ class SchemaAdapter:
 
             else:
                 warnings.append(
-                    f"Pattern {i + 1}: Invalid type {type(pattern).__name__}, skipping"
+                    "Pattern {i + 1}: Invalid type {type(pattern).__name__}, skipping"
                 )
 
         return transformed
@@ -417,16 +453,17 @@ class SchemaAdapter:
             elif status in ["missing", "none", "unknown"]:
                 address_dict["status"] = "missing"
             else:
-                warnings.append(f"Address: Unknown status '{status}', using 'missing'")
+                warnings.append("Address: Unknown status '{status}', using 'missing'")
                 address_dict["status"] = "missing"
 
             # Ensure required fields for COMPLETE status
             if address_dict["status"] == "complete":
                 required = ["address1", "city", "state", "zip", "country"]
                 for field in required:
-                    if field not in address_dict or not address_dict[field]:
+                    # Only set default if field is truly missing or empty, preserve existing values
+                    if field not in address_dict or (address_dict[field] is None or str(address_dict[field]).strip() == ""):
                         address_dict[field] = self._get_address_default(field)
-                        warnings.append(f"Address: Missing {field}, using default")
+                        warnings.append("Address: Missing {field}, using default")
 
                 # Optional fields
                 if "department" not in address_dict:
@@ -525,7 +562,7 @@ class SchemaAdapter:
                     "routing_rule": "direct",
                     "phone_confirmation_policy": {"required": False},
                 }
-                warnings.append(f"Section {section_id}: String converted to dict")
+                warnings.append("Section {section_id}: String converted to dict")
 
             elif isinstance(section_data, dict):
                 section_dict = section_data.copy()
@@ -537,7 +574,7 @@ class SchemaAdapter:
                 if "name" not in section_dict:
                     section_dict["name"] = section_id.upper()
                     warnings.append(
-                        f"Section {section_id}: Missing name, using section_id"
+                        "Section {section_id}: Missing name, using section_id"
                     )
 
                 # Ensure routing_rule
@@ -564,7 +601,7 @@ class SchemaAdapter:
 
             else:
                 warnings.append(
-                    f"Section {section_id}: Invalid type {type(section_data).__name__}, skipping"
+                    "Section {section_id}: Invalid type {type(section_data).__name__}, skipping"
                 )
 
         return transformed
@@ -573,6 +610,33 @@ class SchemaAdapter:
         """Transform verification metadata to Schema 4.3.0 format."""
         if isinstance(metadata, dict):
             metadata_dict = metadata.copy()
+
+            # Map old format fields to new format
+            # verified_at -> last_updated
+            if "verified_at" in metadata_dict and "last_updated" not in metadata_dict:
+                metadata_dict["last_updated"] = metadata_dict.pop("verified_at")
+            # last_checked -> last_updated (if verified_at not present)
+            elif "last_checked" in metadata_dict and "last_updated" not in metadata_dict:
+                metadata_dict["last_updated"] = metadata_dict.pop("last_checked")
+
+            # source_type -> source
+            if "source_type" in metadata_dict and "source" not in metadata_dict:
+                metadata_dict["source"] = metadata_dict.pop("source_type")
+
+            # source_note -> notes
+            if "source_note" in metadata_dict and "notes" not in metadata_dict:
+                metadata_dict["notes"] = metadata_dict.pop("source_note")
+
+            # last_validated_by -> verified_by
+            if "last_validated_by" in metadata_dict and "verified_by" not in metadata_dict:
+                metadata_dict["verified_by"] = metadata_dict.pop("last_validated_by")
+
+            # Remove unsupported fields (status, needs_confirmation, operational_ready, etc.)
+            unsupported_fields = ["status", "needs_confirmation", "operational_ready", "last_checked"]
+            for field in unsupported_fields:
+                if field in metadata_dict:
+                    del metadata_dict[field]
+                    warnings.append("Metadata: Removed unsupported field '{field}'")
 
             # Ensure required fields
             if "last_updated" not in metadata_dict:
@@ -605,7 +669,9 @@ class SchemaAdapter:
                 metadata_dict["confidence_score"] = 0.5
                 warnings.append("Metadata: Invalid confidence_score, using 0.5")
 
-            return metadata_dict
+            # Only return fields that VerificationMetadata accepts
+            allowed_fields = ["last_updated", "source", "confidence_score", "notes", "verified_by"]
+            return {k: v for k, v in metadata_dict.items() if k in allowed_fields}
 
         else:
             warnings.append("Metadata: Invalid format, creating default")
@@ -626,7 +692,7 @@ class SchemaAdapter:
         # Required top-level fields
         required_fields = [
             ("city_id", "unknown_city"),
-            ("name", "Unknown City"),
+            ("name", ""),
             ("jurisdiction", self.DEFAULT_JURISDICTION),
             ("citation_patterns", []),
             ("appeal_mail_address", {"status": "missing"}),
@@ -648,7 +714,7 @@ class SchemaAdapter:
         for field, default in required_fields:
             if field not in result:
                 result[field] = default
-                warnings.append(f"Missing required field '{field}', using default")
+                warnings.append("Missing required field '{field}', using default")
 
         # Optional fields with defaults
         optional_defaults = [
@@ -685,22 +751,22 @@ class SchemaAdapter:
                 not pattern.get("section_id")
                 or str(pattern["section_id"]).strip() == ""
             ):
-                errors.append(f"Citation pattern {i}: section_id is required")
+                errors.append("Citation pattern {i}: section_id is required")
 
             if pattern["section_id"] not in data.get("sections", {}):
                 errors.append(
-                    f"Citation pattern {i}: section_id '{pattern['section_id']}' not found in sections"
+                    "Citation pattern {i}: section_id '{pattern['section_id']}' not found in sections"
                 )
 
             # Validate regex
             if "regex" not in pattern:
-                errors.append(f"Citation pattern {i}: regex is required")
+                errors.append("Citation pattern {i}: regex is required")
             else:
                 try:
                     re.compile(pattern["regex"])
                 except re.error as e:
                     errors.append(
-                        f"Citation pattern {i}: Invalid regex '{pattern['regex']}': {e}"
+                        "Citation pattern {i}: Invalid regex '{pattern['regex']}': {e}"
                     )
 
         # Validate appeal mail address union rules
@@ -712,7 +778,7 @@ class SchemaAdapter:
             for field in required_fields:
                 if not address.get(field) or str(address[field]).strip() == "":
                     errors.append(
-                        f"Complete appeal mail address requires non-empty {field}"
+                        "Complete appeal mail address requires non-empty {field}"
                     )
 
         elif status == "routes_elsewhere":
@@ -720,7 +786,7 @@ class SchemaAdapter:
                 errors.append("routes_elsewhere status requires routes_to_section_id")
             elif address["routes_to_section_id"] not in data.get("sections", {}):
                 errors.append(
-                    f"routes_to_section_id '{address['routes_to_section_id']}' not found in sections"
+                    "routes_to_section_id '{address['routes_to_section_id']}' not found in sections"
                 )
 
         # Validate sections
@@ -729,11 +795,11 @@ class SchemaAdapter:
             if section.get("routing_rule") == "routes_to_section":
                 if "appeal_mail_address" not in section:
                     errors.append(
-                        f"Section {section_id}: ROUTES_TO_SECTION requires appeal_mail_address"
+                        "Section {section_id}: ROUTES_TO_SECTION requires appeal_mail_address"
                     )
                 elif section["appeal_mail_address"].get("status") == "missing":
                     errors.append(
-                        f"Section {section_id}: ROUTES_TO_SECTION cannot have MISSING appeal_mail_address"
+                        "Section {section_id}: ROUTES_TO_SECTION cannot have MISSING appeal_mail_address"
                     )
 
         # Validate phone confirmation policy
@@ -762,7 +828,7 @@ class SchemaAdapter:
 
         # Fix empty name
         if not result.get("name") or str(result["name"]).strip() == "":
-            result["name"] = "Unknown City"
+            result["name"] = ""
 
         # Fix missing citation patterns
         if not result.get("citation_patterns"):
@@ -858,7 +924,7 @@ class SchemaAdapter:
                 filtered_patterns.append(pattern)
             else:
                 warnings.append(
-                    f"Citation pattern references invalid section '{pattern.get('section_id')}', skipping"
+                    "Citation pattern references invalid section '{pattern.get('section_id')}', skipping"
                 )
 
         if filtered_patterns:
@@ -871,7 +937,7 @@ class SchemaAdapter:
                     {
                         "regex": "^[A-Z0-9]{6,12}$",
                         "section_id": first_section,
-                        "description": f"Default pattern for {first_section}",
+                        "description": "Default pattern for {first_section}",
                         "example_numbers": [],
                     }
                 ]
@@ -903,7 +969,7 @@ class SchemaAdapter:
         """Get default value for address field."""
         defaults = {
             "address1": "Unknown Street",
-            "city": "Unknown City",
+            "city": "Unknown",  # Changed from "" to "Unknown" to pass validation
             "state": "CA",
             "zip": "00000",
             "country": "USA",
@@ -946,7 +1012,7 @@ class SchemaAdapter:
                 success=False,
                 transformed_data={},
                 warnings=[],
-                errors=[f"File adaptation failed: {str(e)}"],
+                errors=["File adaptation failed: {str(e)}"],
             )
 
     def batch_adapt_directory(
@@ -970,7 +1036,7 @@ class SchemaAdapter:
                     success=False,
                     transformed_data={},
                     warnings=[],
-                    errors=[f"Input directory does not exist: {input_dir}"],
+                    errors=["Input directory does not exist: {input_dir}"],
                 )
             }
 
@@ -1042,23 +1108,23 @@ if __name__ == "__main__":
         )
 
         if args.verbose:
-            print(f"\nTransformation {'SUCCESS' if result.success else 'FAILED'}")
+            print("\nTransformation {'SUCCESS' if result.success else 'FAILED'}")
             if result.warnings:
-                print(f"\nWarnings ({len(result.warnings)}):")
+                print("\nWarnings ({len(result.warnings)}):")
                 for warning in result.warnings:
-                    print(f"  ⚠️  {warning}")
+                    print("  ⚠️  {warning}")
             if result.errors:
-                print(f"\nErrors ({len(result.errors)}):")
+                print("\nErrors ({len(result.errors)}):")
                 for error in result.errors:
-                    print(f"  ❌ {error}")
+                    print("  ❌ {error}")
             if result.success:
-                print(f"\nOutput saved to: {args.output or '(not saved)'}")
+                print("\nOutput saved to: {args.output or '(not saved)'}")
         else:
-            print(f"Success: {result.success}")
+            print("Success: {result.success}")
             if result.errors:
-                print(f"Errors: {len(result.errors)}")
+                print("Errors: {len(result.errors)}")
             if result.warnings:
-                print(f"Warnings: {len(result.warnings)}")
+                print("Warnings: {len(result.warnings)}")
 
     elif input_path.is_dir():
         # Directory batch adaptation
@@ -1068,7 +1134,7 @@ if __name__ == "__main__":
         success_count = sum(1 for r in results.values() if r.success)
         total_count = len(results)
 
-        print(f"\nBatch Adaptation Complete")
+        print("\nBatch Adaptation Complete")
         print(f"Processed: {total_count} files")
         print(f"Success: {success_count}")
         print(f"Failed: {total_count - success_count}")
@@ -1077,12 +1143,12 @@ if __name__ == "__main__":
         if args.verbose:
             for filename, result in results.items():
                 status = "✅" if result.success else "❌"
-                print(f"\n{status} {filename}")
+                print("\n{status} {filename}")
                 if result.warnings:
-                    print(f"  Warnings: {len(result.warnings)}")
+                    print("  Warnings: {len(result.warnings)}")
                 if result.errors:
-                    print(f"  Errors: {len(result.errors)}")
+                    print("  Errors: {len(result.errors)}")
 
     else:
-        print(f"Error: Input path does not exist: {args.input}")
+        print("Error: Input path does not exist: {args.input}")
         exit(1)

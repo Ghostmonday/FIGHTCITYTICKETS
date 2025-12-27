@@ -171,7 +171,7 @@ def extract_simplified_city_data(phase1_data: Dict[str, Any]) -> SimplifiedCityD
     city_section = find_city_parking_authority(sections)
 
     if not city_section:
-        raise ValueError(f"No city_parking_authority found in {city_id}")
+        raise ValueError("No city_parking_authority found in {city_id}")
 
     # Extract authority info
     authority = SimplifiedCityAuthority(
@@ -188,7 +188,7 @@ def extract_simplified_city_data(phase1_data: Dict[str, Any]) -> SimplifiedCityD
     how_to_recognize = city_section.get("how_to_recognize", {})
     citation_pattern = SimplifiedCitationPattern(
         regex=how_to_recognize.get("citation_id_pattern", ""),
-        description=f"{name} parking citation format",
+        description="{name} parking citation format",
         example_numbers=how_to_recognize.get("examples"),
         confidence=how_to_recognize.get("pattern_confidence", "low"),
         visual_markers=how_to_recognize.get("visual_markers"),
@@ -350,7 +350,7 @@ def save_simplified_json(simplified_data: SimplifiedCityData, output_path: str):
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data_dict, f, indent=2, ensure_ascii=False)
 
-    print(f"Saved simplified city data to: {output_path}")
+    print("Saved simplified city data to: {output_path}")
 
 
 def main():
@@ -388,26 +388,26 @@ def main():
             # Generate output filename from city_id
             city_id = simplified_data.city_id
             city_name = city_id.split("-")[-1].replace("_", "")
-            output_path = f"{city_name}.json"
+            output_path = "{city_name}.json"
 
         # Save simplified data
         save_simplified_json(simplified_data, output_path)
 
         # Print summary
-        print(f"\nExtracted city: {simplified_data.name}, {simplified_data.state}")
-        print(f"Authority: {simplified_data.authority.name}")
-        print(f"Appeal address status: {simplified_data.appeal_address.status}")
-        print(f"Mail allowed: {simplified_data.submission_methods.mail_allowed}")
-        print(f"Verification status: {simplified_data.verification.status}")
+        print("\nExtracted city: {simplified_data.name}, {simplified_data.state}")
+        print("Authority: {simplified_data.authority.name}")
+        print("Appeal address status: {simplified_data.appeal_address.status}")
+        print("Mail allowed: {simplified_data.submission_methods.mail_allowed}")
+        print("Verification status: {simplified_data.verification.status}")
 
     except json.JSONDecodeError as e:
-        print(f"Error parsing JSON file: {e}")
+        print("Error parsing JSON file: {e}")
         sys.exit(1)
     except ValueError as e:
-        print(f"Error extracting city data: {e}")
+        print("Error extracting city data: {e}")
         sys.exit(1)
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print("Unexpected error: {e}")
         sys.exit(1)
 
 

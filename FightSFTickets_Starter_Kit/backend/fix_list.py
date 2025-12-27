@@ -1,4 +1,3 @@
-import sys
 with open('tests/test_citation_validation.py', 'r', encoding='utf-8') as f:
     lines = f.readlines()
 # replace lines 189-196 (0-indexed 188-195)

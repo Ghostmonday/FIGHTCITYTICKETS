@@ -71,7 +71,7 @@ const defaultState: AppealState = {
 
 const AppealContext = createContext<AppealContextType | undefined>(undefined);
 
-const STORAGE_KEY = "fightsftickets_appeal_state";
+const STORAGE_KEY = "fightcitytickets_appeal_state";
 
 export function AppealProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppealState>(defaultState);

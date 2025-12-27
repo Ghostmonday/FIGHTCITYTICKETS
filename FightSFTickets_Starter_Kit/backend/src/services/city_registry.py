@@ -11,7 +11,6 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -26,6 +25,16 @@ class AppealMailStatus(str, Enum):
     COMPLETE = "complete"
     ROUTES_ELSEWHERE = "routes_elsewhere"
     MISSING = "missing"
+
+
+# Import SchemaAdapter for transforming non-Schema 4.3.0 files
+try:
+    from .schema_adapter import SchemaAdapter
+
+    SCHEMA_ADAPTER_AVAILABLE = True
+except ImportError:
+    SCHEMA_ADAPTER_AVAILABLE = False
+    logger.warning("SchemaAdapter not available - will only load Schema 4.3.0 files")
 
 
 class RoutingRule(str, Enum):
@@ -157,12 +166,12 @@ class PhoneConfirmationPolicy:
             if pattern.match(phone_number):
                 return True, None
             else:
-                error = f"Phone number does not match required format"
+                error = "Phone number does not match required format"
                 if self.phone_number_examples:
                     error += f". Examples: {', '.join(self.phone_number_examples)}"
                 return False, error
         except re.error:
-            logger.warning(f"Invalid regex pattern: {self.phone_format_regex}")
+            logger.warning("Invalid regex pattern: {self.phone_format_regex}")
             return True, None  # Don't fail validation due to bad regex
 
     def to_dict(self) -> Dict[str, Any]:
@@ -194,7 +203,7 @@ class CitationPattern:
         try:
             self.compiled_regex = re.compile(self.regex)
         except re.error as e:
-            raise ValueError(f"Invalid regex pattern '{self.regex}': {e}")
+            raise ValueError(f"Invalid regex pattern '{self.regex}': {e}") from e
 
     def matches(self, citation_number: str) -> bool:
         """Check if citation number matches this pattern."""
@@ -318,46 +327,137 @@ class CityRegistry:
     def load_cities(self) -> None:
         """Load all city configurations from JSON files."""
         if not self.cities_dir.exists():
-            logger.warning(f"Cities directory not found: {self.cities_dir}")
+            logger.warning("Cities directory not found: {self.cities_dir}")
             return
 
-        json_files = list(self.cities_dir.glob("us-*.json"))
+        # Load all JSON files, not just us-*.json, but skip phase1 files
+        json_files = [
+            f
+            for f in self.cities_dir.glob("*.json")
+            if not f.name.endswith("_phase1.json")
+        ]
         if not json_files:
-            logger.warning(f"No JSON files found in {self.cities_dir}")
+            logger.warning("No JSON files found in {self.cities_dir}")
             return
+
+        logger.info("Found {len(json_files)} JSON files (excluding phase1 files)")
 
         loaded = 0
         errors = 0
+        skipped = 0
+        schema_adapter = None
+
+        if SCHEMA_ADAPTER_AVAILABLE:
+            schema_adapter = SchemaAdapter()
+            logger.info(
+                "SchemaAdapter available for transforming non-Schema 4.3.0 files"
+            )
+        else:
+            logger.warning(
+                "SchemaAdapter not available - will only load Schema 4.3.0 files"
+            )
+
+        # Track loaded city_ids to avoid duplicates
+        loaded_city_ids = set()
 
         for json_file in json_files:
             try:
-                city_id = json_file.stem
-                config = self._load_city_config(json_file)
+                # Check if file is already in Schema 4.3.0 format (us- prefix)
+                is_schema_43 = json_file.name.startswith("us-")
+
+                with open(json_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+
+                # Get city_id from data (not filename)
+                city_id = data.get("city_id", json_file.stem)
+
+                # Check for duplicates
+                if city_id in loaded_city_ids:
+                    logger.info(
+                        "Skipping duplicate city_id: {city_id} from {json_file.name}"
+                    )
+                    skipped += 1
+                    continue
+
+                # Determine if file needs transformation
+                needs_transformation = False
+                if not is_schema_43 and (
+                    "citation_patterns" not in data or "appeal_mail_address" not in data
+                ):
+                    # Likely not Schema 4.3.0 format
+                    needs_transformation = True
+                    logger.info(
+                        "File {json_file.name} appears to need Schema 4.3.0 transformation"
+                    )
+
+                if needs_transformation and schema_adapter:
+                    # Transform to Schema 4.3.0
+                    try:
+                        result = schema_adapter.adapt_city_file(
+                            json_file, None
+                        )  # Transform in memory
+                        if result.success:
+                            data = result.transformed_data
+                            # Update city_id from transformed data
+                            city_id = data.get("city_id", city_id)
+                            logger.info(
+                                "Successfully transformed {json_file.name} to Schema 4.3.0, city_id: {city_id}"
+                            )
+                        else:
+                            error_msg = "; ".join(result.errors) if result.errors else "Unknown transformation error"
+                            logger.error(
+                                "Failed to transform {json_file.name}: {error_msg}"
+                            )
+                            errors += 1
+                            continue
+                    except Exception as e:
+                        logger.error(
+                            "Schema transformation failed for {json_file.name}: {e}"
+                        )
+                        errors += 1
+                        continue
+                elif needs_transformation and not schema_adapter:
+                    logger.warning(
+                        "Skipping {json_file.name} - needs Schema 4.3.0 transformation but adapter unavailable"
+                    )
+                    skipped += 1
+                    continue
+
+                # Load configuration from (potentially transformed) data
+                config = self._load_city_config_from_data(data, json_file)
                 validation_errors = self._validate_city_config(config)
 
                 if validation_errors:
                     logger.error(
-                        f"Validation errors for {city_id}: {validation_errors}"
+                        "Validation errors for {city_id}: {validation_errors}"
                     )
                     errors += 1
                     continue
 
                 self.city_configs[city_id] = config
                 self._build_citation_cache_for_city(city_id, config)
+                loaded_city_ids.add(city_id)
                 loaded += 1
-                logger.info(f"Loaded city configuration: {city_id}")
+                logger.info("Loaded city configuration: {city_id}")
 
             except Exception as e:
-                logger.error(f"Failed to load {json_file}: {e}")
+                logger.error("Failed to load {json_file}: {e}")
                 errors += 1
 
-        logger.info(f"Loaded {loaded} city configurations, {errors} errors")
+        logger.info(
+            "Loaded {loaded} city configurations, {errors} errors, {skipped} skipped"
+        )
 
     def _load_city_config(self, json_file: Path) -> CityConfiguration:
         """Load a single city configuration from JSON file."""
         with open(json_file, "r", encoding="utf-8") as f:
             data = json.load(f)
+        return self._load_city_config_from_data(data, json_file)
 
+    def _load_city_config_from_data(
+        self, data: Dict[str, Any], json_file: Optional[Path] = None
+    ) -> CityConfiguration:
+        """Load city configuration from already parsed JSON data."""
         # Build citation patterns
         citation_patterns = []
         for pattern_data in data.get("citation_patterns", []):
@@ -438,10 +538,10 @@ class CityRegistry:
 
         for i, pattern in enumerate(config.citation_patterns):
             if not pattern.section_id or pattern.section_id.strip() == "":
-                errors.append(f"Citation pattern {i}: section_id is required")
+                errors.append("Citation pattern {i}: section_id is required")
             if pattern.section_id not in config.sections:
                 errors.append(
-                    f"Citation pattern {i}: section_id '{pattern.section_id}' not found in sections"
+                    "Citation pattern {i}: section_id '{pattern.section_id}' not found in sections"
                 )
 
         # Validate appeal mail address union rules
@@ -458,7 +558,7 @@ class CityRegistry:
                 field_value = getattr(config.appeal_mail_address, field_name)
                 if not field_value or field_value.strip() == "":
                     errors.append(
-                        f"Complete appeal mail address requires non-empty {field_name}"
+                        "Complete appeal mail address requires non-empty {field_name}"
                     )
 
         elif config.appeal_mail_address.status == AppealMailStatus.ROUTES_ELSEWHERE:
@@ -466,7 +566,7 @@ class CityRegistry:
                 errors.append("routes_elsewhere status requires routes_to_section_id")
             elif config.appeal_mail_address.routes_to_section_id not in config.sections:
                 errors.append(
-                    f"routes_to_section_id '{config.appeal_mail_address.routes_to_section_id}' not found in sections"
+                    "routes_to_section_id '{config.appeal_mail_address.routes_to_section_id}' not found in sections"
                 )
 
         # Validate sections
@@ -474,11 +574,11 @@ class CityRegistry:
             if section.routing_rule == RoutingRule.ROUTES_TO_SECTION:
                 if not section.appeal_mail_address:
                     errors.append(
-                        f"Section {section_id}: ROUTES_TO_SECTION requires appeal_mail_address"
+                        "Section {section_id}: ROUTES_TO_SECTION requires appeal_mail_address"
                     )
                 elif section.appeal_mail_address.status == AppealMailStatus.MISSING:
                     errors.append(
-                        f"Section {section_id}: ROUTES_TO_SECTION cannot have MISSING appeal_mail_address"
+                        "Section {section_id}: ROUTES_TO_SECTION cannot have MISSING appeal_mail_address"
                     )
                 elif (
                     section.appeal_mail_address.status
@@ -486,14 +586,14 @@ class CityRegistry:
                 ):
                     if not section.appeal_mail_address.routes_to_section_id:
                         errors.append(
-                            f"Section {section_id}: ROUTES_ELSEWHERE status requires routes_to_section_id"
+                            "Section {section_id}: ROUTES_ELSEWHERE status requires routes_to_section_id"
                         )
                     elif (
                         section.appeal_mail_address.routes_to_section_id
                         not in config.sections
                     ):
                         errors.append(
-                            f"Section {section_id}: routes_to_section_id '{section.appeal_mail_address.routes_to_section_id}' not found in sections"
+                            "Section {section_id}: routes_to_section_id '{section.appeal_mail_address.routes_to_section_id}' not found in sections"
                         )
                     else:
                         # Check that the target section has a valid address (not MISSING)
@@ -502,14 +602,14 @@ class CityRegistry:
                         ]
                         if not target_section.appeal_mail_address:
                             errors.append(
-                                f"Section {section_id}: target section '{section.appeal_mail_address.routes_to_section_id}' has no appeal_mail_address"
+                                "Section {section_id}: target section '{section.appeal_mail_address.routes_to_section_id}' has no appeal_mail_address"
                             )
                         elif (
                             target_section.appeal_mail_address.status
                             == AppealMailStatus.MISSING
                         ):
                             errors.append(
-                                f"Section {section_id}: target section '{section.appeal_mail_address.routes_to_section_id}' has MISSING appeal_mail_address"
+                                "Section {section_id}: target section '{section.appeal_mail_address.routes_to_section_id}' has MISSING appeal_mail_address"
                             )
                 # COMPLETE status is always valid for ROUTES_TO_SECTION
 
@@ -536,12 +636,15 @@ class CityRegistry:
                 for example in pattern.example_numbers:
                     self._citation_cache[example] = (city_id, pattern.section_id)
 
-    def match_citation(self, citation_number: str) -> Optional[Tuple[str, str]]:
+    def match_citation(
+        self, citation_number: str, city_id_hint: Optional[str] = None
+    ) -> Optional[Tuple[str, str]]:
         """
         Match citation number to city and section.
 
         Args:
             citation_number: Citation number to match
+            city_id_hint: Optional hint to check specific city first
 
         Returns:
             Tuple of (city_id, section_id) or None if no match
@@ -554,8 +657,20 @@ class CityRegistry:
         if cleaned in self._citation_cache:
             return self._citation_cache[cleaned]
 
+        # If city_id_hint is provided, check that city first
+        if city_id_hint and city_id_hint in self.city_configs:
+            config = self.city_configs[city_id_hint]
+            for pattern in config.citation_patterns:
+                if pattern.matches(cleaned):
+                    # Cache for future lookups
+                    self._citation_cache[cleaned] = (city_id_hint, pattern.section_id)
+                    return city_id_hint, pattern.section_id
+
         # Search through all cities
         for city_id, config in self.city_configs.items():
+            # Skip if we already checked this city with the hint
+            if city_id_hint and city_id == city_id_hint:
+                continue
             for pattern in config.citation_patterns:
                 if pattern.matches(cleaned):
                     # Cache for future lookups
@@ -689,7 +804,7 @@ if __name__ == "__main__":
 
     # Create test SF configuration (would normally come from JSON)
     sf_config = CityConfiguration(
-        city_id="sf",
+        city_id="s",
         name="San Francisco",
         jurisdiction=Jurisdiction.CITY,
         citation_patterns=[
@@ -723,26 +838,26 @@ if __name__ == "__main__":
     )
 
     # Manually add for testing
-    registry.city_configs["sf"] = sf_config
-    registry._build_citation_cache_for_city("sf", sf_config)
+    registry.city_configs["s"] = sf_config
+    registry._build_citation_cache_for_city("s", sf_config)
 
     # Test matching
     match = registry.match_citation("912345678")
     if match:
         city_id, section_id = match
-        print(f"✅ Matched citation: city={city_id}, section={section_id}")
+        print("✅ Matched citation: city={city_id}, section={section_id}")
 
         # Test address retrieval
         address = registry.get_mail_address(city_id, section_id)
         if address:
-            print(f"📫 Address status: {address.status.value}")
+            print("📫 Address status: {address.status.value}")
 
         # Test phone validation
         policy = registry.get_phone_confirmation_policy(city_id, section_id)
         if policy:
-            print(f"📞 Phone confirmation required: {policy.required}")
+            print("📞 Phone confirmation required: {policy.required}")
 
     else:
         print("❌ No match found")
 
-    print(f"Loaded cities: {len(registry.city_configs)}")
+    print("Loaded cities: {len(registry.city_configs)}")

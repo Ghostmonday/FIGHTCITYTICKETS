@@ -12,7 +12,6 @@ from sqlalchemy import (
     Column,
     DateTime,
     Enum,
-    Float,
     ForeignKey,
     Index,
     Integer,
@@ -76,7 +75,7 @@ class Intake(Base):
     signature_data = Column(Text, nullable=True)  # Base64 signature image
 
     # Metadata
-    city = Column(String(50), default="sf")  # For future expansion to other cities
+    city = Column(String(50), default="s")  # For future expansion to other cities
     status = Column(String(20), default="draft")  # draft, submitted, paid, fulfilled
     created_at = Column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

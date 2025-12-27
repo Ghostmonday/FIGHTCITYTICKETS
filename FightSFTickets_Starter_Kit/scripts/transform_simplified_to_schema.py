@@ -76,7 +76,7 @@ def transform_simplified_to_schema(simplified_data: Dict[str, Any]) -> Dict[str,
                 "regex": citation_pattern.get("regex", ""),
                 "section_id": section_id,
                 "description": citation_pattern.get(
-                    "description", f"{name} parking citation format"
+                    "description", "{name} parking citation format"
                 ),
                 "example_numbers": citation_pattern.get("example_numbers", []),
                 "visual_markers": citation_pattern.get("visual_markers", []),
@@ -95,7 +95,7 @@ def transform_simplified_to_schema(simplified_data: Dict[str, Any]) -> Dict[str,
         "attention": appeal_address.get("attention", ""),
         "address1": appeal_address.get("address1", ""),
         "address2": appeal_address.get("address2", ""),
-        "city": appeal_address.get("city", ""),
+        "city": appeal_address.get("city", simplified_data.get("name", "")),
         "state": appeal_address.get("state", state),
         "zip": appeal_address.get("zip", ""),
         "country": appeal_address.get("country", country),
@@ -131,13 +131,13 @@ def transform_simplified_to_schema(simplified_data: Dict[str, Any]) -> Dict[str,
 
     if department:
         confirmation_message = (
-            f"Call {department} to confirm the correct mailing address for appeals."
+            "Call {department} to confirm the correct mailing address for appeals."
         )
     elif purpose:
         # Truncate purpose if too long
         if len(purpose) > 120:
             purpose = purpose[:117] + "..."
-        confirmation_message = f"Call to confirm: {purpose}"
+        confirmation_message = "Call to confirm: {purpose}"
 
     # Build phone_confirmation_policy with EXACTLY the fields CityRegistry expects
     phone_confirmation_policy = {
@@ -441,32 +441,32 @@ def validate_with_schema_adapter(schema_data: Dict[str, Any]) -> Dict[str, Any]:
 
         if result.success:
             if result.warnings:
-                print(f"  [WARNING] Validation warnings ({len(result.warnings)}):")
+                print("  [WARNING] Validation warnings ({len(result.warnings)}):")
                 for warning in result.warnings[:5]:  # Show first 5 warnings
-                    print(f"    - {warning}")
+                    print("    - {warning}")
                 if len(result.warnings) > 5:
-                    print(f"    ... and {len(result.warnings) - 5} more warnings")
+                    print("    ... and {len(result.warnings) - 5} more warnings")
 
             if result.errors:
-                print(f"  [ERROR] Validation errors ({len(result.errors)}):")
+                print("  [ERROR] Validation errors ({len(result.errors)}):")
                 for error in result.errors:
-                    print(f"    - {error}")
+                    print("    - {error}")
                 print(
                     "  [WARNING] Returning original (unvalidated) schema due to errors"
                 )
                 return schema_data
 
-            print(f"  [OK] Schema validation passed")
+            print("  [OK] Schema validation passed")
             return result.transformed_data
         else:
-            print(f"  [ERROR] Schema validation failed:")
+            print("  [ERROR] Schema validation failed:")
             for error in result.errors:
-                print(f"    - {error}")
+                print("    - {error}")
             print("  [WARNING] Returning original (unvalidated) schema")
             return schema_data
 
     except Exception as e:
-        print(f"  [ERROR] Schema adapter error: {e}")
+        print("  [ERROR] Schema adapter error: {e}")
         print("  [WARNING] Returning original schema")
         return schema_data
 
@@ -492,11 +492,11 @@ def main():
     try:
         input_path = Path(args.input_file)
         if not input_path.exists():
-            print(f"Error: Input file does not exist: {input_path}")
+            print("Error: Input file does not exist: {input_path}")
             sys.exit(1)
 
         if args.verbose:
-            print(f"Loading simplified city data from: {input_path}")
+            print("Loading simplified city data from: {input_path}")
 
         # Load simplified data
         simplified_data = load_simplified_json(input_path)
@@ -507,7 +507,7 @@ def main():
         state = simplified_data.get("state", "")
 
         if args.verbose:
-            print(f"Transforming: {city_name}, {state} ({city_id})")
+            print("Transforming: {city_name}, {state} ({city_id})")
 
         # Transform to Schema 4.3.0
         schema_data = transform_simplified_to_schema(simplified_data)
@@ -525,13 +525,13 @@ def main():
             output_path = Path(args.output)
         else:
             # Generate output filename from city_id (Schema 4.3.0 format)
-            output_path = Path(f"{city_id}.json")
+            output_path = Path("{city_id}.json")
 
         # Save output
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(schema_data, f, indent=2, ensure_ascii=False)
 
-        print(f"[OK] Saved Schema 4.3.0 data to: {output_path}")
+        print("[OK] Saved Schema 4.3.0 data to: {output_path}")
 
         # Show summary
         appeal_status = schema_data.get("appeal_mail_address", {}).get(
@@ -540,19 +540,19 @@ def main():
         citation_patterns = len(schema_data.get("citation_patterns", []))
         sections = len(schema_data.get("sections", {}))
 
-        print(f"\nSummary:")
-        print(f"  City: {city_name}, {state}")
-        print(f"  City ID: {city_id}")
-        print(f"  Appeal address status: {appeal_status}")
-        print(f"  Citation patterns: {citation_patterns}")
-        print(f"  Sections: {sections}")
-        print(f"  Jurisdiction: {schema_data.get('jurisdiction', 'unknown')}")
+        print("\nSummary:")
+        print("  City: {city_name}, {state}")
+        print("  City ID: {city_id}")
+        print("  Appeal address status: {appeal_status}")
+        print("  Citation patterns: {citation_patterns}")
+        print("  Sections: {sections}")
+        print("  Jurisdiction: {schema_data.get('jurisdiction', 'unknown')}")
 
     except json.JSONDecodeError as e:
-        print(f"Error parsing JSON file: {e}")
+        print("Error parsing JSON file: {e}")
         sys.exit(1)
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        print("Unexpected error: {e}")
         import traceback
 
         traceback.print_exc()

@@ -2,6 +2,8 @@
 
 **Status**: 🚀 **PRODUCTION READY - DEPLOYED TO HETZNER CLOUD** | **Version**: 1.0.0 | **Last Updated**: 2025-01-09
 
+**🤖 AI Assistant Note**: For AI assistants working on this project, please read `AI_START_HERE.md` first - it contains the complete consolidated project context and serves as the single source of truth.
+
 ## 🎉 Project Overview
 
 FightSFTickets.com is a complete, production-ready SaaS application that automates San Francisco parking ticket appeals via physical mail. The system provides an end-to-end solution for users to submit evidence, record their story, receive AI-drafted appeal letters, and have them professionally printed and mailed via Lob API.

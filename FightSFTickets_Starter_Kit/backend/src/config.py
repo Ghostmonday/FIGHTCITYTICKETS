@@ -1,7 +1,7 @@
 import warnings
 from typing import List, Optional
 
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,20 +17,27 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:3000"
 
-    database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/fightsf"
+    database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/fights"
 
     # Stripe Configuration
-    stripe_secret_key: str = "sk_test_dummy"
-    stripe_publishable_key: str = "pk_test_dummy"
-    stripe_webhook_secret: str = "whsec_dummy"
+    # IMPORTANT: Set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET in .env
+    # Use sk_live_... for production, sk_test_... for testing
+    stripe_secret_key: str = "sk_live_dummy"  # Override with STRIPE_SECRET_KEY env var
+    stripe_publishable_key: str = "pk_live_dummy"  # Override with STRIPE_PUBLISHABLE_KEY env var
+    stripe_webhook_secret: str = "whsec_dummy"  # Override with STRIPE_WEBHOOK_SECRET env var
 
-    # Stripe Price IDs (test mode)
-    stripe_price_standard: str = "price_1SedsMLncfs9uXKNp1q7FWc7"  # $9.89 test
-    stripe_price_certified: str = "price_1SedsaLncfs9uXKN7YnRzjt4"  # $19.89 test
+    # Stripe Price IDs - Set these in .env for production
+    # Get live price IDs from: https://dashboard.stripe.com/products
+    stripe_price_standard: str = ""  # Set STRIPE_PRICE_STANDARD in .env
+    stripe_price_certified: str = ""  # Set STRIPE_PRICE_CERTIFIED in .env
 
     # Lob Configuration
     lob_api_key: str = "test_dummy"
     lob_mode: str = "test"  # "test" or "live"
+
+    # Hetzner Cloud Configuration
+    hetzner_api_token: str = "change-me"  # Override with HETZNER_API_TOKEN env var
+    hetzner_droplet_name: Optional[str] = None  # Override with HETZNER_DROPLET_NAME env var
 
     # AI Services - DeepSeek
     deepseek_api_key: str = "sk_dummy"
@@ -41,8 +48,8 @@ class Settings(BaseSettings):
     openai_api_key: str = "sk_dummy"
 
     # Application URLs
-    app_url: str = "http://localhost:3000"
-    api_url: str = "http://localhost:8000"
+    app_url: str = "http://localhost:3000"  # Override with APP_URL env var
+    api_url: str = "http://localhost:8000"  # Override with API_URL env var
 
     # Security
     secret_key: str = "dev_secret_change_in_production"
@@ -75,6 +82,7 @@ class Settings(BaseSettings):
             "lob_api_key": "change-me",
             "deepseek_api_key": "change-me",
             "openai_api_key": "change-me",
+            "hetzner_api_token": "change-me",
         }
 
         if field_name in default_values and v == default_values[field_name]:
@@ -85,18 +93,19 @@ class Settings(BaseSettings):
 
             if app_env == "prod":
                 raise ValueError(
-                    f"{field_name} must be changed from default value in production environment"
+                    "{field_name} must be changed from default value in production environment"
                 )
             elif app_env in ["staging", "test"]:
                 warnings.warn(
-                    f"Warning: {field_name} is using default value in {app_env} environment. "
-                    f"This should be changed before production deployment.",
+                    "Warning: {field_name} is using default value in {app_env} environment. "
+                    "This should be changed before production deployment.",
                     UserWarning,
+                    stacklevel=2,
                 )
             else:
                 # dev environment - just log warning
                 print(
-                    f"⚠️  Warning: {field_name} is using default value. Change this before production."
+                    "⚠️  Warning: {field_name} is using default value. Change this before production."
                 )
 
         return v
@@ -110,9 +119,10 @@ class Settings(BaseSettings):
 
         if not v.startswith(("sk_test_", "sk_live_")):
             warnings.warn(
-                f"Stripe secret key doesn't match expected format. "
-                f"Expected 'sk_test_...' or 'sk_live_...', got '{v[:10]}...'",
+                "Stripe secret key doesn't match expected format. "
+                "Expected 'sk_test_...' or 'sk_live_...', got '{v[:10]}...'",
                 UserWarning,
+                stacklevel=2,
             )
         return v
 
@@ -125,9 +135,10 @@ class Settings(BaseSettings):
 
         if not v.startswith(("pk_test_", "pk_live_")):
             warnings.warn(
-                f"Stripe publishable key doesn't match expected format. "
-                f"Expected 'pk_test_...' or 'pk_live_...', got '{v[:10]}...'",
+                "Stripe publishable key doesn't match expected format. "
+                "Expected 'pk_test_...' or 'pk_live_...', got '{v[:10]}...'",
                 UserWarning,
+                stacklevel=2,
             )
         return v
 
@@ -140,9 +151,10 @@ class Settings(BaseSettings):
 
         if not v.startswith("whsec_"):
             warnings.warn(
-                f"Stripe webhook secret doesn't match expected format. "
-                f"Expected 'whsec_...', got '{v[:10]}...'",
+                "Stripe webhook secret doesn't match expected format. "
+                "Expected 'whsec_...', got '{v[:10]}...'",
                 UserWarning,
+                stacklevel=2,
             )
         return v
 
@@ -155,16 +167,15 @@ class Settings(BaseSettings):
 
         if not v.startswith(("test_", "live_")):
             warnings.warn(
-                f"Lob API key doesn't match expected format. "
-                f"Expected 'test_...' or 'live_...', got '{v[:10]}...'",
+                "Lob API key doesn't match expected format. "
+                "Expected 'test_...' or 'live_...', got '{v[:10]}...'",
                 UserWarning,
+                stacklevel=2,
             )
         return v
 
     def validate_production_settings(self) -> bool:
         """Validate all settings for production environment."""
-        import os
-
         if self.app_env != "prod":
             return True
 
@@ -184,7 +195,7 @@ class Settings(BaseSettings):
         for field_name, default_value in default_checks:
             current_value = getattr(self, field_name)
             if current_value == default_value:
-                errors.append(f"{field_name} is using default value '{default_value}'")
+                errors.append("{field_name} is using default value '{default_value}'")
 
         # Check Stripe mode
         if self.stripe_secret_key.startswith("sk_test_"):
@@ -202,13 +213,13 @@ class Settings(BaseSettings):
 
         if errors:
             error_msg = "Production configuration errors:\n" + "\n".join(
-                f"  • {e}" for e in errors
+                "  • {e}" for e in errors
             )
             raise ValueError(error_msg)
 
         if warnings_list:
             warning_msg = "Production configuration warnings:\n" + "\n".join(
-                f"  ⚠️  {w}" for w in warnings_list
+                "  ⚠️  {w}" for w in warnings_list
             )
             print(warning_msg)
 

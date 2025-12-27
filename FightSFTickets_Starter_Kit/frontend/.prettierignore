@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Generated files
+*.min.js
+*.min.css
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Config files that shouldn't be formatted
+next-env.d.ts
+
+# Public assets
+public/
+

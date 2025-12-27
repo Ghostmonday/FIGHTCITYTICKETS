@@ -8,20 +8,65 @@ Integrates with mail service for automatic appeal fulfillment.
 
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Header, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
+from ..config import settings
 from ..models import AppealType, PaymentStatus
 from ..services.database import get_db_service
 from ..services.mail import AppealLetterRequest, get_mail_service
 from ..services.stripe_service import StripeService
+from ..services.email_service import get_email_service
 
 # Set up logger
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Rate limiter - shared instance from app.py
+# BACKLOG PRIORITY 1: Rate limiting integration
+limiter = Limiter(key_func=get_remote_address)
+
+# Admin authentication for retry endpoint
+ADMIN_SECRET_HEADER = "X-Admin-Secret"
+
+def verify_admin_secret(
+    request: Request,
+    x_admin_secret: str = Header(...),
+):
+    """
+    Verify the admin secret header for protected endpoints.
+
+    SECURITY: This endpoint can trigger real mail sending and charges,
+    so it requires admin authentication.
+    """
+    admin_secret = os.getenv("ADMIN_SECRET")
+
+    if not admin_secret:
+        logger.error("ADMIN_SECRET environment variable not set - admin routes disabled")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Admin authentication not configured. Set ADMIN_SECRET environment variable.",
+        )
+
+    if x_admin_secret != admin_secret:
+        client_ip = get_remote_address(request)
+        logger.warning(
+            f"Failed admin access attempt on retry-fulfillment - Invalid admin secret provided. "
+            f"IP: {client_ip}"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid admin secret",
+        )
+
+    logger.info("Admin access granted for retry-fulfillment")
+    return x_admin_secret
 
 
 async def handle_checkout_session_completed(session: Dict[str, Any]) -> Dict[str, Any]:
@@ -55,7 +100,6 @@ async def handle_checkout_session_completed(session: Dict[str, Any]) -> Dict[str
 
     try:
         # Initialize services
-        stripe_service = StripeService()
         db_service = get_db_service()
 
         # Get payment from database
@@ -74,7 +118,7 @@ async def handle_checkout_session_completed(session: Dict[str, Any]) -> Dict[str
                 return result
             else:
                 result["message"] = (
-                    f"Payment not found and no valid payment ID in metadata"
+                    "Payment not found and no valid payment ID in metadata"
                 )
                 return result
 
@@ -111,6 +155,33 @@ async def handle_checkout_session_completed(session: Dict[str, Any]) -> Dict[str
             result["message"] = f"Draft for intake {payment.intake_id} not found"
             return result
 
+        # BACKLOG PRIORITY 4: Extract city_id from metadata or re-validate citation
+        city_id = None
+        section_id = None
+
+        # Try to get from Stripe metadata first
+        if metadata:
+            city_id = metadata.get("city_id") or metadata.get("cityId")
+            section_id = metadata.get("section_id") or metadata.get("sectionId")
+
+        # If not in metadata, try to get from payment metadata
+        if not city_id and payment.stripe_metadata:
+            city_id = payment.stripe_metadata.get("city_id") or payment.stripe_metadata.get("cityId")
+            section_id = payment.stripe_metadata.get("section_id") or payment.stripe_metadata.get("sectionId")
+
+        # Fallback: re-validate citation to get city_id (if CityRegistry available)
+        if not city_id:
+            try:
+                from ..services.citation import CitationValidator
+                validator = CitationValidator()
+                validation = validator.validate_citation(intake.citation_number)
+                if validation and validation.city_id:
+                    city_id = validation.city_id
+                    section_id = validation.section_id
+                    logger.info(f"Re-validated citation {intake.citation_number}: city_id={city_id}, section_id={section_id}")
+            except Exception as e:
+                logger.warning(f"Could not re-validate citation for city_id: {e}")
+
         # Prepare mail request
         mail_request = AppealLetterRequest(
             citation_number=intake.citation_number,
@@ -123,6 +194,8 @@ async def handle_checkout_session_completed(session: Dict[str, Any]) -> Dict[str
             letter_text=draft.draft_text,
             selected_photos=None,  # Would need to be stored separately
             signature_data=intake.signature_data,
+            city_id=city_id,  # BACKLOG PRIORITY 4: Multi-city support
+            section_id=section_id,  # BACKLOG PRIORITY 4: Multi-city support
         )
 
         # Send appeal via mail service
@@ -155,6 +228,26 @@ async def handle_checkout_session_completed(session: Dict[str, Any]) -> Dict[str
                     f"citation {intake.citation_number}, "
                     f"tracking: {mail_result.tracking_number}"
                 )
+
+                # Send email notifications
+                email_service = get_email_service()
+                if intake.user_email:
+                    # Send payment confirmation (if not already sent)
+                    await email_service.send_payment_confirmation(
+                        email=intake.user_email,
+                        citation_number=intake.citation_number,
+                        amount_paid=payment.amount_total,
+                        appeal_type=payment.appeal_type.value,
+                        session_id=session_id,
+                    )
+
+                    # Send appeal mailed confirmation
+                    await email_service.send_appeal_mailed(
+                        email=intake.user_email,
+                        citation_number=intake.citation_number,
+                        tracking_number=mail_result.tracking_number or "",
+                        expected_delivery=mail_result.expected_delivery,
+                    )
             else:
                 result["message"] = (
                     "Payment marked as paid but failed to mark as fulfilled"
@@ -168,6 +261,28 @@ async def handle_checkout_session_completed(session: Dict[str, Any]) -> Dict[str
                 f"Mail service failed for payment {payment.id}, "
                 f"citation {intake.citation_number}: {mail_result.error_message}"
             )
+
+            # BACKLOG PRIORITY 1: Suspend droplet on critical failure
+            # Only suspend if this is a critical failure (not test mode issues)
+            if settings.app_env == "production" and "test" not in mail_result.error_message.lower():
+                try:
+                    from ..services.hetzner import get_hetzner_service
+                    hetzner_service = get_hetzner_service()
+                    if hetzner_service.is_available:
+                        droplet_name = getattr(settings, "hetzner_droplet_name", None)
+                        if droplet_name:
+                            # Use await since we're already in an async function
+                            suspension_result = await hetzner_service.suspend_droplet_by_name(droplet_name)
+                            if suspension_result.success:
+                                logger.critical(
+                                    f"Droplet {droplet_name} suspended due to mail service failure"
+                                )
+                            else:
+                                logger.error(
+                                    f"Failed to suspend droplet: {suspension_result.error_message}"
+                                )
+                except Exception as e:
+                    logger.error(f"Error attempting droplet suspension: {e}")
 
     except Exception as e:
         logger.error(
@@ -225,6 +340,7 @@ async def handle_payment_intent_failed(
 
 
 @router.post("/stripe")
+@limiter.limit("100/minute")  # BACKLOG PRIORITY 1: Rate limiting for webhooks (higher limit for Stripe)
 async def handle_stripe_webhook(request: Request):
     """
     Handle Stripe webhook events with database-first approach.
@@ -292,11 +408,11 @@ async def handle_stripe_webhook(request: Request):
             "draft_id": result.get("draft_id"),
         }
 
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
         logger.error("Invalid JSON in webhook payload")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid JSON payload"
-        )
+        ) from e
     except HTTPException:
         raise
     except Exception as e:
@@ -311,44 +427,116 @@ async def handle_stripe_webhook(request: Request):
 
 
 @router.post("/retry-fulfillment/{session_id}")
-async def retry_fulfillment(session_id: str):
+@limiter.limit("10/minute")  # Strict rate limit - this costs money
+async def retry_fulfillment(
+    request: Request,
+    session_id: str,
+    admin_secret: str = Depends(verify_admin_secret),
+):
     """
     Manually retry fulfillment for a payment.
 
-    This endpoint can be used to retry failed fulfillment attempts
-    or to manually trigger fulfillment for testing.
+    SECURITY: This endpoint requires admin authentication and can trigger
+    real mail sending (costs $0.60-$6.50 per letter). Protected by:
+    - Admin secret header (X-Admin-Secret)
+    - Rate limiting (10 requests/minute)
+    - Session ID validation
 
     Args:
-        session_id: Stripe checkout session ID
+        session_id: Stripe checkout session ID (must start with cs_test_ or cs_live_)
 
     Returns:
         Result of retry attempt
     """
-    try:
-        stripe_service = StripeService()
-        success, message = stripe_service.fulfill_payment(session_id)
+    # Validate session ID format to prevent injection/guessing attacks
+    if not session_id.startswith(("cs_test_", "cs_live_")):
+        logger.warning(f"Invalid session ID format attempted: {session_id[:20]}...")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session ID format. Must start with 'cs_test_' or 'cs_live_'",
+        )
 
-        if success:
-            logger.info(f"Manual retry successful for session {session_id}: {message}")
+    # Additional validation: session ID length (Stripe session IDs are ~60 chars)
+    if len(session_id) < 20 or len(session_id) > 100:
+        logger.warning(f"Suspicious session ID length: {len(session_id)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid session ID length",
+        )
+
+    try:
+        # Verify payment exists and is in a valid state for retry
+        db_service = get_db_service()
+        payment = db_service.get_payment_by_session(session_id)
+
+        if not payment:
+            logger.warning(f"Retry attempted for non-existent payment: {session_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Payment not found for session {session_id}",
+            )
+
+        # Only allow retry if payment is PAID but not fulfilled
+        if payment.status != PaymentStatus.PAID:
+            logger.warning(
+                f"Retry attempted for payment in invalid state: {payment.status} "
+                f"(session: {session_id})"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot retry fulfillment for payment with status: {payment.status.value}",
+            )
+
+        if payment.is_fulfilled:
+            logger.info(f"Payment already fulfilled, returning current status (session: {session_id})")
+            return {
+                "status": "already_fulfilled",
+                "message": "Payment is already fulfilled",
+                "session_id": session_id,
+                "lob_tracking_id": payment.lob_tracking_id,
+            }
+
+        # Re-process the checkout session completion (same logic as webhook)
+        logger.info(f"Admin retry fulfillment initiated for session {session_id}")
+        result = await handle_checkout_session_completed(
+            {
+                "id": session_id,
+                "payment_status": "paid",
+                "metadata": {
+                    "payment_id": str(payment.id),
+                    "intake_id": str(payment.intake_id),
+                },
+                "payment_intent": payment.stripe_payment_intent,
+                "customer": None,
+                "receipt_url": payment.receipt_url,
+            }
+        )
+
+        if result.get("processed"):
+            logger.info(f"Admin retry successful for session {session_id}")
             return {
                 "status": "success",
-                "message": message,
+                "message": result.get("message", "Fulfillment retried successfully"),
                 "session_id": session_id,
+                "payment_id": result.get("payment_id"),
+                "intake_id": result.get("intake_id"),
             }
         else:
-            logger.warning(f"Manual retry failed for session {session_id}: {message}")
+            logger.warning(f"Admin retry failed for session {session_id}: {result.get('message')}")
             return {
                 "status": "error",
-                "message": message,
+                "message": result.get("message", "Fulfillment retry failed"),
                 "session_id": session_id,
             }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error in manual retry for session {session_id}: {e}")
+        logger.error(f"Error in admin retry fulfillment for session {session_id}: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to retry fulfillment: {str(e)}",
-        )
+        ) from e
 
 
 @router.get("/health")

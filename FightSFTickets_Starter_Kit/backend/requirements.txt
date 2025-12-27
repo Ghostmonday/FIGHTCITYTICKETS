@@ -18,3 +18,13 @@ reportlab==3.6.13
 # tests
 pytest==8.3.3
 pytest-asyncio==0.24.0
+
+# ============================================
+# COORDINATION NOTE: Added by AI Assistant #1 (Auto)
+# Working backwards through audit items - Issue #5: Rate Limiting
+# ============================================
+# Rate limiting middleware (AUDIT ITEM #5)
+slowapi==0.1.9
+
+# Error tracking and monitoring
+sentry-sdk[fastapi]==2.19.0

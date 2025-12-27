@@ -15,8 +15,7 @@ from typing import Dict, Optional, Tuple
 import httpx
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
-from reportlab.lib.units import inch
-from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
 from ..config import settings
 
@@ -24,19 +23,17 @@ from ..config import settings
 try:
     from .citation import CitationAgency, CitationValidator
     from .city_registry import (
-        AppealMailAddress,
         AppealMailStatus,
-        CityRegistry,
         get_city_registry,
     )
+    from .address_validator import get_address_validator
 except ImportError:
     from citation import CitationAgency, CitationValidator
     from city_registry import (
-        AppealMailAddress,
         AppealMailStatus,
-        CityRegistry,
         get_city_registry,
     )
+    from address_validator import get_address_validator
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -84,6 +81,8 @@ class AppealLetterRequest:
     letter_text: str
     selected_photos: Optional[list] = None  # Base64 image data
     signature_data: Optional[str] = None  # Base64 signature
+    city_id: Optional[str] = None  # BACKLOG PRIORITY 2: Multi-city support - city identifier
+    section_id: Optional[str] = None  # BACKLOG PRIORITY 2: Multi-city support - section identifier
 
 
 @dataclass
@@ -134,21 +133,50 @@ class LobMailService:
             "Content-Type": "application/json",
         }
 
-    def _get_agency_address(self, citation_number: str) -> MailingAddress:
-        """Get the correct mailing address based on citation agency."""
-        # Try city registry first for multi-city support
+    def _get_agency_address(
+        self, citation_number: str, city_id: Optional[str] = None, section_id: Optional[str] = None
+    ) -> MailingAddress:
+        """
+        Get the correct mailing address based on citation agency or city_id.
+
+        BACKLOG PRIORITY 2: Multi-city support - accepts city_id parameter.
+        If city_id is provided, uses it directly. Otherwise, infers from citation.
+        """
+        # BACKLOG PRIORITY 2: Use city_id if provided directly
+        if self.city_registry and city_id:
+            try:
+                mail_address = self.city_registry.get_mail_address(city_id, section_id)
+                if (
+                    mail_address
+                    and mail_address.status == AppealMailStatus.COMPLETE
+                ):
+                    logger.info(f"Using city-specific address for city_id={city_id}, section_id={section_id}")
+                    return MailingAddress(
+                        name=mail_address.department or "Citation Review",
+                        address_line1=mail_address.address1,
+                        address_line2=mail_address.address2,
+                        city=mail_address.city,
+                        state=mail_address.state,
+                        zip_code=mail_address.zip,
+                    )
+            except Exception as e:
+                logger.warning(f"CityRegistry address lookup failed for city_id={city_id}: {e}")
+                logger.warning("Falling back to citation-based lookup")
+
+        # Try city registry with citation matching (fallback)
         if self.city_registry:
             try:
                 match = self.city_registry.match_citation(citation_number)
                 if match:
-                    city_id, section_id = match
+                    matched_city_id, matched_section_id = match
                     mail_address = self.city_registry.get_mail_address(
-                        city_id, section_id
+                        matched_city_id, matched_section_id
                     )
                     if (
                         mail_address
                         and mail_address.status == AppealMailStatus.COMPLETE
                     ):
+                        logger.info(f"Using citation-matched address for city_id={matched_city_id}")
                         # Convert AppealMailAddress to MailingAddress
                         return MailingAddress(
                             name=mail_address.department or "Citation Review",
@@ -160,7 +188,7 @@ class LobMailService:
                         )
             except Exception as e:
                 logger.warning(f"CityRegistry address lookup failed: {e}")
-                logger.warning("Falling back to legacy agency mapping")
+                logger.warning("Falling back to legacy SF-only agency mapping")
 
         # Fall back to legacy SF-only agency mapping
         agency = CitationValidator.identify_agency(citation_number)
@@ -272,12 +300,24 @@ class LobMailService:
         story.append(Spacer(1, 12))
         story.append(Paragraph(f"Name: {request.user_name}", body_style))
 
+        # Add return address below signature for clarity
+        return_address_text = f"{request.user_name}\n{request.user_address}\n{request.user_city}, {request.user_state} {request.user_zip}"
+        story.append(Spacer(1, 12))
+        story.append(
+            Paragraph(
+                f"Return Address:\n{return_address_text}",
+                ParagraphStyle(
+                    "ReturnAddress", parent=styles["Normal"], fontSize=10, textColor="gray"
+                ),
+            )
+        )
+
         # Selected photos (if any)
         if request.selected_photos:
             story.append(Spacer(1, 24))
             story.append(Paragraph("Attached Evidence:", title_style))
 
-            for i, photo_data in enumerate(request.selected_photos):
+            for i, _photo_data in enumerate(request.selected_photos):
                 try:
                     # Decode base64 image
                     # Note: This is simplified - real implementation would handle various image formats
@@ -309,6 +349,87 @@ class LobMailService:
         else:
             return "usps_first_class"
 
+    def _add_return_address_to_letter_body(
+        self, letter_text: str, user_name: str, user_address: str,
+        user_city: str, user_state: str, user_zip: str
+    ) -> str:
+        """
+        Add return address statement to letter body and replace placeholders.
+
+        Ensures the return address is clearly stated in the body of the letter,
+        not just in the envelope header, so the city knows where to send responses.
+        """
+        # Format full return address
+        return_address_lines = [
+            user_name,
+            user_address,
+            f"{user_city}, {user_state} {user_zip}"
+        ]
+        return_address = "\n".join(return_address_lines)
+
+        # Replace placeholders if they exist
+        letter_text = letter_text.replace("[Your Name]", user_name)
+        letter_text = letter_text.replace("[Your Address]", return_address)
+        letter_text = letter_text.replace("[RETURN_ADDRESS]", return_address)
+
+        # Check if return address statement already exists
+        return_address_indicators = [
+            "Please send your response to",
+            "Please respond to",
+            "Return address",
+            "Response address",
+            "Send response to",
+            "Mail response to"
+        ]
+
+        has_return_address_statement = any(
+            indicator.lower() in letter_text.lower()
+            for indicator in return_address_indicators
+        )
+
+        # Add return address statement if not present
+        if not has_return_address_statement:
+            # Find the closing section (before signature)
+            closing_markers = [
+                "\nSincerely,",
+                "\nRespectfully,",
+                "\nThank you,",
+                "\nBest regards,"
+            ]
+
+            # Try to insert before closing
+            inserted = False
+            for marker in closing_markers:
+                if marker in letter_text:
+                    # Insert return address statement before closing
+                    return_address_statement = f"""\n\nPlease send your response regarding this appeal to the following address:\n\n{return_address}\n\n{marker}"""
+                    letter_text = letter_text.replace(marker, return_address_statement)
+                    inserted = True
+                    break
+
+            # If no closing marker found, add at the end before signature placeholders
+            if not inserted:
+                # Look for signature section
+                signature_markers = [
+                    "\n[Your Name]",
+                    "\nSignature:",
+                    "\nName:"
+                ]
+
+                for marker in signature_markers:
+                    if marker in letter_text:
+                        return_address_statement = f"""\n\nPlease send your response regarding this appeal to the following address:\n\n{return_address}\n\n{marker}"""
+                        letter_text = letter_text.replace(marker, return_address_statement)
+                        inserted = True
+                        break
+
+                # If still not inserted, append at the end
+                if not inserted:
+                    return_address_statement = f"""\n\nPlease send your response regarding this appeal to the following address:\n\n{return_address}"""
+                    letter_text = letter_text + return_address_statement
+
+        return letter_text
+
     async def send_appeal_letter(self, request: AppealLetterRequest) -> MailResult:
         """
         Send an appeal letter via Lob API.
@@ -325,8 +446,34 @@ class LobMailService:
                     success=False, error_message="Lob API key not configured"
                 )
 
-            # Get agency-specific address
-            agency_address = self._get_agency_address(request.citation_number)
+            # Add return address to letter body before processing
+            request.letter_text = self._add_return_address_to_letter_body(
+                letter_text=request.letter_text,
+                user_name=request.user_name,
+                user_address=request.user_address,
+                user_city=request.user_city,
+                user_state=request.user_state,
+                user_zip=request.user_zip
+            )
+
+            # Validate address before sending (with retry logic)
+            if request.city_id:
+                validation_result, error_msg = await self._validate_and_retry_address(
+                    request.city_id, request.section_id
+                )
+                if not validation_result:
+                    # Address validation failed after retry - cancel mail-out
+                    return MailResult(
+                        success=False,
+                        error_message=error_msg or "Address validation failed - mail-out cancelled"
+                    )
+
+            # BACKLOG PRIORITY 2: Get agency-specific address using city_id if provided
+            agency_address = self._get_agency_address(
+                request.citation_number,
+                city_id=request.city_id,
+                section_id=request.section_id,
+            )
 
             # User return address
             user_address = MailingAddress(
@@ -348,7 +495,7 @@ class LobMailService:
                 "to": agency_address.to_lob_dict(),
                 "from": user_address.to_lob_dict(),
                 "file": pdf_base64,
-                "file_type": "application/pdf",
+                "file_type": "application/pd",
                 "mail_type": mail_type,
                 "color": False,  # Black and white is sufficient and cheaper
                 "double_sided": True,
@@ -419,6 +566,70 @@ class LobMailService:
                 success=False,
                 error_message=f"Mail service error: {str(e)}",
             )
+
+    async def _validate_and_retry_address(
+        self, city_id: str, section_id: Optional[str] = None
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Validate address with retry logic.
+
+        If validation fails:
+        1. Return error message to user
+        2. Wait 30 seconds
+        3. Retry once
+        4. If still fails, return False to cancel mail-out
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        try:
+            validator = get_address_validator()
+
+            # First validation attempt
+            result = await validator.validate_address(city_id, section_id)
+
+            if result.is_valid:
+                return True, None
+
+            # Address validation failed - log
+            logger.warning(
+                f"Address validation failed for {city_id}: {result.error_message}"
+            )
+
+            # If address was updated, we should retry immediately
+            if result.was_updated:
+                logger.info(f"Address was updated for {city_id}, retrying validation...")
+                # Wait a moment for registry to reload
+                import asyncio
+                await asyncio.sleep(2)
+                result = await validator.validate_address(city_id, section_id)
+                if result.is_valid:
+                    return True, None
+
+            # Return the exact error message to user
+            error_msg = "Address for this city changed on the city website. Hold up for thirty seconds, then try sending again."
+
+            # Wait 30 seconds
+            import asyncio
+            await asyncio.sleep(30)
+
+            # Retry once
+            logger.info(f"Retrying address validation for {city_id} after 30 second wait...")
+            result = await validator.validate_address(city_id, section_id)
+
+            if result.is_valid:
+                return True, None
+
+            # Still failed after retry - cancel mail-out
+            logger.error(
+                f"Address validation failed after retry for {city_id}: {result.error_message}"
+            )
+            return False, error_msg
+
+        except Exception as e:
+            logger.error(f"Error in address validation: {e}")
+            # On error, allow the mail to proceed (fail open)
+            return True, None
 
 
 # Global service instance

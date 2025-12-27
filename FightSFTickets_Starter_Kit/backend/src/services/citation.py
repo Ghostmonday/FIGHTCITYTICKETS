@@ -10,29 +10,26 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 # Import CityRegistry if available - try multiple import strategies
 CITY_REGISTRY_AVAILABLE = False
 CityRegistry = Any
-get_city_registry = lambda cities_dir=None: None
+def get_city_registry(cities_dir=None):
+    return None
 AppealMailAddress = Any
 PhoneConfirmationPolicy = Any
 
 # Define enum stubs as fallback
 AppealMailStatus = Enum("AppealMailStatus", ["COMPLETE", "ROUTES_ELSEWHERE", "MISSING"])
-RoutingRule = Enum(
-    "RoutingRule", ["DIRECT", "ROUTES_TO_SECTION", "SEPARATE_ADDRESS_REQUIRED"]
-)
 
 try:
     # Strategy 1: Relative import (works when module is imported)
-    from .city_registry import (
-        AppealMailAddress,
-        AppealMailStatus,
-        CityRegistry,
-        PhoneConfirmationPolicy,
-        RoutingRule,
+    from .city_registry import (  # noqa: F401
+        AppealMailAddress,  # noqa: F401
+        AppealMailStatus,  # noqa: F401
+        CityRegistry,  # noqa: F401
+        PhoneConfirmationPolicy,  # noqa: F401
         get_city_registry,
     )
 
@@ -47,12 +44,11 @@ except ImportError:
         src_dir = Path(__file__).parent.parent
         if str(src_dir) not in sys.path:
             sys.path.insert(0, str(src_dir))
-        from services.city_registry import (
-            AppealMailAddress,
-            AppealMailStatus,
-            CityRegistry,
-            PhoneConfirmationPolicy,
-            RoutingRule,
+        from services.city_registry import (  # noqa: F401
+            AppealMailAddress,  # noqa: F401
+            AppealMailStatus,  # noqa: F401
+            CityRegistry,  # noqa: F401
+            PhoneConfirmationPolicy,  # noqa: F401
             get_city_registry,
         )
 
@@ -272,7 +268,7 @@ class CitationValidator:
             ) from e
 
     def _match_citation_to_city(
-        self, citation_number: str
+        self, citation_number: str, city_id: Optional[str] = None
     ) -> Optional[Tuple[str, str, Dict[str, Any]]]:
         """
         Match citation number to city and section using CityRegistry.
@@ -286,7 +282,7 @@ class CitationValidator:
         if not self.city_registry:
             return None
 
-        match = self.city_registry.match_citation(citation_number)
+        match = self.city_registry.match_citation(citation_number, city_id_hint=city_id)
         if not match:
             return None
 
@@ -302,6 +298,7 @@ class CitationValidator:
         citation_number: str,
         violation_date: Optional[str] = None,
         license_plate: Optional[str] = None,
+        city_id: Optional[str] = None,
     ) -> CitationValidationResult:
         """
         Complete citation validation with multi-city matching.
@@ -336,7 +333,7 @@ class CitationValidator:
             )
 
         # Step 3: Try to match to city using CityRegistry
-        city_match = self._match_citation_to_city(clean_number)
+        city_match = self._match_citation_to_city(clean_number, city_id)
 
         # Step 4: Backward compatibility - identify SF agency if no city match
         if city_match:
@@ -344,7 +341,7 @@ class CitationValidator:
             agency = CitationAgency.UNKNOWN  # We'll map section_id to agency for SF
 
             # Map SF section IDs to agencies for backward compatibility
-            if city_id == "sf":
+            if city_id == "s":
                 if section_id == "sfmta":
                     agency = CitationAgency.SFMTA
                 elif section_id == "sfpd":
@@ -526,10 +523,11 @@ class CitationValidator:
         citation_number: str,
         violation_date: Optional[str] = None,
         license_plate: Optional[str] = None,
+        city_id: Optional[str] = None,
     ) -> CitationValidationResult:
         """Class method wrapper for validate_citation."""
         return cls._get_default_validator()._validate_citation(
-            citation_number, violation_date, license_plate
+            citation_number, violation_date, license_plate, city_id
         )
 
     @classmethod
@@ -570,7 +568,7 @@ def get_appeal_method_messaging(
     also accepts online appeals as an alternative option.
 
     Args:
-        city_id: City identifier (e.g., 'sf', 'la', 'nyc')
+        city_id: City identifier (e.g., 's', 'la', 'nyc')
         section_id: Section identifier (e.g., 'sfmta', 'lapd')
         city_registry: Optional CityRegistry instance
 
@@ -602,7 +600,7 @@ def get_appeal_method_messaging(
             return {
                 "online_appeal_available": True,
                 "online_appeal_url": online_url,
-                "message": f"This city accepts online appeals, but our mail service provides guaranteed delivery and professional formatting.",
+                "message": "This city accepts online appeals, but our mail service provides guaranteed delivery and professional formatting.",
                 "recommended_method": "mail",
                 "alternative_method": "online",
                 "notes": "Mail appeals are often given more consideration and have guaranteed delivery confirmation.",
@@ -634,9 +632,9 @@ if __name__ == "__main__":
 
     # Test cases including SF citations that should match
     test_cases = [
-        ("912345678", "2024-01-15", "ABC123"),  # Valid SFMTA (should match sf.json)
-        ("SF123456", "2024-01-15", "TEST123"),  # SFPD-like (should match sf.json)
-        ("SFSU12345", "2024-01-15", "CAMPUS"),  # SFSU (should match sf.json)
+        ("912345678", "2024-01-15", "ABC123"),  # Valid SFMTA (should match us-ca-san_francisco.json)
+        ("SF123456", "2024-01-15", "TEST123"),  # SFPD-like (should match us-ca-san_francisco.json)
+        ("SFSU12345", "2024-01-15", "CAMPUS"),  # SFSU (should match us-ca-san_francisco.json)
         ("123456", "2024-01-15", "XYZ789"),  # Too short (no city match)
         ("ABCDEFGHIJKLMNOP", "2024-01-15", "TEST"),  # Too long (no city match)
         ("", "2024-01-15", "TEST"),  # Empty

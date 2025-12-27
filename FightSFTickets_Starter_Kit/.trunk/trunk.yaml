@@ -1,0 +1,44 @@
+version: 0.1
+cli:
+  version: 1.22.0
+lint:
+  enabled:
+    - ruff@0.1.0
+  disabled:
+    - pylint
+    - flake8
+    - bandit
+    - mypy
+    - pyright
+    - eslint
+    - prettier
+    - markdownlint
+    - checkov
+    - git-diff-check
+  ignore:
+    # Ignore everything in test/script files - they're not production code
+    - linters: [ALL]
+      paths:
+        - backend/tests/**
+        - backend/test_*.py
+        - scripts/**
+        - test_*.py
+    # Ignore trailing whitespace everywhere (Ruff handles what matters)
+    - linters: [ALL]
+      paths:
+        - "**/*.md"
+ruff:
+  # Only flag actual bugs, not style preferences
+  select:
+    - E9    # Runtime errors
+    - F63   # Invalid syntax
+    - F7    # Comparison issues
+    - F82   # Undefined names
+  ignore:
+    - E501  # Line too long (who cares)
+    - E712  # Comparison to True/False (SQLAlchemy needs this)
+    - F401  # Unused imports (annoying in dev)
+    - F541  # f-string without placeholders
+    - E722  # Bare except
+    - E402  # Module import not at top
+    - B904  # Exception chaining style

@@ -7,7 +7,6 @@ with a proper database (PostgreSQL, Redis, etc.).
 """
 
 import hashlib
-import json
 import logging
 import time
 from dataclasses import asdict, dataclass
@@ -80,7 +79,7 @@ class AppealStorage:
         """
         self._storage: Dict[str, AppealData] = {}
         self._ttl = timedelta(hours=ttl_hours)
-        logger.info(f"Appeal storage initialized with {ttl_hours}h TTL")
+        logger.info("Appeal storage initialized with {ttl_hours}h TTL")
 
     def _generate_key(
         self, citation_number: str, user_email: Optional[str] = None
@@ -88,9 +87,9 @@ class AppealStorage:
         """Generate a unique storage key."""
         # Use citation number + timestamp hash for uniqueness
         timestamp = str(time.time())
-        key_data = f"{citation_number}:{timestamp}"
+        key_data = "{citation_number}:{timestamp}"
         if user_email:
-            key_data += f":{user_email}"
+            key_data += ":{user_email}"
 
         return hashlib.sha256(key_data.encode()).hexdigest()[:16]
 
@@ -115,8 +114,8 @@ class AppealStorage:
         self._storage[storage_key] = appeal
 
         logger.info(
-            f"Stored appeal for citation {appeal.citation_number} "
-            f"(key: {storage_key}, type: {appeal.appeal_type})"
+            "Stored appeal for citation {appeal.citation_number} "
+            "(key: {storage_key}, type: {appeal.appeal_type})"
         )
 
         return storage_key
@@ -132,7 +131,7 @@ class AppealStorage:
             AppealData if found and not expired, None otherwise
         """
         if storage_key not in self._storage:
-            logger.warning(f"Appeal not found for key: {storage_key}")
+            logger.warning("Appeal not found for key: {storage_key}")
             return None
 
         appeal = self._storage[storage_key]
@@ -141,12 +140,12 @@ class AppealStorage:
         try:
             created_at = datetime.fromisoformat(appeal.created_at)
             if datetime.now() - created_at > self._ttl:
-                logger.info(f"Appeal expired for key: {storage_key}")
+                logger.info("Appeal expired for key: {storage_key}")
                 del self._storage[storage_key]
                 return None
         except (ValueError, TypeError):
             # If created_at is invalid, keep the data but log warning
-            logger.warning(f"Invalid created_at for key: {storage_key}")
+            logger.warning("Invalid created_at for key: {storage_key}")
 
         return appeal
 
@@ -167,7 +166,7 @@ class AppealStorage:
         appeal = self.get_appeal(storage_key)
         if not appeal:
             logger.warning(
-                f"Cannot update payment status: appeal not found for key {storage_key}"
+                "Cannot update payment status: appeal not found for key {storage_key}"
             )
             return False
 
@@ -175,8 +174,8 @@ class AppealStorage:
         appeal.payment_status = status
 
         logger.info(
-            f"Updated payment status for citation {appeal.citation_number}: "
-            f"{status} (session: {session_id})"
+            "Updated payment status for citation {appeal.citation_number}: "
+            "{status} (session: {session_id})"
         )
 
         return True
@@ -194,7 +193,7 @@ class AppealStorage:
         if storage_key in self._storage:
             citation = self._storage[storage_key].citation_number
             del self._storage[storage_key]
-            logger.info(f"Deleted appeal for citation {citation} (key: {storage_key})")
+            logger.info("Deleted appeal for citation {citation} (key: {storage_key})")
             return True
         return False
 
@@ -221,7 +220,7 @@ class AppealStorage:
             del self._storage[key]
 
         if expired_keys:
-            logger.info(f"Cleaned up {len(expired_keys)} expired appeals")
+            logger.info("Cleaned up {len(expired_keys)} expired appeals")
 
         return len(expired_keys)
 
@@ -314,13 +313,13 @@ def test_storage():
 
     # Store the appeal
     storage_key = storage.store_appeal(test_appeal)
-    print(f"✅ Stored appeal with key: {storage_key}")
+    print("✅ Stored appeal with key: {storage_key}")
 
     # Retrieve the appeal
     retrieved = storage.get_appeal(storage_key)
     if retrieved and retrieved.citation_number == test_appeal.citation_number:
         print(
-            f"✅ Successfully retrieved appeal for citation: {retrieved.citation_number}"
+            "✅ Successfully retrieved appeal for citation: {retrieved.citation_number}"
         )
     else:
         print("❌ Failed to retrieve appeal")
@@ -330,11 +329,11 @@ def test_storage():
 
     # Get stats
     stats = storage.get_stats()
-    print(f"✅ Storage stats: {stats}")
+    print("✅ Storage stats: {stats}")
 
     # Cleanup (won't remove since it's new)
     cleaned = storage.cleanup_expired()
-    print(f"✅ Cleaned up {cleaned} expired appeals")
+    print("✅ Cleaned up {cleaned} expired appeals")
 
     print("\n" + "=" * 50)
     print("✅ Appeal Storage Test Complete")

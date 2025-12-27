@@ -16,6 +16,9 @@ except ImportError:
 
 router = APIRouter()
 
+# Rate limiter - will be set from app.py after app initialization
+limiter: Optional[object] = None
+
 
 # Legacy ticket types (keep for backward compatibility, but deprecate)
 class TicketType(BaseModel):
@@ -35,6 +38,7 @@ class CitationValidationRequest(BaseModel):
     citation_number: str
     license_plate: Optional[str] = None
     violation_date: Optional[str] = None
+    city_id: Optional[str] = None
 
 
 class CitationValidationResponse(BaseModel):
@@ -57,6 +61,10 @@ class CitationValidationResponse(BaseModel):
     phone_confirmation_required: bool = False
     phone_confirmation_policy: Optional[Dict[str, Any]] = None
 
+    # City mismatch detection
+    city_mismatch: bool = False
+    selected_city_mismatch_message: Optional[str] = None
+
 
 # Legacy ticket inventory (keep for old clients)
 LEGACY_INVENTORY: List[TicketType] = [
@@ -68,11 +76,13 @@ LEGACY_INVENTORY: List[TicketType] = [
 @router.post("/validate", response_model=CitationValidationResponse)
 def validate_citation(request: CitationValidationRequest):
     """
-    Validate a San Francisco parking citation.
+    Validate a parking citation and check against selected city.
 
     Performs comprehensive validation including:
     - Format checking
-    - Agency identification (SFMTA vs others)
+    - Agency identification
+    - City detection from citation number
+    - City mismatch detection (if city_id provided)
     - Appeal deadline calculation
     - Deadline status (urgent/past due)
     """
@@ -82,7 +92,42 @@ def validate_citation(request: CitationValidationRequest):
             citation_number=request.citation_number,
             violation_date=request.violation_date,
             license_plate=request.license_plate,
+            city_id=request.city_id,  # Pass selected city for validation
         )
+
+        # Check for city mismatch if city_id was provided
+        city_mismatch = False
+        selected_city_mismatch_message = None
+
+        if request.city_id and validation.city_id:
+            if validation.city_id != request.city_id:
+                city_mismatch = True
+                # Get city names for error message
+                try:
+                    from ..services.city_registry import get_city_registry
+                    city_registry = get_city_registry()
+                    if city_registry:
+                        detected_city_config = city_registry.get_city_config(validation.city_id)
+                        selected_city_config = city_registry.get_city_config(request.city_id)
+
+                        detected_name = detected_city_config.name if detected_city_config else validation.city_id
+                        selected_name = selected_city_config.name if selected_city_config else request.city_id
+
+                        selected_city_mismatch_message = (
+                            "The citation number appears to be from {detected_name}, "
+                            "but you selected {selected_name}. Please verify your selection or citation number."
+                        )
+                    else:
+                        selected_city_mismatch_message = (
+                            "The citation number appears to be from {validation.city_id}, "
+                            "but you selected {request.city_id}. Please verify your selection or citation number."
+                        )
+                except Exception:
+                    # Fallback if city registry not available
+                    selected_city_mismatch_message = (
+                        "The citation number appears to be from {validation.city_id}, "
+                        "but you selected {request.city_id}. Please verify your selection or citation number."
+                    )
 
         # Convert service response to API response
         return CitationValidationResponse(
@@ -101,13 +146,16 @@ def validate_citation(request: CitationValidationRequest):
             appeal_deadline_days=validation.appeal_deadline_days,
             phone_confirmation_required=validation.phone_confirmation_required,
             phone_confirmation_policy=validation.phone_confirmation_policy,
+            # City mismatch detection
+            city_mismatch=city_mismatch,
+            selected_city_mismatch_message=selected_city_mismatch_message,
         )
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Citation validation failed: {str(e)}",
-        )
+            detail="Citation validation failed: {str(e)}",
+        ) from e
 
 
 @router.get("", response_model=List[TicketType], deprecated=True)
@@ -165,5 +213,5 @@ def get_citation_info(citation_number: str):
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get citation info: {str(e)}",
-        )
+            detail="Failed to get citation info: {str(e)}",
+        ) from e

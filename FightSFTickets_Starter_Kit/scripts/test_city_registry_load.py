@@ -23,7 +23,7 @@ try:
 
     print("✅ Successfully imported CityRegistry")
 except ImportError as e:
-    print(f"❌ Failed to import CityRegistry: {e}")
+    print("❌ Failed to import CityRegistry: {e}")
     sys.exit(1)
 
 
@@ -33,21 +33,21 @@ def test_city_registry_load():
     cities_dir = Path(__file__).parent.parent / "cities"
 
     if not cities_dir.exists():
-        print(f"❌ Cities directory not found: {cities_dir}")
+        print("❌ Cities directory not found: {cities_dir}")
         return False
 
-    print(f"📁 Cities directory: {cities_dir}")
+    print("📁 Cities directory: {cities_dir}")
 
     # Check for Los Angeles schema file
     la_schema_file = cities_dir / "us-ca-los_angeles.json"
     if not la_schema_file.exists():
-        print(f"❌ Los Angeles schema file not found: {la_schema_file}")
-        print(f"   Available files:")
+        print("❌ Los Angeles schema file not found: {la_schema_file}")
+        print("   Available files:")
         for f in cities_dir.glob("*.json"):
-            print(f"   - {f.name}")
+            print("   - {f.name}")
         return False
 
-    print(f"✅ Los Angeles schema file found: {la_schema_file.name}")
+    print("✅ Los Angeles schema file found: {la_schema_file.name}")
 
     try:
         # Load CityRegistry
@@ -64,7 +64,7 @@ def test_city_registry_load():
         print("\n🧪 Test 1: Get all cities")
         all_cities = registry.get_all_cities()
         print(
-            f"   Found {len(all_cities)} cities: {[city['city_id'] for city in all_cities]}"
+            "   Found {len(all_cities)} cities: {[city['city_id'] for city in all_cities]}"
         )
 
         if not any(city["city_id"] == "us-ca-los_angeles" for city in all_cities):
@@ -81,12 +81,12 @@ def test_city_registry_load():
             print("❌ Failed to get Los Angeles configuration")
             return False
 
-        print(f"✅ Los Angeles configuration loaded")
-        print(f"   Name: {la_config.name}")
-        print(f"   Jurisdiction: {la_config.jurisdiction.value}")
-        print(f"   Citation patterns: {len(la_config.citation_patterns)}")
-        print(f"   Timezone: {la_config.timezone}")
-        print(f"   Appeal deadline days: {la_config.appeal_deadline_days}")
+        print("✅ Los Angeles configuration loaded")
+        print("   Name: {la_config.name}")
+        print("   Jurisdiction: {la_config.jurisdiction.value}")
+        print("   Citation patterns: {len(la_config.citation_patterns)}")
+        print("   Timezone: {la_config.timezone}")
+        print("   Appeal deadline days: {la_config.appeal_deadline_days}")
 
         # Test 3: Test citation pattern matching
         print("\n🧪 Test 3: Test citation pattern matching")
@@ -97,9 +97,9 @@ def test_city_registry_load():
             return False
 
         la_pattern = la_config.citation_patterns[0]
-        print(f"   Citation pattern regex: {la_pattern.regex}")
-        print(f"   Description: {la_pattern.description}")
-        print(f"   Example numbers: {la_pattern.example_numbers}")
+        print("   Citation pattern regex: {la_pattern.regex}")
+        print("   Description: {la_pattern.description}")
+        print("   Example numbers: {la_pattern.example_numbers}")
 
         # Test with example citations
         test_citations = ["12345678901", "LA1234567", "INVALID123"]
@@ -110,9 +110,9 @@ def test_city_registry_load():
             if match:
                 city_id, section_id = match
                 matches.append((citation, city_id, section_id))
-                print(f"   ✅ '{citation}' → {city_id} ({section_id})")
+                print("   ✅ '{citation}' → {city_id} ({section_id})")
             else:
-                print(f"   ❌ '{citation}' → No match")
+                print("   ❌ '{citation}' → No match")
 
         if len(matches) < len(test_citations) - 1:  # At least 2 should match
             print("⚠️  Fewer matches than expected, but continuing...")
@@ -125,12 +125,12 @@ def test_city_registry_load():
             print("❌ Failed to get mail address")
             return False
 
-        print(f"✅ Mail address retrieved")
-        print(f"   Status: {mail_address.status.value}")
-        print(f"   Address: {mail_address.address1}")
-        print(f"   City: {mail_address.city}")
-        print(f"   State: {mail_address.state}")
-        print(f"   ZIP: {mail_address.zip}")
+        print("✅ Mail address retrieved")
+        print("   Status: {mail_address.status.value}")
+        print("   Address: {mail_address.address1}")
+        print("   City: {mail_address.city}")
+        print("   State: {mail_address.state}")
+        print("   ZIP: {mail_address.zip}")
 
         # Test 5: Get phone confirmation policy
         print("\n🧪 Test 5: Get phone confirmation policy")
@@ -142,17 +142,17 @@ def test_city_registry_load():
             print("❌ Failed to get phone confirmation policy")
             return False
 
-        print(f"✅ Phone confirmation policy retrieved")
-        print(f"   Required: {phone_policy.required}")
+        print("✅ Phone confirmation policy retrieved")
+        print("   Required: {phone_policy.required}")
         if phone_policy.phone_format_regex:
-            print(f"   Phone format regex: {phone_policy.phone_format_regex}")
+            print("   Phone format regex: {phone_policy.phone_format_regex}")
         if phone_policy.confirmation_message:
             print(
-                f"   Confirmation message: {phone_policy.confirmation_message[:50]}..."
+                "   Confirmation message: {phone_policy.confirmation_message[:50]}..."
             )
 
         if phone_policy.phone_number_examples:
-            print(f"   Phone number examples: {phone_policy.phone_number_examples}")
+            print("   Phone number examples: {phone_policy.phone_number_examples}")
 
         # Test 6: Get routing rule
         print("\n🧪 Test 6: Get routing rule")
@@ -162,14 +162,14 @@ def test_city_registry_load():
             print("❌ Failed to get routing rule")
             return False
 
-        print(f"✅ Routing rule: {routing_rule.value}")
+        print("✅ Routing rule: {routing_rule.value}")
 
         # Test 7: Validate phone number (if required)
         print("\n🧪 Test 7: Test phone validation")
         if phone_policy.required:
             test_phone = "866-561-9742"  # LA's phone number from schema
             is_valid = registry.validate_phone_for_city("us-ca-los_angeles", test_phone)
-            print(f"   Test phone '{test_phone}' valid: {is_valid}")
+            print("   Test phone '{test_phone}' valid: {is_valid}")
 
         # Test 8: Load configuration from file directly
         print("\n🧪 Test 8: Direct file validation")
@@ -196,17 +196,17 @@ def test_city_registry_load():
                 missing_fields.append(field)
 
         if missing_fields:
-            print(f"❌ Missing required fields in schema: {missing_fields}")
+            print("❌ Missing required fields in schema: {missing_fields}")
             return False
 
-        print(f"✅ All required fields present in schema")
-        print(f"   Citation patterns: {len(schema_data['citation_patterns'])}")
-        print(f"   Sections: {len(schema_data['sections'])}")
+        print("✅ All required fields present in schema")
+        print("   Citation patterns: {len(schema_data['citation_patterns'])}")
+        print("   Sections: {len(schema_data['sections'])}")
 
         return True
 
     except Exception as e:
-        print(f"❌ Error during testing: {e}")
+        print("❌ Error during testing: {e}")
         import traceback
 
         traceback.print_exc()

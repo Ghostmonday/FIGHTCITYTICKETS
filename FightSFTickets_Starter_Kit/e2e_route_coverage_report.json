@@ -1,0 +1,230 @@
+{
+  "timestamp": "2025-12-26T08:04:49.138007",
+  "base_url": "https://fightcitytickets.com",
+  "summary": {
+    "total": 30,
+    "passed": 27,
+    "failed": 3,
+    "warnings": 0,
+    "skipped": 0,
+    "pass_rate": 90.0
+  },
+  "results": {
+    "passed": [
+      {
+        "route": "/",
+        "status": "PASS",
+        "message": "Home page - Status: 200",
+        "timestamp": "2025-12-26T08:04:36.332351+00:00",
+        "details": {}
+      },
+      {
+        "route": "/privacy",
+        "status": "PASS",
+        "message": "Privacy policy - Status: 200",
+        "timestamp": "2025-12-26T08:04:36.798292+00:00",
+        "details": {}
+      },
+      {
+        "route": "/terms",
+        "status": "PASS",
+        "message": "Terms of service - Status: 200",
+        "timestamp": "2025-12-26T08:04:37.257387+00:00",
+        "details": {}
+      },
+      {
+        "route": "/sf",
+        "status": "PASS",
+        "message": "San Francisco city page - Status: 200",
+        "timestamp": "2025-12-26T08:04:37.673886+00:00",
+        "details": {}
+      },
+      {
+        "route": "/SF",
+        "status": "PASS",
+        "message": "San Francisco city page (uppercase) - Status: 200",
+        "timestamp": "2025-12-26T08:04:38.152792+00:00",
+        "details": {}
+      },
+      {
+        "route": "/san_francisco",
+        "status": "PASS",
+        "message": "San Francisco city page (slug) - Status: 200",
+        "timestamp": "2025-12-26T08:04:38.586395+00:00",
+        "details": {}
+      },
+      {
+        "route": "/la",
+        "status": "PASS",
+        "message": "Los Angeles city page - Status: 200",
+        "timestamp": "2025-12-26T08:04:38.993195+00:00",
+        "details": {}
+      },
+      {
+        "route": "/LA",
+        "status": "PASS",
+        "message": "Los Angeles city page (uppercase) - Status: 200",
+        "timestamp": "2025-12-26T08:04:39.466085+00:00",
+        "details": {}
+      },
+      {
+        "route": "/nyc",
+        "status": "PASS",
+        "message": "New York City page - Status: 200",
+        "timestamp": "2025-12-26T08:04:39.940825+00:00",
+        "details": {}
+      },
+      {
+        "route": "/NYC",
+        "status": "PASS",
+        "message": "New York City page (uppercase) - Status: 200",
+        "timestamp": "2025-12-26T08:04:40.341834+00:00",
+        "details": {}
+      },
+      {
+        "route": "/chicago",
+        "status": "PASS",
+        "message": "Chicago city page - Status: 200",
+        "timestamp": "2025-12-26T08:04:40.737530+00:00",
+        "details": {}
+      },
+      {
+        "route": "/seattle",
+        "status": "PASS",
+        "message": "Seattle city page - Status: 200",
+        "timestamp": "2025-12-26T08:04:41.220703+00:00",
+        "details": {}
+      },
+      {
+        "route": "/phoenix",
+        "status": "PASS",
+        "message": "Phoenix city page - Status: 200",
+        "timestamp": "2025-12-26T08:04:41.684391+00:00",
+        "details": {}
+      },
+      {
+        "route": "/appeal",
+        "status": "PASS",
+        "message": "Appeal page - Status: 200",
+        "timestamp": "2025-12-26T08:04:42.074023+00:00",
+        "details": {}
+      },
+      {
+        "route": "/appeal/camera",
+        "status": "PASS",
+        "message": "Appeal camera page - Status: 200",
+        "timestamp": "2025-12-26T08:04:42.520814+00:00",
+        "details": {}
+      },
+      {
+        "route": "/appeal/review",
+        "status": "PASS",
+        "message": "Appeal review page - Status: 200",
+        "timestamp": "2025-12-26T08:04:42.994373+00:00",
+        "details": {}
+      },
+      {
+        "route": "/appeal/signature",
+        "status": "PASS",
+        "message": "Appeal signature page - Status: 200",
+        "timestamp": "2025-12-26T08:04:43.410881+00:00",
+        "details": {}
+      },
+      {
+        "route": "/appeal/checkout",
+        "status": "PASS",
+        "message": "Appeal checkout page - Status: 200",
+        "timestamp": "2025-12-26T08:04:43.872807+00:00",
+        "details": {}
+      },
+      {
+        "route": "/admin",
+        "status": "PASS",
+        "message": "Admin page - Status: 200",
+        "timestamp": "2025-12-26T08:04:44.254943+00:00",
+        "details": {}
+      },
+      {
+        "route": "https://fightcitytickets.com/api/health",
+        "status": "PASS",
+        "message": "API health check - Status: 200",
+        "timestamp": "2025-12-26T08:04:44.695452+00:00",
+        "details": {}
+      },
+      {
+        "route": "https://fightcitytickets.com/health",
+        "status": "PASS",
+        "message": "Health endpoint - Status: 200",
+        "timestamp": "2025-12-26T08:04:45.129581+00:00",
+        "details": {}
+      },
+      {
+        "route": "https://fightcitytickets.com/api/tickets/validate",
+        "status": "PASS",
+        "message": "Citation validation endpoint - Status: 200",
+        "timestamp": "2025-12-26T08:04:45.565965+00:00",
+        "details": {}
+      },
+      {
+        "route": "Flow1:Validate",
+        "status": "PASS",
+        "message": "Citation validation successful",
+        "timestamp": "2025-12-26T08:04:46.941338+00:00",
+        "details": {}
+      },
+      {
+        "route": "Flow2:Home",
+        "status": "PASS",
+        "message": "Home page accessible",
+        "timestamp": "2025-12-26T08:04:47.821364+00:00",
+        "details": {}
+      },
+      {
+        "route": "Flow2:City",
+        "status": "PASS",
+        "message": "City page accessible",
+        "timestamp": "2025-12-26T08:04:48.233374+00:00",
+        "details": {}
+      },
+      {
+        "route": "Link:/privacy",
+        "status": "PASS",
+        "message": "Footer link works",
+        "timestamp": "2025-12-26T08:04:48.690958+00:00",
+        "details": {}
+      },
+      {
+        "route": "Link:/terms",
+        "status": "PASS",
+        "message": "Footer link works",
+        "timestamp": "2025-12-26T08:04:49.137007+00:00",
+        "details": {}
+      }
+    ],
+    "failed": [
+      {
+        "route": "https://fightcitytickets.com/api/statement/refine",
+        "status": "FAIL",
+        "message": "Statement refinement endpoint - Request failed",
+        "timestamp": "2025-12-26T08:04:46.002406+00:00",
+        "details": {}
+      },
+      {
+        "route": "https://fightcitytickets.com/api/webhook/health",
+        "status": "FAIL",
+        "message": "Webhook health check - Request failed",
+        "timestamp": "2025-12-26T08:04:46.502605+00:00",
+        "details": {}
+      },
+      {
+        "route": "Flow1:Appeal",
+        "status": "FAIL",
+        "message": "Appeal page not accessible",
+        "timestamp": "2025-12-26T08:04:47.332434+00:00",
+        "details": {}
+      }
+    ],
+    "warnings": [],
+    "skipped": []
+  }
+}

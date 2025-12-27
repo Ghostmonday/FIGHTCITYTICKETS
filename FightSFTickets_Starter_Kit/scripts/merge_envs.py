@@ -101,13 +101,13 @@ class EnvMerger:
 
         for file_path, file_type in file_specs:
             if not file_path.exists():
-                print(f"⚠️  Warning: File not found: {file_path}")
+                print("⚠️  Warning: File not found: {file_path}")
                 continue
 
             env_file = self._parse_file(file_path, file_type)
             self.files.append(env_file)
             print(
-                f"✅ Loaded {file_type.value}: {file_path} ({env_file.variable_count} variables, {env_file.total_lines} lines)"
+                "✅ Loaded {file_type.value}: {file_path} ({env_file.variable_count} variables, {env_file.total_lines} lines)"
             )
 
     def _parse_file(self, file_path: Path, file_type: EnvFileType) -> EnvFile:
@@ -225,7 +225,7 @@ class EnvMerger:
         print("-" * 40)
         for env_file in self.files:
             print(
-                f"  {env_file.type.value.upper():12} | {env_file.variable_count:3} variables | {env_file.total_lines:3} lines | {env_file.path}"
+                "  {env_file.type.value.upper():12} | {env_file.variable_count:3} variables | {env_file.total_lines:3} lines | {env_file.path}"
             )
 
         # Variable overlap analysis
@@ -233,7 +233,7 @@ class EnvMerger:
         print("-" * 40)
 
         total_unique_vars = len(self.all_variables)
-        print(f"  Total unique variables across all files: {total_unique_vars}")
+        print("  Total unique variables across all files: {total_unique_vars}")
 
         # Count variables per file type
         vars_by_type = {file_type: set() for file_type in EnvFileType}
@@ -242,13 +242,13 @@ class EnvMerger:
                 vars_by_type[var.file_type].add(var_name)
 
         print(
-            f"  Variables in example file:      {len(vars_by_type[EnvFileType.EXAMPLE]):3}"
+            "  Variables in example file:      {len(vars_by_type[EnvFileType.EXAMPLE]):3}"
         )
         print(
-            f"  Variables in production file:   {len(vars_by_type[EnvFileType.PRODUCTION]):3}"
+            "  Variables in production file:   {len(vars_by_type[EnvFileType.PRODUCTION]):3}"
         )
         print(
-            f"  Variables in test file:         {len(vars_by_type[EnvFileType.TEST]):3}"
+            "  Variables in test file:         {len(vars_by_type[EnvFileType.TEST]):3}"
         )
 
         # Find variables unique to each file
@@ -261,20 +261,20 @@ class EnvMerger:
 
             unique_vars = vars_by_type[file_type] - other_vars
             if unique_vars:
-                print(f"    {file_type.value.upper():12}: {len(unique_vars)} variables")
+                print("    {file_type.value.upper():12}: {len(unique_vars)} variables")
                 for var in sorted(unique_vars)[:5]:  # Show first 5
-                    print(f"      - {var}")
+                    print("      - {var}")
                 if len(unique_vars) > 5:
-                    print(f"      ... and {len(unique_vars) - 5} more")
+                    print("      ... and {len(unique_vars) - 5} more")
 
         # Find variables in all files
         common_vars = set.intersection(*[vars_by_type[ft] for ft in EnvFileType])
-        print(f"\n  Variables in ALL files: {len(common_vars)}")
+        print("\n  Variables in ALL files: {len(common_vars)}")
         if common_vars:
             for var in sorted(common_vars)[:10]:
-                print(f"    - {var}")
+                print("    - {var}")
             if len(common_vars) > 10:
-                print(f"    ... and {len(common_vars) - 10} more")
+                print("    ... and {len(common_vars) - 10} more")
 
         # Find variables with different values
         print("\n🔍 VARIABLES WITH DIFFERENT VALUES ACROSS FILES:")
@@ -288,11 +288,11 @@ class EnvMerger:
                     conflicting_vars.append((var_name, vars_list))
 
         if conflicting_vars:
-            print(f"  Found {len(conflicting_vars)} variables with different values:")
+            print("  Found {len(conflicting_vars)} variables with different values:")
             for var_name, vars_list in conflicting_vars[:5]:  # Show first 5
-                print(f"\n    {var_name}:")
+                print("\n    {var_name}:")
                 for var in vars_list:
-                    print(f"      {var.file_type.value:12}: {var.value}")
+                    print("      {var.file_type.value:12}: {var.value}")
         else:
             print("  No variables with conflicting values found.")
 
@@ -305,7 +305,7 @@ class EnvMerger:
         if example_file:
             for section_name, vars_list in example_file.sections.items():
                 if vars_list:
-                    print(f"  {section_name:30}: {len(vars_list):2} variables")
+                    print("  {section_name:30}: {len(vars_list):2} variables")
 
     def show_differences(self) -> None:
         """Show detailed differences between files."""
@@ -357,7 +357,7 @@ class EnvMerger:
                 test_val = test_val[:17] + "..."
 
             print(
-                f"{var_name:25} | {example_val:20} | {prod_val:20} | {test_val:20} | {status}"
+                "{var_name:25} | {example_val:20} | {prod_val:20} | {test_val:20} | {status}"
             )
 
     def merge(self, output_path: Optional[Path] = None) -> Path:
@@ -376,7 +376,7 @@ class EnvMerger:
         if output_path is None:
             output_path = self.project_root / ".env.template"
 
-        print(f"\n📝 Creating merged template: {output_path}")
+        print("\n📝 Creating merged template: {output_path}")
 
         # Build merged variables
         merged_vars: Dict[str, EnvVariable] = {}
@@ -445,9 +445,9 @@ class EnvMerger:
             for section_name in self.SECTION_HEADERS.values():
                 vars_in_section = categorized_vars[section_name]
                 if vars_in_section:
-                    f.write(f"\n# {'=' * 77}\n")
-                    f.write(f"# {section_name}\n")
-                    f.write(f"# {'=' * 77}\n\n")
+                    f.write("\n# {'=' * 77}\n")
+                    f.write("# {section_name}\n")
+                    f.write("# {'=' * 77}\n\n")
 
                     # Sort variables alphabetically within section
                     vars_in_section.sort(key=lambda v: v.name)
@@ -455,7 +455,7 @@ class EnvMerger:
                     for var in vars_in_section:
                         # Write variable with comment
                         if var.comment:
-                            f.write(f"# {var.comment}\n")
+                            f.write("# {var.comment}\n")
 
                         # Determine best default value
                         default_value = var.value
@@ -472,22 +472,22 @@ class EnvMerger:
                             elif not default_value or default_value == "...":
                                 default_value = "change-me-to-actual-value"
 
-                        f.write(f"{var.name}={default_value}\n")
+                        f.write("{var.name}={default_value}\n")
 
             # Footer
             f.write("\n" + "# " + "=" * 77 + "\n")
             f.write("# END OF CONFIGURATION\n")
             f.write("# " + "=" * 77 + "\n")
 
-        print(f"✅ Created merged template with {len(merged_vars)} variables")
-        print(f"📁 Output file: {output_path}")
+        print("✅ Created merged template with {len(merged_vars)} variables")
+        print("📁 Output file: {output_path}")
 
         # Show summary
         print("\n📊 MERGED TEMPLATE SUMMARY:")
         print("-" * 40)
         for section_name, vars_list in categorized_vars.items():
             if vars_list:
-                print(f"  {section_name:30}: {len(vars_list):2} variables")
+                print("  {section_name:30}: {len(vars_list):2} variables")
 
         return output_path
 
@@ -515,20 +515,20 @@ class EnvMerger:
         print("-" * 40)
 
         action_items = [
-            (f"Create merged template", f"python merge_envs.py merge"),
-            (f"Review merged template", f"Check {merged_path} for accuracy"),
-            (f"Update .gitignore", f"Ensure .env is listed (already done)"),
-            (f"Update documentation", f"Change references to use .env.template"),
+            ("Create merged template", "python merge_envs.py merge"),
+            ("Review merged template", "Check {merged_path} for accuracy"),
+            ("Update .gitignore", "Ensure .env is listed (already done)"),
+            ("Update documentation", "Change references to use .env.template"),
             (
-                f"Optional: Delete redundant files",
-                f"rm .env.example .env.production.template backend/.env.test",
+                "Optional: Delete redundant files",
+                "rm .env.example .env.production.template backend/.env.test",
             ),
-            (f"Test with new setup", f"cp .env.template .env && fill with test values"),
+            ("Test with new setup", "cp .env.template .env && fill with test values"),
         ]
 
         for i, (action, command) in enumerate(action_items, 1):
-            print(f"{i}. {action}")
-            print(f"   → {command}")
+            print("{i}. {action}")
+            print("   → {command}")
 
         print("\n⚠️  WARNINGS:")
         print("-" * 40)
@@ -547,7 +547,7 @@ class EnvMerger:
         for old_file in old_files:
             # Simple grep for references
             old_file_ref = old_file.replace(".", r"\.").replace("/", r"\/")
-            print(f"  References to {old_file}: Checking...")
+            print("  References to {old_file}: Checking...")
 
         print("\n💡 TIP: Run 'python merge_envs.py analyze' first to see current state")
         print("💡 TIP: Run 'python merge_envs.py diff' to see all differences")
@@ -572,7 +572,7 @@ def main():
 
     if command == "analyze":
         merger.analyze()
-    elif command == "diff":
+    elif command == "dif":
         merger.show_differences()
     elif command == "merge":
         merger.merge()
@@ -581,7 +581,7 @@ def main():
     elif command in ["help", "--help", "-h"]:
         print(__doc__)
     else:
-        print(f"Unknown command: {command}")
+        print("Unknown command: {command}")
         print("Available commands: analyze, diff, merge, cleanup, help")
         sys.exit(1)
 

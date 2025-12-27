@@ -88,7 +88,7 @@ async def refine_appeal_statement(request: StatementRefinementRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Statement refinement failed: {str(e)}",
-        )
+        ) from e
 
 
 @router.post("/polish", response_model=StatementRefinementResponse, deprecated=True)
