@@ -65,9 +65,9 @@ print("Configuring DNS for your existing domains")
 print("=" * 60)
 print()
 
-# Configure fightsftickets.com
-print("1. Configuring fightsftickets.com...")
-set_dns("fightsftickets", "com")
+# Configure fightcitytickets.com
+print("1. Configuring fightcitytickets.com...")
+set_dns("fightcitytickets", "com")
 print()
 
 # Configure fightcitytickets.city
@@ -87,7 +87,7 @@ print("  - Register it if available")
 print("  - Then run: python scripts/fix_dns_now.py")
 print()
 print("Option 2: Use an existing domain")
-print("  - Use: https://fightsftickets.com (already configured)")
+print("  - Use: https://fightcitytickets.com (already configured)")
 print("  - Or: https://fightcitytickets.city (already configured)")
 print()
 print("DNS will propagate in 5-30 minutes")

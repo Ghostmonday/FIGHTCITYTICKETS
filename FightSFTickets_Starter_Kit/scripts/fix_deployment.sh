@@ -11,9 +11,9 @@ echo "🔧 Fixing deployment for $DOMAIN"
 echo "============================================================"
 
 # Check if we're on the server or local
-if [ -d "/var/www/fightsftickets" ]; then
+if [ -d "/var/www/fightcitytickets" ]; then
     echo "✅ Running on server"
-    DEPLOY_DIR="/var/www/fightsftickets"
+    DEPLOY_DIR="/var/www/fightcitytickets"
     cd "$DEPLOY_DIR"
 else
     echo "⚠️  Running locally - will SSH to server"

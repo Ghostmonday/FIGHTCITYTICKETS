@@ -1,5 +1,5 @@
 """
-Lob Mail Service for FightSFTickets.com
+Lob Mail Service for FightCityTickets.com
 
 Handles physical mail delivery of parking ticket appeals via Lob API.
 Generates PDFs and sends certified/regular mail to SFMTA.

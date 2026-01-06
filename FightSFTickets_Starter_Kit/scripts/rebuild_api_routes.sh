@@ -5,7 +5,7 @@
 set -e
 
 echo "🔧 Rebuilding API container with fixed routes..."
-cd /var/www/fightsftickets
+cd /var/www/fightcitytickets
 
 echo "Stopping API container..."
 docker-compose stop api

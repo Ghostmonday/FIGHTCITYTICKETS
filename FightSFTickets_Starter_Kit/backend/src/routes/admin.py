@@ -1,5 +1,5 @@
 """
-Admin Routes for FightSFTickets.com
+Admin Routes for FightCityTickets.com
 
 Provides endpoints for monitoring server status, viewing logs, and accessing recent activity.
 Protected by a simple admin secret key header.

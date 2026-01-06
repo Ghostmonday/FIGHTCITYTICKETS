@@ -9,7 +9,7 @@ import subprocess
 import sys
 import time
 
-DOMAIN = "fightsftickets.com"  # CORRECTED domain name
+DOMAIN = "fightcitytickets.com"  # CORRECTED domain name
 SERVER_IP = "178.156.215.100"
 SERVER_USER = "root"
 

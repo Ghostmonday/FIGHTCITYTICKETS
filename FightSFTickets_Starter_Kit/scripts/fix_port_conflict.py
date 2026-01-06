@@ -13,7 +13,7 @@ if sys.platform == 'win32':
 SERVER_IP = "178.156.215.100"
 USERNAME = "root"
 PASSWORD = "HWU9CCseoeFWLNG729rTYSwkTUF5WMtHhP8cgFDmHLkm1Hw0xwSk0beN1D6MXNBo"
-DEPLOY_PATH = "/var/www/fightsftickets"
+DEPLOY_PATH = "/var/www/fightcitytickets"
 
 def log(message, level="INFO"):
     colors = {"INFO": "\033[0;34m", "SUCCESS": "\033[0;32m", "WARNING": "\033[1;33m", "ERROR": "\033[0;31m", "NC": "\033[0m"}

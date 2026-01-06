@@ -1,5 +1,5 @@
 """
-Simple Appeal Data Storage for FightSFTickets.com
+Simple Appeal Data Storage for FightCityTickets.com
 
 Provides temporary storage for appeal data between frontend submission
 and Stripe webhook processing. In production, this should be replaced

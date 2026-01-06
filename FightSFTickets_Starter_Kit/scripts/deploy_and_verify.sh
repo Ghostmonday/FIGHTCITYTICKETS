@@ -14,7 +14,7 @@ NC='\033[0m'
 # Configuration
 DOMAIN="${DOMAIN:-fightcitytickets.com}"
 SERVER_IP="${SERVER_IP:-178.156.215.100}"
-DEPLOY_PATH="/var/www/fightsftickets"
+DEPLOY_PATH="/var/www/fightcitytickets"
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/id_rsa}"
 
 log_info() {

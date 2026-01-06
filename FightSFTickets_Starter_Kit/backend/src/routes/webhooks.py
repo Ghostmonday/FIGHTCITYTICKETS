@@ -1,5 +1,5 @@
 """
-Stripe Webhook Handler for FightSFTickets.com (Database-First Approach)
+Stripe Webhook Handler for FightCityTickets.com (Database-First Approach)
 
 Handles Stripe webhook events for payment confirmation and appeal fulfillment.
 Uses database for persistent storage and implements idempotent processing.

@@ -9,7 +9,7 @@ import sys
 # Server configuration
 SERVER_HOST = "178.156.215.100"
 SERVER_USER = "root"
-NGINX_CONFIG_PATH = "/var/www/fightsftickets/nginx/conf.d/fightcitytickets.conf"
+NGINX_CONFIG_PATH = "/var/www/fightcitytickets/nginx/conf.d/fightcitytickets.conf"
 
 # Fixed Nginx configuration
 NGINX_CONFIG = """# HTTP server - redirect to HTTPS
@@ -120,7 +120,7 @@ def main():
         # Test Nginx config
         print("Testing Nginx configuration...")
         stdin, stdout, stderr = ssh.exec_command(
-            "cd /var/www/fightsftickets && docker-compose exec -T nginx nginx -t"
+            "cd /var/www/fightcitytickets && docker-compose exec -T nginx nginx -t"
         )
         exit_status = stdout.channel.recv_exit_status()
         output = stdout.read().decode()
@@ -137,7 +137,7 @@ def main():
         # Reload Nginx
         print("Reloading Nginx...")
         stdin, stdout, stderr = ssh.exec_command(
-            "cd /var/www/fightsftickets && docker-compose exec -T nginx nginx -s reload"
+            "cd /var/www/fightcitytickets && docker-compose exec -T nginx nginx -s reload"
         )
         exit_status = stdout.channel.recv_exit_status()
         if exit_status == 0:

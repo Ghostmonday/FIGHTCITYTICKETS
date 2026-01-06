@@ -15,7 +15,7 @@ NC='\033[0m'
 # Configuration
 SERVER_IP="${SERVER_IP:-178.156.215.100}"
 SERVER_USER="${SERVER_USER:-root}"
-DEPLOY_PATH="${DEPLOY_PATH:-/var/www/fightsftickets}"
+DEPLOY_PATH="${DEPLOY_PATH:-/var/www/fightcitytickets}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/id_rsa}"
 
 log_info() {

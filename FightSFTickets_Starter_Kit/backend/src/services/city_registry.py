@@ -1,5 +1,5 @@
 """
-City Registry Service for FightSFTickets.com
+City Registry Service for FightCityTickets.com
 
 Handles multi-city configuration management for 37 cities.
 Loads, validates, and provides routing for citation patterns and mailing addresses

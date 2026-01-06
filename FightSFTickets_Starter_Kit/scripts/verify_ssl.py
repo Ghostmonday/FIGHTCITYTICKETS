@@ -5,7 +5,7 @@ import requests
 import socket
 import ssl
 
-DOMAIN = "fightsftickets.com"
+DOMAIN = "fightcitytickets.com"
 
 print("=" * 60)
 print("SSL Verification")

@@ -15,7 +15,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-PROJECT_NAME="fightsftickets"
+PROJECT_NAME="fightcitytickets"
 DEPLOY_PATH="/var/www/${PROJECT_NAME}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/id_rsa}"
 
@@ -122,7 +122,7 @@ rebuild_services() {
     log_info "Rebuilding and restarting services..."
 
     ssh -i "$SSH_KEY_PATH" root@"$SERVER_IP" << 'ENDSSH'
-cd /var/www/fightsftickets
+cd /var/www/fightcitytickets
 
 # Pull latest images if any
 docker-compose -f docker-compose.prod.yml pull
@@ -157,7 +157,7 @@ run_migrations() {
     log_info "Running database migrations..."
 
     ssh -i "$SSH_KEY_PATH" root@"$SERVER_IP" << 'ENDSSH'
-cd /var/www/fightsftickets
+cd /var/www/fightcitytickets
 
 # Wait for database to be ready
 sleep 10
@@ -177,7 +177,7 @@ verify_deployment() {
 
     # Check if services are running
     ssh -i "$SSH_KEY_PATH" root@"$SERVER_IP" << 'ENDSSH'
-cd /var/www/fightsftickets
+cd /var/www/fightcitytickets
 
 echo "Checking service status..."
 docker-compose -f docker-compose.prod.yml ps
@@ -205,7 +205,7 @@ docker image prune -af --filter "until=24h"
 docker volume prune -f --filter "label!=keep"
 
 # Remove old backups (keep last 7 days)
-find /var/backups/fightsftickets -type f -mtime +7 -delete || true
+find /var/backups/fightcitytickets -type f -mtime +7 -delete || true
 
 echo "Cleanup completed!"
 ENDSSH

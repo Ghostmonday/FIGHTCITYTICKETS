@@ -37,7 +37,7 @@ config = '''server {
 }
 '''
 
-with open('/var/www/fightsftickets/nginx/conf.d/fightcitytickets.conf', 'w') as f:
+with open('/var/www/fightcitytickets/nginx/conf.d/fightcitytickets.conf', 'w') as f:
     f.write(config)
 print('Config written successfully')
 

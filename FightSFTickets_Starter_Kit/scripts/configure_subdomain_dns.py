@@ -18,7 +18,7 @@ if not NAMECHEAP_USERNAME or not NAMECHEAP_API_KEY:
 
 # Domains to configure
 DOMAINS = [
-    ("fightsftickets", "com"),
+    ("fightcitytickets", "com"),
     ("fightcitytickets", "city"),
 ]
 
@@ -107,9 +107,9 @@ print("Subdomain DNS Configuration Complete!")
 print("=" * 60)
 print()
 print("Now these subdomains will work:")
-print("  - sf.fightsftickets.com")
-print("  - nyc.fightsftickets.com")
-print("  - sd.fightsftickets.com")
+print("  - sf.fightcitytickets.com")
+print("  - nyc.fightcitytickets.com")
+print("  - sd.fightcitytickets.com")
 print("  - (and all other city subdomains)")
 print()
 print("DNS will propagate in 5-30 minutes")

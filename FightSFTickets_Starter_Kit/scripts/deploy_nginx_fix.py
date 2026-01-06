@@ -14,7 +14,7 @@ if sys.platform == 'win32':
 SERVER_IP = "178.156.215.100"
 USERNAME = "root"
 PASSWORD = "HWU9CCseoeFWLNG729rTYSwkTUF5WMtHhP8cgFDmHLkm1Hw0xwSk0beN1D6MXNBo"
-DEPLOY_PATH = "/var/www/fightsftickets"
+DEPLOY_PATH = "/var/www/fightcitytickets"
 
 # Get project root - script is in scripts/, so go up 2 levels
 SCRIPT_DIR = Path(__file__).parent.absolute()

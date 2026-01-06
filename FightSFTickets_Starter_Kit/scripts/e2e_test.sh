@@ -12,7 +12,7 @@ echo "Timestamp: $(date)"
 echo ""
 
 # Configuration
-BASE_URL="https://fightsftickets.com"
+BASE_URL="https://fightcitytickets.com"
 API_URL="${BASE_URL}"
 TEST_CITATION="912345678"
 TEST_DATE="2024-01-15"
@@ -252,7 +252,7 @@ echo "-------------------------------"
 
 # Test 26: Check HTTPS is enforced
 echo -n "Checking HTTPS redirect... "
-http_response=$(curl -s -o /dev/null -w "%{http_code}" http://fightsftickets.com/)
+http_response=$(curl -s -o /dev/null -w "%{http_code}" http://fightcitytickets.com/)
 if [ "$http_response" -eq 301 ] || [ "$http_response" -eq 308 ]; then
     log_success "HTTP redirects to HTTPS"
 else

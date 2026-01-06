@@ -1,5 +1,5 @@
 """
-Database Service for FightSFTickets.com
+Database Service for FightCityTickets.com
 
 Handles database connections, session management, and common operations.
 Uses SQLAlchemy with PostgreSQL for production-ready data persistence.

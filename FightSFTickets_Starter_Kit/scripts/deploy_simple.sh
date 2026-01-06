@@ -15,9 +15,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-PROJECT_NAME="fightsftickets"
+PROJECT_NAME="fightcitytickets"
 SERVER_NAME="${PROJECT_NAME}-prod"
-DOMAIN="${DOMAIN:-fightsftickets.com}"
+DOMAIN="${DOMAIN:-fightcitytickets.com}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
 DEPLOY_PATH="/var/www/${PROJECT_NAME}"
 SSH_KEY_PATH="${SSH_KEY_PATH:-$HOME/.ssh/id_rsa}"
@@ -424,7 +424,7 @@ volumes:
 
 networks:
   default:
-    name: fightsftickets_network
+    name: fightcitytickets_network
 EOF
 ENDSSH
 

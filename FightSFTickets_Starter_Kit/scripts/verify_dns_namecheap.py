@@ -172,7 +172,7 @@ def verify_dns_records(domain, expected_ip):
     # Check for incorrect domain references
     for host in hosts:
         address = host.get('Address', '').lower()
-        if 'fightsftickets' in address or 'flight' in address:
+        if 'fightcitytickets' in address or 'flight' in address:
             issues.append("❌ Found incorrect domain reference: {address}")
 
     if issues:

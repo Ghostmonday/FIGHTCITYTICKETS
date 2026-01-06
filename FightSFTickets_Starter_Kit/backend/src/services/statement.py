@@ -1,5 +1,5 @@
 """
-Statement Refinement Service for FightSFTickets.com
+Statement Refinement Service for FightCityTickets.com
 
 Uses DeepSeek AI to convert user appeal statements into professional,
 UPL-compliant appeal letters for San Francisco parking tickets.

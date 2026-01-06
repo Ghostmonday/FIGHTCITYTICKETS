@@ -1,5 +1,5 @@
 """
-Checkout Routes for FightSFTickets.com (Database-First Approach)
+Checkout Routes for FightCityTickets.com (Database-First Approach)
 
 Handles payment session creation and status checking for appeal processing.
 Uses database for persistent storage before creating Stripe checkout sessions.
@@ -101,8 +101,11 @@ class AppealCheckoutRequest(BaseModel):
             return v
         # City IDs should be lowercase alphanumeric with underscores
         import re
+
         if not re.match(r"^[a-z0-9_]+$", v.lower()):
-            raise ValueError("city_id must be lowercase alphanumeric with underscores only")
+            raise ValueError(
+                "city_id must be lowercase alphanumeric with underscores only"
+            )
         return v.lower()
 
     @validator("user_state")
@@ -210,7 +213,9 @@ def create_appeal_checkout(request: Request, appeal_request: AppealCheckoutReque
             user_state=appeal_request.user_state,
             user_zip=appeal_request.user_zip,
             user_email=appeal_request.user_email,
-            appeal_reason=appeal_request.draft_text[:5000] if appeal_request.draft_text else None,
+            appeal_reason=appeal_request.draft_text[:5000]
+            if appeal_request.draft_text
+            else None,
             selected_evidence=appeal_request.selected_evidence,
             signature_data=appeal_request.signature_data,
             city=appeal_request.city_id or "s",  # Default to SF if not provided
@@ -253,7 +258,7 @@ def create_appeal_checkout(request: Request, appeal_request: AppealCheckoutReque
             # This is acceptable - user can retry payment later
             logger.error(
                 "Stripe session creation failed after DB records created [intake_id={intake.id}]: {stripe_error}",
-                exc_info=True
+                exc_info=True,
             )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
@@ -277,18 +282,14 @@ def create_appeal_checkout(request: Request, appeal_request: AppealCheckoutReque
         # Validation error from our service
         logger.warning(f"Checkout validation error: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid request: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid request: {str(e)}"
         ) from e
     except HTTPException:
         # Re-raise HTTP exceptions (e.g., from Stripe error handler)
         raise
     except Exception as e:
         # Unexpected error - log with request context
-        logger.error(
-            f"Unexpected error creating checkout session: {e}",
-            exc_info=True
-        )
+        logger.error(f"Unexpected error creating checkout session: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create checkout session. Please try again.",

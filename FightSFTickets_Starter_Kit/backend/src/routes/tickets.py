@@ -1,5 +1,5 @@
 """
-Citation and Ticket Routes for FightSFTickets.com
+Citation and Ticket Routes for FightCityTickets.com
 
 Handles citation validation and related ticket services.
 """
@@ -87,11 +87,29 @@ def validate_citation(request: CitationValidationRequest):
     - Deadline status (urgent/past due)
     """
     # #region agent log
-    import json, time
+    import json
+    import time
+
     try:
-        with open(r'c:\Comapnyfiles\provethat.io\.cursor\debug.log', 'a') as f:
-            f.write(json.dumps({"location":"tickets.py:91","message":"validate_citation called","data":{"citation_number":request.citation_number,"city_id":request.city_id},"timestamp":int(time.time()*1000),"sessionId":"debug-session","hypothesisId":"C,E"})+"\n")
-    except: pass
+        with open(r"c:\Comapnyfiles\provethat.io\.cursor\debug.log", "a") as f:
+            f.write(
+                json.dumps(
+                    {
+                        "location": "tickets.py:91",
+                        "message": "validate_citation called",
+                        "data": {
+                            "citation_number": request.citation_number,
+                            "city_id": request.city_id,
+                        },
+                        "timestamp": int(time.time() * 1000),
+                        "sessionId": "debug-session",
+                        "hypothesisId": "C,E",
+                    }
+                )
+                + "\n"
+            )
+    except:
+        pass
     # #endregion
     try:
         # Use the citation validation service
@@ -112,13 +130,26 @@ def validate_citation(request: CitationValidationRequest):
                 # Get city names for error message
                 try:
                     from ..services.city_registry import get_city_registry
+
                     city_registry = get_city_registry()
                     if city_registry:
-                        detected_city_config = city_registry.get_city_config(validation.city_id)
-                        selected_city_config = city_registry.get_city_config(request.city_id)
+                        detected_city_config = city_registry.get_city_config(
+                            validation.city_id
+                        )
+                        selected_city_config = city_registry.get_city_config(
+                            request.city_id
+                        )
 
-                        detected_name = detected_city_config.name if detected_city_config else validation.city_id
-                        selected_name = selected_city_config.name if selected_city_config else request.city_id
+                        detected_name = (
+                            detected_city_config.name
+                            if detected_city_config
+                            else validation.city_id
+                        )
+                        selected_name = (
+                            selected_city_config.name
+                            if selected_city_config
+                            else request.city_id
+                        )
 
                         selected_city_mismatch_message = (
                             "The citation number appears to be from {detected_name}, "
@@ -160,11 +191,30 @@ def validate_citation(request: CitationValidationRequest):
 
     except Exception as e:
         # #region agent log
-        import json, time, traceback
+        import json
+        import time
+        import traceback
+
         try:
-            with open(r'c:\Comapnyfiles\provethat.io\.cursor\debug.log', 'a') as f:
-                f.write(json.dumps({"location":"tickets.py:160","message":"validate_citation exception","data":{"error":str(e),"traceback":traceback.format_exc()},"timestamp":int(time.time()*1000),"sessionId":"debug-session","hypothesisId":"E"})+"\n")
-        except: pass
+            with open(r"c:\Comapnyfiles\provethat.io\.cursor\debug.log", "a") as f:
+                f.write(
+                    json.dumps(
+                        {
+                            "location": "tickets.py:160",
+                            "message": "validate_citation exception",
+                            "data": {
+                                "error": str(e),
+                                "traceback": traceback.format_exc(),
+                            },
+                            "timestamp": int(time.time() * 1000),
+                            "sessionId": "debug-session",
+                            "hypothesisId": "E",
+                        }
+                    )
+                    + "\n"
+                )
+        except:
+            pass
         # #endregion
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

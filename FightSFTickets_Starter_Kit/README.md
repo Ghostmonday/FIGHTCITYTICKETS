@@ -1,12 +1,12 @@
-# FightSFTickets - Production Ready Parking Ticket Appeal System
+# FightCityTickets - Multi-City Parking Ticket Appeal System
 
-**Status**: 🚀 **PRODUCTION READY - DEPLOYED TO HETZNER CLOUD** | **Version**: 1.0.0 | **Last Updated**: 2025-01-09
+**Status**: 🚀 **PRODUCTION READY** | **Version**: 1.0.0 | **Last Updated**: 2025-01-09
 
 **🤖 AI Assistant Note**: For AI assistants working on this project, please read `AI_START_HERE.md` first - it contains the complete consolidated project context and serves as the single source of truth.
 
 ## 🎉 Project Overview
 
-FightSFTickets.com is a complete, production-ready SaaS application that automates San Francisco parking ticket appeals via physical mail. The system provides an end-to-end solution for users to submit evidence, record their story, receive AI-drafted appeal letters, and have them professionally printed and mailed via Lob API.
+FightCityTickets.com is a complete, production-ready SaaS application that automates parking ticket appeals for 15+ cities via physical mail. The system provides an end-to-end solution for users to submit evidence, record their story, receive AI-drafted appeal letters, and have them professionally printed and mailed via Lob API.
 
 ### ✨ Key Features
 - **Complete Appeal Flow**: Citation entry → Photo upload → Voice recording → Letter review → Signature → Payment → Success
@@ -332,7 +332,7 @@ SERVER_IP=xxx.xxx.xxx.xxx ./scripts/update_deployment.sh
 ## 📄 License & Legal
 
 ### Important Legal Notice
-FightSFTickets is not a law firm and does not provide legal advice. We are a document preparation service that helps you format and submit your own appeal. We do not recommend specific evidence, promise outcomes, or provide legal representation. You are responsible for the content of your appeal.
+FightCityTickets is not a law firm and does not provide legal advice. We are a document preparation service that helps you format and submit your own appeal. We do not recommend specific evidence, promise outcomes, or provide legal representation. You are responsible for the content of your appeal.
 
 ### Compliance Documents
 - [Terms of Service](/terms)
@@ -357,7 +357,7 @@ FightSFTickets is not a law firm and does not provide legal advice. We are a doc
 
 ## 🎯 Deployment Status
 
-**The FightSFTickets application is 100% complete and ready for immediate production deployment.**
+**The FightCityTickets application is 100% complete and ready for immediate production deployment.**
 
 ### ✅ What's Ready
 - ✅ **Automated Hetzner Cloud deployment** - One command deploys everything

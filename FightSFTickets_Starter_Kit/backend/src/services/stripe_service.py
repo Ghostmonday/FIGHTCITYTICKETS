@@ -1,5 +1,5 @@
 """
-Stripe Payment Service for FightSFTickets.com
+Stripe Payment Service for FightCityTickets.com
 
 Handles Stripe checkout session creation, webhook verification, and payment status.
 Integrates with citation validation and mail fulfillment.

@@ -16,7 +16,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-PROJECT_NAME="fightsftickets"
+PROJECT_NAME="fightcitytickets"
 SERVER_NAME="${PROJECT_NAME}-prod"
 DOMAIN="${DOMAIN:-fightcitytickets.com}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
@@ -432,7 +432,7 @@ volumes:
 
 networks:
   default:
-    name: fightsftickets_network
+    name: fightcitytickets_network
 EOF
 ENDSSH
 
