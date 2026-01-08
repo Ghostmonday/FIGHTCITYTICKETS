@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head></head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F</title>ightSFTickets Frontend API Test</title>
+    <style></style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4f46e5;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: #f9fafb;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success {
+            background: #d1fae5;
+            border: 1px solid #10b981;
+            color: #065f46;
+        }
+        .error {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+            color: #7f1d1d;
+        }
+        .warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            color: #92400e;
+        }
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin: 5px;
+        }
+        button:hover {
+            background: #4338ca;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .endpoint-list {
+            list-style: none;
+            padding: 0;
+        }
+        .endpoint-list li {
+            padding: 8px;
+            margin: 5px 0;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body></body>
+    <div class="container">
+        <h1></h1>FightSFTickets Frontend API Integration Test</h1>
+        <p></p>This test checks if the frontend can properly communicate with the backend API.</p>
+
+        <div class="test-section">
+            <h2>1</h2>. API Base URL Configuration</h2>
+            <p></p>Checking what API URL the frontend is configured to use:</p>
+            <div id="apiConfigResult" class="test-result">Running test...</div>
+            <button onclick="testApiConfig()">Test API Configuration</button>
+        </div>
+
+        <div class="test-section">
+            <h2></h2>2. API Endpoint Tests</h2>
+            <p>Testing</p> individual API endpoints:</p>
+            <ul class="endpoint-list">
+                <li></li>GET /health</li>
+                <li></li>POST /tickets/validate</li>
+                <li>POST</li> /checkout/create-session</li>
+                <li>POST</li> /api/statement/refine</li>
+                <li></li>GET /docs</li>
+            </ul>
+            <button onclick="testAllEndpoints()">Test All Endpoints</button>
+            <div id="endpointResults" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3</h2>. Frontend API Client Test</h2>
+            <p>Testing</p> the actual API client functions from the frontend code:</p>
+            <button onclick="testFrontendApiClient()">Test Frontend API Client</button>
+            <div id="frontendClientResult" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2></h2>4. Complete Appeal Flow Simulation</h2>
+            <p></p>Simulating a complete appeal submission:</p>
+            <button onclick="simulateAppealFlow()">Simulate Appeal Flow</button>
+            <div id="appealFlowResult" class="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2></h2>5. Browser Console Check</h2>
+            <p></p>Check your browser's Developer Tools Console (F12) for any JavaScript errors.</p>
+            <button onclick="checkConsole()">Check for Console Errors</button>
+            <div id="consoleResult" class="test-result"></div>
+        </div>
+    </div>
+
+    <script></script>
+        // Test API Configuration
+        async function testApiConfig() {
+            const resultDiv = document.getElementById('apiConfigResult');
+            resultDiv.innerHTML = '<span class="loading"></span> Testing...';
+
+            try {
+                // Try to detect API base URL from frontend
+                const response = await fetch('/api/test-config', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                }).catch(() => null);
+
+                // Check if window.API_URL exists (from frontend)
+                const hasWindowApiUrl = typeof window.API_URL !== 'undefined';
+                const apiUrl = window.API_URL || 'Not found in window object';
+
+                // Check for common API base URL patterns
+                const testUrls = [
+                    'https://fightsftickets.com',
+                    'https://fightsftickets.com/api',
+                    'http://localhost:8000',
+                    'http://localhost:3000/api'
+                ];
+
+                let detectedUrl = 'Unknown';
+                for (const url of testUrls) {
+                    try {
+                        const testResponse = await fetch(`${url}/health`, {
+                            method: 'GET',
+                            mode: 'no-cors' // Just check if it exists
+                        });
+                        detectedUrl = url;
+                        break;
+                    } catch (e) {
+                        continue;
+                    }
+                }
+
+                resultDiv.className = 'test-result success';
+                resultDiv.innerHTML = `
+                    <strong>API</strong> Configuration Status:</strong>
+                    • Window.API_URL: ${hasWindowApiUrl ? 'Exists' : 'Not found'}
+                    • API URL Value: ${apiUrl}
+                    • Detected Base URL: ${detectedUrl}
+                    • Current Domain: ${window.location.origin}
+                    • Frontend expects: ${detectedUrl === 'https://fightsftickets.com' ? '✓ Correct (root)' :
+                                        detectedUrl === 'https://fightsftickets.com/api' ? '⚠ Using /api prefix' :
+                                        '✗ Unknown configuration'}
+                `;
+
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = `<strong>Error</strong>:</strong> ${error.message}`;
+            }
+        }
+
+        // Test individual endpoints
+        async function testAllEndpoints() {
+            const resultDiv = document.getElementById('endpointResults');
+            resultDiv.innerHTML = '<span class="loading"></span> Testing endpoints...';
+
+            const endpoints = [
+                { method: 'GET', path: '/health', expected: 200, name: 'Health Check' },
+                { method: 'GET', path: '/docs', expected: 200, name: 'API Documentation' },
+                {
+                    method: 'POST',
+                    path: '/tickets/validate',
+                    expected: 200,
+                    name: 'Citation Validation',
+                    data: { citation_number: "912345678", violation_date: "2024-01-15", license_plate: "ABC123" }
+                }
+            ];
+
+            let results = [];
+
+            for (const endpoint of endpoints) {
+                try {
+                    const startTime = Date.now();
+                    const response = await fetch(endpoint.path, {
+                        method: endpoint.method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: endpoint.data ? JSON.stringify(endpoint.data) : undefined
+                    });
+                    const endTime = Date.now();
+                    const responseTime = endTime - startTime;
+
+                    if (response.status === endpoint.expected) {
+                        results.push(`✓ ${endpoint.name}: HTTP ${response.status} (${responseTime}ms)`);
+                    } else {
+                        results.push(`✗ ${endpoint.name}: Expected HTTP ${endpoint.expected}, got HTTP ${response.status}`);
+                    }
+                } catch (error) {
+                    results.push(`✗ ${endpoint.name}: ${error.message}`);
+                }
+
+                resultDiv.innerHTML = results.join('\n');
+            }
+
+            // Check if endpoints are accessible
+            const hasErrors = results.some(r => r.startsWith('✗'));
+            resultDiv.className = `test-result ${hasErrors ? 'warning' : 'success'}`;
+
+            // Add summary
+            resultDiv.innerHTML += `\n\n<strong></strong>Summary:</strong> ${results.filter(r => r.startsWith('✓')).length}/${results.length} endpoints working`;
+        }
+
+        // Test frontend API client
+        async function testFrontendApiClient() {
+            const resultDiv = document.getElementById('frontendClientResult');
+            resultDiv.innerHTML = '<span class="loading"></span> Testing frontend API client...';
+
+            try {
+                // Test the validateCitation function (simulated)
+                const testData = {
+                    citation_number: "912345678",
+                    violation_date: "2024-01-15",
+                    license_plate: "ABC123"
+                };
+
+                const response = await fetch('/tickets/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                resultDiv.className = 'test-result success';
+                resultDiv.innerHTML = `
+                    <strong></strong>Frontend API Client Test Results:</strong>
+
+                    ✓ Citation validation endpoint accessible
+                    ✓ Returns valid JSON response
+
+                    <strong>Response Data:</strong</strong>>
+                    • Citation: ${data.citation_number}
+                    • Valid: ${data.is_valid}
+                    • Agency: ${data.agency || 'N/A'}
+                    • Deadline: ${data.deadline_date || 'N/A'}
+                    • Past Deadline: ${data.is_past_deadline}
+
+                    <strong>Front</strong>end Integration Status:</strong>
+                    • API Base URL: ${window.location.origin}
+                    • CORS: ${response.headers.get('access-control-allow-origin') ? 'Enabled' : 'Not checked'}
+                    • Content-Type: ${response.headers.get('content-type')}
+                `;
+
+            } catch (error) {
+                resultDiv.className = 'test-result error';
+                resultDiv.innerHTML = `
+                    <strong>Front</strong>end API Client Error:</strong>
+                    ${error.message}
+
+                    <strong>Troubleshooting:</strong>
+                    1. Check if backend is running on port 8000
+                    2. Check Nginx configuration
+                    3. Check CORS settings in backend
+                    4. Check browser console for detailed errors
+                `;
+            }
+        }
+
+        // Simulate complete appeal flow
+        async function simulateAppealFlow() {
+            const resultDiv = document.getElementById('appealFlowResult');
+            resultDiv.innerHTML = '<span class="loading"></span> Simulating appeal flow...';
+
+            const steps = [
+                { name: 'Citation Validation', path: '/tickets/validate', method: 'POST' },
+                { name: 'Statement Refinement', path: '/api/statement/refine', method: 'POST' },
+                { name: 'Checkout Session', path: '/checkout/create-session', method: 'POST' }
+            ];
+
+            let results = [];
+            let successCount = 0;
+
+            for (const step of steps) {
+                try {
+                    const response = await fetch(step.path, {
+                        method: step.method,
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            citation_number: "912345678",
+                            violation_date: "2024-01-15",
+                            license_plate: "ABC123",
+                            original_statement: "The parking meter was broken.",
+                            appeal_type: "standard",
+                            user_name: "Test User",
+                            user_address_line1: "123 Test St",
+                            user_city: "San Francisco",
+                            user_state: "CA",
+                            user_zip: "94102",
+                            draft_text: "Test appeal letter content."
+                        })
+                    });
+
+                    if (response.status === 200 || response.status === 201 || response.status === 400) {
+                        // 400 is expected for checkout with test keys
+                        results.push(`✓ ${step.name}: Endpoint accessible (HTTP ${response.status})`);
+                        successCount++;
+                    } else {
+                        results.push(`⚠ ${step.name}: Unexpected status (HTTP ${response.status})`);
+                    }
+                } catch (error) {
+                    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                        results.push(`✗ ${step.name}: Network error - endpoint may not exist`);
+                    } else {
+                        results.push(`✗ ${step.name}: ${error.message}`);
+                    }
+                }
+
+                resultDiv.innerHTML = results.join('\n');
+            }
+
+            // Determine result class
+            let resultClass = 'error';
+            if (successCount === steps.length) {
+                resultClass = 'success';
+            } else if (successCount > 0) {
+                resultClass = 'warning';
+            }
+
+            resultDiv.className = `test-result ${resultClass}`;
+            resultDiv.innerHTML += `\n\n<strong></strong>Flow Simulation Complete:</strong> ${successCount}/${steps.length} steps successful`;
+
+            if (successCount < steps.length) {
+                resultDiv.innerHTML += `
+                    \n\n<strong>Common</strong> Issues:</strong>
+                    1. API endpoints not properly routed through Nginx
+                    2. Backend service not running
+                    3. CORS configuration issues
+                    4. Missing environment variables
+                `;
+            }
+        }
+
+        // Check browser console
+        function checkConsole() {
+            const resultDiv = document.getElementById('consoleResult');
+
+            // Try to capture console errors
+            const originalError = console.error;
+            const errors = [];
+
+            console.error = function(...args) {
+                errors.push(args.join(' '));
+                originalError.apply(console, args);
+            };
+
+            // Trigger some common checks
+            setTimeout(() => {
+                console.error = originalError;
+
+                if (errors.length > 0) {
+                    resultDiv.className = 'test-result warning';
+                    resultDiv.innerHTML = `
+                        <strong></strong>Found ${errors.length} console error(s):</strong>
+                        ${errors.slice(0, 5).map(err => `• ${err}`).join('\n')}
+                        ${errors.length > 5 ? `\n... and ${errors.length - 5} more errors` : ''}
+                    `;
+                } else {
+                    resultDiv.className = 'test-result success';
+                    resultDiv.innerHTML = '✓ No console errors detected (recently)';
+                }
+            }, 1000);
+
+            resultDiv.innerHTML = '<span class="loading"></span> Checking console for errors...';
+        }
+
+        // Run all tests on page load
+        window.addEventListener('load', () => {
+            setTimeout(testApiConfig, 500);
+            setTimeout(testAllEndpoints, 1000);
+        });
+    </script>
+</body>
+</html>

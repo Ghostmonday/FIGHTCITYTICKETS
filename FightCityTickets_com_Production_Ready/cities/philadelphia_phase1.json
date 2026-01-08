@@ -1,0 +1,457 @@
+{
+  "city_id": "us-pa-philadelphia",
+  "city": "Philadelphia",
+  "state": "PA",
+  "country": "US",
+
+  "official_confirmation": {
+    "primary_phone": {
+      "phone": "1-888-591-3636",
+      "alt_phone": "215-683-9580",
+      "department": "Parking Violations Branch / Bureau of Administrative Adjudication",
+      "purpose": "Confirm Phase‑1 appeal mailing addresses and issuing authority routing for Philadelphia parking citations."
+    }
+  },
+
+  "phase1_routing": {
+    "sections": [
+      {
+        "section_id": "philadelphia_baa",
+        "canonical_section_name": "Bureau of Administrative Adjudication",
+        "section_type": "city_parking_authority",
+        "authority_name": "Philadelphia Bureau of Administrative Adjudication",
+        "jurisdiction": "city",
+        "abbrev": ["BAA"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "First‑level hearings and appeals for parking violations issued within the City of Philadelphia are handled by the Bureau of Administrative Adjudication."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^\\d{9}$",
+          "pattern_confidence": "high",
+          "examples": ["123456789", "987654321"],
+          "visual_markers": ["Philadelphia Parking Authority", "Bureau of Administrative Adjudication", "bar‑coded nine‑digit number"],
+          "notes": "Parking tickets issued in Philadelphia use a bar‑coded nine‑digit ticket number【154706948584185†L630-L664】."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Parking tickets may be disputed online, by mail or in person at the Bureau of Administrative Adjudication. A written statement and evidence must be included for mail hearings【113070172967258†L179-L227】."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Bureau of Administrative Adjudication",
+          "attention": "Hearing by Mail",
+          "address1": "48 N. 8th Street",
+          "address2": null,
+          "city": "Philadelphia",
+          "state": "PA",
+          "zip": "19107-3117",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "1-888-591-3636",
+          "alt_phone": "215-683-9580",
+          "department": "Parking Violations Branch / BAA",
+          "purpose": "Confirm that this is the correct mailing address for Phase‑1 parking citation disputes."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "PPA dispute page and BAA contact page list the BAA mailing address and instructions for contesting tickets【113070172967258†L179-L227】【59924717429726†L174-L188】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "philadelphia_parking_authority",
+        "canonical_section_name": "Philadelphia Parking Authority",
+        "section_type": "city_parking_authority",
+        "authority_name": "Philadelphia Parking Authority",
+        "jurisdiction": "city",
+        "abbrev": ["PPA"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Standard parking citations issued by the Philadelphia Parking Authority."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^\\d{9}$",
+          "pattern_confidence": "high",
+          "examples": ["123456789"],
+          "visual_markers": ["PPA logo", "Philadelphia Parking Authority", "bar‑coded nine‑digit ticket number"],
+          "notes": "PPA parking tickets feature a bar‑coded nine‑digit ticket number【154706948584185†L630-L664】."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Parking tickets issued by the PPA must be disputed through the Bureau of Administrative Adjudication; disputes may be made online, by mail, or in person【113070172967258†L179-L227】."
+        },
+
+        "appeal_mail_to": {
+          "status": "routes_elsewhere",
+          "routes_to_section_id": "philadelphia_baa"
+        },
+
+        "routing_rule": "routes_to_section",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "1-888-591-3636",
+          "alt_phone": "215-683-9580",
+          "department": "Parking Violations Branch",
+          "purpose": "Confirm routing for PPA-issued parking citations."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "PPA contact page states that parking ticket disputes are handled by the Bureau of Administrative Adjudication【59924717429726†L174-L188】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "philadelphia_police_department",
+        "canonical_section_name": "Philadelphia Police Department",
+        "section_type": "police_department",
+        "authority_name": "Philadelphia Police Department",
+        "jurisdiction": "city",
+        "abbrev": ["PPD", "Philadelphia Police"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking tickets issued by police officers when the Parking Authority is not on duty."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{7,10}$",
+          "pattern_confidence": "low",
+          "examples": ["12873946"],
+          "visual_markers": ["Philadelphia Police Department", "City of Philadelphia police badge"],
+          "notes": "Exact citation format for police‑issued parking tickets is not published; pattern is estimated based on typical ticket numbering." 
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Police‑issued parking tickets are contested through the Bureau of Administrative Adjudication; follow the same procedures used for PPA tickets【59924717429726†L174-L188】."
+        },
+
+        "appeal_mail_to": {
+          "status": "routes_elsewhere",
+          "routes_to_section_id": "philadelphia_baa"
+        },
+
+        "routing_rule": "routes_to_section",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "1-888-591-3636",
+          "alt_phone": "215-683-9580",
+          "department": "Parking Violations Branch / BAA",
+          "purpose": "Confirm routing and process for police‑issued parking citations."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": null,
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "The PPA enforcement page mentions that Philadelphia Police Department enforces parking violations when PPA is unavailable【720653744773516†L208-L215】. Further confirmation is needed to verify that these tickets route to the BAA.",
+          "verified_source_last_checked": null,
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "temple_university",
+        "canonical_section_name": "Temple University Parking Services",
+        "section_type": "campus",
+        "authority_name": "Temple University Office of Parking Services",
+        "jurisdiction": "campus",
+        "abbrev": ["Temple", "TU"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on Temple University campuses by university parking enforcement."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Z0-9]{6,8}$",
+          "pattern_confidence": "low",
+          "examples": ["TU123456"],
+          "visual_markers": ["Temple University Parking Services", "Temple logo"],
+          "notes": "Temple University citations typically include university branding; exact citation numbering format is not published."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Appeals must be submitted within seven days using the TU Parking Account, by emailing the appeals form to citation@temple.edu, or in person at the Office of Parking Services; mail appeals are not accepted【758979653278661†L183-L205】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "zip"],
+          "missing_reason": "Temple University does not provide a mailing address for Phase‑1 parking citation appeals; appeals are accepted online or in person."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "215-204-5301",
+          "alt_phone": null,
+          "department": "Temple University Parking Services",
+          "purpose": "Confirm whether there is any mailing address for Phase‑1 appeals or if appeals are strictly online/in‑person."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "Temple University citations and enforcement page indicates that appeals must be filed online, via email, or in person within seven days; no mail address is provided【758979653278661†L183-L205】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "drexel_university",
+        "canonical_section_name": "Drexel University Parking Services",
+        "section_type": "campus",
+        "authority_name": "Drexel University Parking Services",
+        "jurisdiction": "campus",
+        "abbrev": ["Drexel"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on Drexel University property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Z0-9]{6,8}$",
+          "pattern_confidence": "low",
+          "examples": ["DR123456"],
+          "visual_markers": ["Drexel Parking Services", "Drexel logo"],
+          "notes": "Drexel University citations contain university branding; exact citation format is not publicly documented."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Parking violations issued by Drexel University must be paid or appealed through the online PayMyNotice portal; appeals are not accepted by mail or in person【854381601289034†L150-L158】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "zip"],
+          "missing_reason": "Drexel University does not provide a mailing address for parking citation appeals; all appeals must be submitted online."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "215-895-2813",
+          "alt_phone": null,
+          "department": "Drexel Parking Services",
+          "purpose": "Confirm whether there is any mailing address for Phase‑1 parking citation appeals or if online appeals are the only option."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "Drexel University parking violations page states that citations must be paid or appealed online via PayMyNotice; no mailing address for appeals is provided【854381601289034†L150-L158】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "university_of_pennsylvania",
+        "canonical_section_name": "University of Pennsylvania Parking & Commuter Services",
+        "section_type": "campus",
+        "authority_name": "University of Pennsylvania Parking and Commuter Services",
+        "jurisdiction": "campus",
+        "abbrev": ["UPenn", "Penn"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on University of Pennsylvania property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Z0-9]{6,8}$",
+          "pattern_confidence": "low",
+          "examples": ["UP123456"],
+          "visual_markers": ["University of Pennsylvania", "Park@Penn", "Penn logo"],
+          "notes": "UPenn citations are associated with the Park@Penn system; no official citation numbering format is published."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Citations must be paid or contested via the Park@Penn portal within 14 days; no mail or in‑person appeals are mentioned【544786415097876†L424-L429】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "zip"],
+          "missing_reason": "University of Pennsylvania does not list a mailing address for Phase‑1 parking citation appeals; appeals are processed online via the Park@Penn portal."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "215-898-8667",
+          "alt_phone": null,
+          "department": "Penn Parking & Commuter Services",
+          "purpose": "Confirm whether there is a mailing address for Phase‑1 appeals or if online submission is the only option."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "University of Pennsylvania parking policies indicate that citations should be paid or appealed via the Park@Penn portal within 14 days; no mailing address is given【544786415097876†L424-L429】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "septa",
+        "canonical_section_name": "SEPTA Parking Violations",
+        "section_type": "special_district",
+        "authority_name": "Southeastern Pennsylvania Transportation Authority",
+        "jurisdiction": "regional",
+        "abbrev": ["SEPTA"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations issued at SEPTA park‑and‑ride facilities and transit stations."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Z0-9]{6,10}$",
+          "pattern_confidence": "low",
+          "examples": ["SE123456"],
+          "visual_markers": ["SEPTA Parking Violations", "SEPTA logo"],
+          "notes": "SEPTA parking violation notices include the SEPTA logo and reference to the parking violation website; exact citation numbering format is not published."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "SEPTA parking violation appeals must be filed within seven days either online via the citation website or by mailing a written appeal letter with citation details and contact information【228972081973761†L174-L198】."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "SEPTA Parking Violations",
+          "attention": null,
+          "address1": "P.O. Box 7780-1883",
+          "address2": null,
+          "city": "Philadelphia",
+          "state": "PA",
+          "zip": "19182-1942",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "215-580-7800",
+          "alt_phone": null,
+          "department": "SEPTA Customer Service",
+          "purpose": "Confirm this mailing address for Phase‑1 parking citation appeals and obtain any additional instructions."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "SEPTA Parking Violations and Etiquette page lists the mailing address for written appeals and explains the appeal process【228972081973761†L174-L198】【178478100735202†L152-L167】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      }
+    ]
+  },
+
+  "qa": {
+    "has_sections": true,
+    "has_city_confirmation_phone": true,
+    "all_sections_have_valid_routing": true,
+
+    "blocking_issues": [
+      "Routing for police‑issued parking citations has not been fully confirmed; it is assumed that these citations route to the Bureau of Administrative Adjudication.",
+      "Several campus authorities (Temple University, Drexel University, University of Pennsylvania) do not publish Phase‑1 mailing addresses for appeals; confirmation by phone is required."
+    ],
+    "known_gaps": [
+      "Citation ID patterns for police‑issued, Temple University, Drexel University, and University of Pennsylvania tickets are estimated; official formats not published.",
+      "University sections are missing mailing addresses for appeals; they may accept appeals only online or in person."
+    ]
+  }
+}

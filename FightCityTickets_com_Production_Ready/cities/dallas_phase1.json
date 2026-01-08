@@ -1,0 +1,453 @@
+{
+  "city_id": "us-tx-dallas",
+  "city": "Dallas",
+  "state": "TX",
+  "country": "US",
+
+  "official_confirmation": {
+    "primary_phone": {
+      "phone": "214-670-4830",
+      "alt_phone": "1-833-773-1942",
+      "department": "City of Dallas Parking Adjudication Office",
+      "purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing."
+    }
+  },
+
+  "phase1_routing": {
+    "sections": [
+      {
+        "section_id": "dallas_parking_adjudication_office",
+        "canonical_section_name": "City of Dallas Parking Adjudication Office",
+        "section_type": "city_parking_authority",
+        "authority_name": "City of Dallas Parking Adjudication Office",
+        "jurisdiction": "city",
+        "abbrev": ["City of Dallas", "Parking Adjudication Office"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations issued by the City of Dallas on public streets."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{8,10}$",
+          "pattern_confidence": "low",
+          "examples": ["12345678", "8765432101"],
+          "visual_markers": ["City of Dallas", "Parking Citation", "Adjudication Office"],
+          "notes": "Dallas citations include a numeric citation number printed on the ticket."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Administrative hearings may be requested online, by mail, or in person at the Adjudication Office."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "Parking Adjudication Office",
+          "attention": "Administrative Review",
+          "address1": "2014 Main Street",
+          "address2": null,
+          "city": "Dallas",
+          "state": "TX",
+          "zip": "75201-4406",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "214-670-4830",
+          "alt_phone": "1-833-773-1942",
+          "department": "Parking Adjudication Office",
+          "purpose": "Confirm this is the correct Phase-1 mailing address for Dallas parking citations."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "By-mail request instructions on Dallas City Hall Parking Violations page show mail requests must be sent to City of Dallas Parking Adjudication Office, 2014 Main Street, Dallas, TX 75201-4406 and provide contact phone 214-670-4830【442481854652253†L35-L46】【442481854652253†L59-L63】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "dfw_airport",
+        "canonical_section_name": "DFW Airport Parking Citation Administration",
+        "section_type": "airport",
+        "authority_name": "Dallas/Fort Worth International Airport",
+        "jurisdiction": "special_district",
+        "abbrev": ["DFW Airport"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations issued on Dallas/Fort Worth International Airport property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Z0-9]{8,10}$",
+          "pattern_confidence": "low",
+          "examples": ["DFW1234567", "2023456789"],
+          "visual_markers": ["DFW", "Dallas/Fort Worth International Airport", "Parking Citation"],
+          "notes": "Airport citations often include an alphanumeric identifier and DFW branding."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "DFW Airport requires citation contests to be submitted online; customer service is available by phone."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "DFW Airport instructs customers to contest parking citations online; no mailing address is provided on the official site."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "866-449-7566",
+          "alt_phone": null,
+          "department": "DFW Airport Parking Citation Administration",
+          "purpose": "Confirm that there is no mail address and verify the online contest process."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "DFW Airport citation page directs users to contest citations online and provides customer service number 866-449-7566; it does not list a mailing address【846139274676953†L139-L149】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "smu_parking",
+        "canonical_section_name": "SMU Parking & ID Card Services",
+        "section_type": "campus",
+        "authority_name": "Southern Methodist University",
+        "jurisdiction": "campus",
+        "abbrev": ["SMU", "Parking & ID Services"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on the Southern Methodist University campus."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{5,8}$",
+          "pattern_confidence": "low",
+          "examples": ["12345", "7654321"],
+          "visual_markers": ["SMU Parking", "Southern Methodist University", "Parking Citation"],
+          "notes": "SMU citations may include a numeric citation number and SMU branding."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Appeals must be submitted via the parking portal within 15 days of citation issuance. Additional documentation may be delivered in person to the Parking and ID Card Services office."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "SMU requires appeals to be submitted through an online portal and does not provide a specific mailing address for appeal submissions【6169281522462†L95-L160】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "214-768-7275",
+          "alt_phone": null,
+          "department": "SMU Parking & ID Card Services",
+          "purpose": "Confirm that appeals cannot be mailed and identify the correct procedure for SMU citation appeals."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "SMU appeal guidelines state that appeals must be submitted through the SMU parking portal within 15 days and do not provide a mailing address【6169281522462†L95-L160】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "ut_southwestern",
+        "canonical_section_name": "UT Southwestern Parking Services",
+        "section_type": "campus",
+        "authority_name": "UT Southwestern Medical Center",
+        "jurisdiction": "campus",
+        "abbrev": ["UTSW", "UT Southwestern"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on the UT Southwestern campus by Parking Services."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{6,9}$",
+          "pattern_confidence": "low",
+          "examples": ["123456", "987654321"],
+          "visual_markers": ["UT Southwestern", "Parking Services", "Citation"],
+          "notes": "UT Southwestern citations typically feature a numeric identifier and UT Southwestern branding."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "UT Southwestern requires appeals to be submitted electronically via the parking portal; appellants may request to appear in person before the appeals committee【799612999579485†L97-L104】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "UT Southwestern’s Parking Services site instructs that appeals must be submitted electronically; no mailing address is provided for appeals【799612999579485†L97-L104】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "214-648-9600",
+          "alt_phone": null,
+          "department": "UT Southwestern Parking Services",
+          "purpose": "Confirm that there is no mailing address for appeals and verify the online and in-person appeal process."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "UT Southwestern’s parking citation page states that appeals must be filed electronically and that appellants may appear in person by emailing the appeals committee【799612999579485†L97-L104】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "ut_dallas",
+        "canonical_section_name": "UT Dallas Parking Services",
+        "section_type": "campus",
+        "authority_name": "The University of Texas at Dallas",
+        "jurisdiction": "campus",
+        "abbrev": ["UTD", "UT Dallas"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on the UT Dallas campus by Parking & Transportation Services."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{6,8}$",
+          "pattern_confidence": "low",
+          "examples": ["123456", "8765432"],
+          "visual_markers": ["UT Dallas", "Parking Services"],
+          "notes": "UT Dallas citations likely include a numeric identifier and UT Dallas branding."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Due to limited information, appeals are believed to be handled through the UT Dallas parking portal."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "UT Dallas parking information is not accessible; appeal mailing address is not provided."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "972-883-2344",
+          "alt_phone": null,
+          "department": "UT Dallas Parking Services",
+          "purpose": "Confirm UT Dallas citation appeal procedures and whether mail appeals are accepted."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "UT Dallas parking site is unavailable (Bad Gateway) and the appeals process cannot be verified; phone confirmation is required.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "university_of_dallas",
+        "canonical_section_name": "University of Dallas Police Department",
+        "section_type": "campus",
+        "authority_name": "University of Dallas",
+        "jurisdiction": "campus",
+        "abbrev": ["UD", "University of Dallas"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued by the University of Dallas Police Department on campus property."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{4,7}$",
+          "pattern_confidence": "low",
+          "examples": ["1234", "7654321"],
+          "visual_markers": ["University of Dallas", "UD Police Department"],
+          "notes": "University of Dallas citations have a numeric identifier and UD branding."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Appeals must be submitted via an online ticket appeal form; hearings may be held by appointment【777451738539093†L285-L301】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "University of Dallas requires appeals to be filed through an online ticket appeal form and does not provide a mailing address【777451738539093†L285-L301】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "972-721-5305",
+          "alt_phone": null,
+          "department": "University of Dallas Police Department",
+          "purpose": "Confirm there is no mailing address for appeals and verify appeal procedures."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "University of Dallas parking rules state that citations may be appealed via an online form and do not mention a mailing address【777451738539093†L285-L301】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "dart",
+        "canonical_section_name": "Dallas Area Rapid Transit (DART)",
+        "section_type": "regional_transit_authority",
+        "authority_name": "Dallas Area Rapid Transit",
+        "jurisdiction": "regional",
+        "abbrev": ["DART"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Citations issued by DART for fare evasion or parking violations in DART-operated facilities."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Z0-9]{6,10}$",
+          "pattern_confidence": "low",
+          "examples": ["DART1234", "20234567"],
+          "visual_markers": ["DART", "Dallas Area Rapid Transit"],
+          "notes": "DART citations may include an alphanumeric citation number."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": false,
+          "in_person_allowed": true,
+          "preferred_method": "in_person",
+          "method_constraints": [],
+          "notes": "To contest a DART citation, individuals must appear in the justice of the peace court; administrative resolution payments may be mailed but appeals cannot be submitted by mail【790555259445397†L120-L134】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "DART does not offer a mail-based appeal; contested citations require an in-person court appearance【790555259445397†L120-L134】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "214-979-1111",
+          "alt_phone": null,
+          "department": "DART Customer Service",
+          "purpose": "Confirm the appeal process and that there is no mail-in route for contesting DART citations."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-24",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "DART's contest information page states that to contest a citation you must appear in person; only administrative resolution payments may be mailed【790555259445397†L120-L134】.",
+          "verified_source_last_checked": "2025-12-24",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      }
+    ]
+  },
+
+  "qa": {
+    "has_sections": true,
+    "has_city_confirmation_phone": true,
+    "all_sections_have_valid_routing": false,
+
+    "blocking_issues": [
+      "DFW Airport, SMU, UT Southwestern, UT Dallas, University of Dallas, and DART sections lack confirmed mailing addresses for Phase-1 appeals; confirm or obtain addresses."
+    ],
+    "known_gaps": [
+      "Citation number patterns across authorities are speculative with low confidence.",
+      "UT Dallas information is unavailable (Bad Gateway) and requires direct confirmation.",
+      "Need to verify whether DART issues parking citations and whether any mail submission exists for appeals."
+    ]
+  }
+}

@@ -1,0 +1,276 @@
+{
+  "city_id": "us-nv-las_vegas",
+  "city": "Las Vegas",
+  "state": "NV",
+  "country": "US",
+
+  "official_confirmation": {
+    "primary_phone": {
+      "phone": "702-229-4700",
+      "alt_phone": "702-229-6011",
+      "department": "City of Las Vegas Parking Services",
+      "purpose": "Confirm Phase-1 appeal mailing addresses and issuing authority routing."
+    }
+  },
+
+  "phase1_routing": {
+    "sections": [
+      {
+        "section_id": "las_vegas_parking_services",
+        "canonical_section_name": "Las Vegas Parking Services",
+        "section_type": "city_parking_authority",
+        "authority_name": "City of Las Vegas Parking Services",
+        "jurisdiction": "city",
+        "abbrev": ["Las Vegas Parking", "CLV Parking"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations issued within Las Vegas city limits under the municipal parking program."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{7,10}$",
+          "pattern_confidence": "low",
+          "examples": ["12345678", "9876543210"],
+          "visual_markers": ["City of Las Vegas", "Notice of Infraction", "AIMS Parking"],
+          "notes": "Citations are typically numeric; the ticket references a Notice of Infraction number."
+        },
+
+        "submission_methods": {
+          "mail_allowed": true,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "Level 1 appeals may be submitted via mail, email, or online through the city’s AIMS portal."
+        },
+
+        "appeal_mail_to": {
+          "status": "complete",
+          "department": "City of Las Vegas Parking Services",
+          "attention": "Administrative Appeal (Level 1)",
+          "address1": "350 S. City Parkway",
+          "address2": null,
+          "city": "Las Vegas",
+          "state": "NV",
+          "zip": "89106",
+          "country": "US"
+        },
+
+        "routing_rule": "direct",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "702-229-4700",
+          "alt_phone": "702-382-2309",
+          "department": "City of Las Vegas Parking Services",
+          "purpose": "Confirm this is the correct mailing address and procedure for Level 1 parking citation appeals."
+        },
+
+        "verification": {
+          "status": "verified",
+          "needs_confirmation": false,
+          "verified_at": "2025-12-25",
+          "verified_source_type": "official_pdf",
+          "verified_source_note": "Level 1 appeal form directs appellants to return the form to City of Las Vegas Parking Services at 350 S. City Pkwy, Las Vegas, NV 89106 with phone numbers【336443596262655†L160-L163】.",
+          "verified_source_last_checked": "2025-12-25",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "clark_county_code_enforcement",
+        "canonical_section_name": "Clark County Code Enforcement",
+        "section_type": "county",
+        "authority_name": "Clark County Code Enforcement Administrative Office",
+        "jurisdiction": "county",
+        "abbrev": ["Clark County Code Enforcement"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Administrative and parking citations issued by Clark County Code Enforcement within unincorporated areas."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9A-Z]{6,10}$",
+          "pattern_confidence": "low",
+          "examples": ["A123456", "CC987654"],
+          "visual_markers": ["Clark County", "Administrative Citation", "Code Enforcement"],
+          "notes": "County citations may include alphanumeric identifiers."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": false,
+          "in_person_allowed": true,
+          "preferred_method": "in_person",
+          "method_constraints": [],
+          "notes": "To contest a county administrative citation, appellants must request a supervisor review or hearing in person at the Code Enforcement Office and submit a hearing request form with a deposit."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "Clark County’s Code Enforcement website instructs appellants to file hearing request forms in person; it does not provide a mailing address for appeal submissions【829047723666963†L56-L63】【829047723666963†L94-L104】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "702-455-4191",
+          "alt_phone": null,
+          "department": "Clark County Code Enforcement Office",
+          "purpose": "Confirm whether appeals can be mailed and obtain the correct mailing address if applicable."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-25",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "County website describes payment and hearing process but does not list a mailing address for appeal submissions【829047723666963†L56-L63】【829047723666963†L94-L104】.",
+          "verified_source_last_checked": "2025-12-25",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "unlv_parking",
+        "canonical_section_name": "UNLV Parking & Transportation Services",
+        "section_type": "campus",
+        "authority_name": "University of Nevada, Las Vegas Parking & Transportation Services",
+        "jurisdiction": "campus",
+        "abbrev": ["UNLV"],
+
+        "serves": {
+          "basis": "campus",
+          "description": "Parking citations issued on UNLV campus property by Parking & Transportation Services."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[0-9]{5,8}$",
+          "pattern_confidence": "low",
+          "examples": ["12345", "8765432"],
+          "visual_markers": ["UNLV", "Parking & Transportation Services"],
+          "notes": "UNLV citations display a numeric citation number linked to the vehicle license plate."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": true,
+          "preferred_method": "in_person",
+          "method_constraints": [],
+          "notes": "UNLV requires appellants to submit an official arbitration form with a deposit equal to the citation fee. Appeals can be filed online or in person at the Parking & Transportation Services office; a mailing address for appeal submissions is not provided and attendance is required【616833293299771†L359-L370】."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "UNLV’s Parking FAQ states appeals must be filed on an arbitration form with a deposit; they may be submitted online or in person. A mailing address for appeals is not provided【616833293299771†L359-L370】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "702-895-1300",
+          "alt_phone": null,
+          "department": "UNLV Parking & Transportation Services",
+          "purpose": "Verify whether a mailing address is available for parking citation appeals and confirm appeal procedures."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-25",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "UNLV’s website explains appeal procedures but omits a mailing address; in-person arbitration or online submission is required【616833293299771†L359-L370】.",
+          "verified_source_last_checked": "2025-12-25",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      },
+
+      {
+        "section_id": "harry_reid_airport",
+        "canonical_section_name": "Harry Reid International Airport",
+        "section_type": "special_district",
+        "authority_name": "Clark County Department of Aviation",
+        "jurisdiction": "special_district",
+        "abbrev": ["LAS", "Harry Reid Airport"],
+
+        "serves": {
+          "basis": "issuing_authority",
+          "description": "Parking citations issued at Harry Reid International Airport facilities by the Department of Aviation."
+        },
+
+        "how_to_recognize": {
+          "citation_id_pattern": "^[A-Z0-9]{6,9}$",
+          "pattern_confidence": "low",
+          "examples": ["LAS12345", "HRI67890"],
+          "visual_markers": ["Harry Reid International Airport", "LAS", "Department of Aviation"],
+          "notes": "Airport citations may have alphanumeric identifiers and reference LAS or Airport Parking."
+        },
+
+        "submission_methods": {
+          "mail_allowed": false,
+          "online_allowed": true,
+          "in_person_allowed": false,
+          "preferred_method": "online",
+          "method_constraints": [],
+          "notes": "The airport’s FAQ states that individuals who wish to appeal a parking citation must contact the Department of Aviation’s designated representative by phone; no mailing address is provided【474609952226979†L33-L38】. Appeals appear to be handled administratively over the phone or through the online portal."
+        },
+
+        "appeal_mail_to": {
+          "status": "missing",
+          "missing_fields": ["department", "address1", "city", "state", "zip"],
+          "missing_reason": "Harry Reid International Airport’s parking citation FAQ instructs individuals to contact the Department of Aviation’s representative at (702) 261‑5186 to appeal; it does not provide a mailing address【474609952226979†L33-L38】."
+        },
+
+        "routing_rule": "separate_address_required",
+
+        "confirm_by_phone": {
+          "required": true,
+          "phone": "702-261-5186",
+          "alt_phone": "702-261-5121",
+          "department": "Clark County Department of Aviation Parking Services",
+          "purpose": "Confirm the procedure for appealing airport parking citations and inquire if a mailing address exists for written appeals."
+        },
+
+        "verification": {
+          "status": "incomplete",
+          "needs_confirmation": true,
+          "verified_at": "2025-12-25",
+          "verified_source_type": "official_webpage",
+          "verified_source_note": "Airport FAQ states appeals must be made by contacting the Department of Aviation via phone; no mailing address is provided【474609952226979†L33-L38】.",
+          "verified_source_last_checked": "2025-12-25",
+          "verified_source_page_last_updated": null,
+          "verified_source_publication_date": null,
+          "last_validated_by": "collector"
+        }
+      }
+    ]
+  },
+
+  "qa": {
+    "has_sections": true,
+    "has_city_confirmation_phone": true,
+    "all_sections_have_valid_routing": false,
+
+    "blocking_issues": [
+      "Clark County Code Enforcement, UNLV, and Harry Reid International Airport sections lack confirmed mailing addresses for appeals; official confirmation is needed.",
+      "Citation patterns for all sections have low confidence due to limited examples."
+    ],
+    "known_gaps": [
+      "County, campus, and airport appeal processes require deposit or administrative contact; exact mail addresses must be confirmed by phone.",
+      "Additional campuses or special districts in Las Vegas (e.g., other universities or hospitals) may issue parking citations but were not identified."
+    ]
+  }
+}

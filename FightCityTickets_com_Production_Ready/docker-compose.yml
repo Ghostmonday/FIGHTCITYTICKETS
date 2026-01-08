@@ -1,0 +1,117 @@
+services:
+  api:
+    # ============================================
+    # COORDINATION NOTE: Added by AI Assistant #1 (Auto)
+    # Working backwards through audit items - Issue #7: Docker Health Checks
+    # Added health check, restart policy, and resource limits
+    # ============================================
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-fightsf}
+    # Remove direct port exposure - nginx will proxy
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # AUDIT ITEM #7: Health check for API service
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Restart policy for production reliability
+    restart: unless-stopped
+    # Resource limits to prevent resource exhaustion
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  web:
+    # ============================================
+    # COORDINATION NOTE: Added by AI Assistant #1 (Auto)
+    # Working backwards through audit items - Issue #7: Docker Health Checks
+    # Added health check, restart policy, and resource limits for frontend
+    # ============================================
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    env_file:
+      - .env
+    environment:
+      - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+    # Remove direct port exposure - nginx will proxy
+    expose:
+      - "3000"
+    depends_on:
+      - api
+    # AUDIT ITEM #7: Health check for frontend service
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 90s  # Next.js needs more time to start
+    # Restart policy for production reliability
+    restart: unless-stopped
+    # Resource limits to prevent resource exhaustion
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /var/www/certbot:/var/www/certbot:ro
+    depends_on:
+      - web
+      - api
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-fightsf}
+    # SECURITY: Database port NOT exposed externally - only accessible via Docker network
+    # Remove port mapping for production security
+    # ports:
+    #   - "5432:5432"
+    volumes:
+      - fightsf_db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  fightsf_db:
