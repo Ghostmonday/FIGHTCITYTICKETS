@@ -1,0 +1,76 @@
+{
+  "$schema": "https://railway.com/schema.json",
+  "name": "FightCityTickets",
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "services": {
+    "backend": {
+      "name": "backend",
+      "sourceDir": "backend",
+      "dockerfilePath": "backend/Dockerfile",
+      "healthcheckPath": "/health",
+      "healthcheckPort": 8000,
+      "restartPolicy": {
+        "type": "always"
+      },
+      "variables": {
+        "DATABASE_URL": {
+          "ref": "postgres.DATABASE_URL"
+        },
+        "APP_ENV": "prod",
+        "STRIPE_SECRET_KEY": "",
+        "STRIPE_PUBLISHABLE_KEY": "",
+        "STRIPE_WEBHOOK_SECRET": "",
+        "LOB_API_KEY": "",
+        "OPENAI_API_KEY": "",
+        "DEEPSEEK_API_KEY": ""
+      },
+      "dependsOn": ["postgres"]
+    },
+    "frontend": {
+      "name": "frontend",
+      "sourceDir": "frontend",
+      "dockerfilePath": "frontend/Dockerfile",
+      "healthcheckPath": "/",
+      "healthcheckPort": 3000,
+      "restartPolicy": {
+        "type": "always"
+      },
+      "variables": {
+        "NEXT_PUBLIC_API_BASE": "http://backend:8000",
+        "APP_ENV": "prod"
+      },
+      "dependsOn": ["backend"]
+    },
+    "postgres": {
+      "name": "postgres",
+      "image": "postgres:16",
+      "variables": {
+        "POSTGRES_DB": "fightsf",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": {
+          "ref": "postgres.PASSWORD"
+        }
+      },
+      "healthcheck": {
+        "test": ["CMD-SHELL", "pg_isready -U postgres"],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 5
+      }
+    }
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "STRIPE_SECRET_KEY": "",
+        "STRIPE_PUBLISHABLE_KEY": "",
+        "STRIPE_WEBHOOK_SECRET": "",
+        "LOB_API_KEY": "",
+        "OPENAI_API_KEY": "",
+        "DEEPSEEK_API_KEY": ""
+      }
+    }
+  }
+}
