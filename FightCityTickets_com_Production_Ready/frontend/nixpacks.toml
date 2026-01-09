@@ -1,0 +1,6 @@
+[build]
+build = "npm run build"
+install = "npm ci"
+
+[start]
+start = "npx next start -p $PORT"
