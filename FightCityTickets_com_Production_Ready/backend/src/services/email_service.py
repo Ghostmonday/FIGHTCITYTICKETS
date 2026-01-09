@@ -1,10 +1,12 @@
-"""
-Email Notification Service for FightCityTickets.com
+provethat.io\FightCityTickets_com_Production_Ready\backend\src\services\email_service.py
+```
 
-Sends transactional emails to users for:
-- Payment confirmation
-- Appeal mailing confirmation
-- Status updates
+```python
+"""
+Email Service for FightCityTickets.com
+
+Handles email notifications for payment confirmations and appeal status updates.
+Currently logs emails; integrate with SendGrid, AWS SES, or similar for production.
 """
 
 import logging
@@ -14,13 +16,12 @@ logger = logging.getLogger(__name__)
 
 
 class EmailService:
-    """Handles email notifications."""
+    """Email notification service."""
 
     def __init__(self):
         """Initialize email service."""
-        # TODO: Integrate with email provider (SendGrid, AWS SES, etc.)
         self.is_available = False
-        logger.warning("Email service not configured - emails will be logged only")
+        logger.info("Email service initialized (logging mode)")
 
     async def send_payment_confirmation(
         self,
@@ -28,71 +29,80 @@ class EmailService:
         citation_number: str,
         amount_paid: int,
         appeal_type: str,
-        session_id: str,
     ) -> bool:
         """
         Send payment confirmation email.
 
         Args:
-            email: User email address
+            email: Customer email address
             citation_number: Citation number
             amount_paid: Amount paid in cents
-            appeal_type: Type of appeal (standard/certified)
-            session_id: Stripe session ID
+            appeal_type: standard or certified
 
         Returns:
-            True if sent successfully
+            True if email would be sent (logged in dev mode)
         """
-        try:
-            amount = "${amount_paid / 100:.2f}"
-
-            # TODO: Implement actual email sending
-            logger.info(
-                "📧 Payment confirmation email would be sent to {email}: "
-                "Citation {citation_number}, Amount {amount}, Type {appeal_type}"
-            )
-
-            # For now, just log
-            # In production, integrate with SendGrid/AWS SES/etc.
-            return True
-        except Exception as e:
-            logger.error("Failed to send payment confirmation email: {e}")
-            return False
+        amount = f"${amount_paid / 100:.2f}"
+        logger.info(
+            f"Payment confirmation email would be sent to {email}: "
+            f"Citation {citation_number}, Amount {amount}, Type {appeal_type}"
+        )
+        return True
 
     async def send_appeal_mailed(
         self,
         email: str,
         citation_number: str,
-        tracking_number: str,
-        expected_delivery: Optional[str] = None,
+        tracking_number: Optional[str],
     ) -> bool:
         """
-        Send appeal mailed confirmation email.
+        Send appeal mailed notification email.
 
         Args:
-            email: User email address
+            email: Customer email address
             citation_number: Citation number
-            tracking_number: Lob tracking number
-            expected_delivery: Expected delivery date
+            tracking_number: Lob tracking number if available
 
         Returns:
-            True if sent successfully
+            True if email would be sent (logged in dev mode)
         """
-        try:
-            logger.info(
-                "📧 Appeal mailed email would be sent to {email}: "
-                "Citation {citation_number}, Tracking {tracking_number}"
-            )
+        logger.info(
+            f"Appeal mailed email would be sent to {email}: "
+            f"Citation {citation_number}, Tracking {tracking_number}"
+        )
+        return True
 
-            # TODO: Implement actual email sending
-            return True
-        except Exception as e:
-            logger.error("Failed to send appeal mailed email: {e}")
-            return False
+    async def send_appeal_rejected(
+        self,
+        email: str,
+        citation_number: str,
+        reason: str,
+    ) -> bool:
+        """
+        Send appeal rejected notification email.
+
+        Args:
+            email: Customer email address
+            citation_number: Citation number
+            reason: Rejection reason from city
+
+        Returns:
+            True if email would be sent (logged in dev mode)
+        """
+        logger.info(
+            f"Appeal rejected email would be sent to {email}: "
+            f"Citation {citation_number}, Reason: {reason}"
+        )
+        return True
+
+
+# Singleton instance
+_email_service: Optional[EmailService] = None
 
 
 def get_email_service() -> EmailService:
-    """Get email service instance."""
-    return EmailService()
-
-
+    """Get email service singleton."""
+    global _email_service
+    if _email_service is None:
+        _email_service = EmailService()
+    return _email_service

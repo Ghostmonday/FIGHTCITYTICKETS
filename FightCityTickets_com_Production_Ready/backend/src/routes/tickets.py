@@ -4,15 +4,15 @@ Citation and Ticket Routes for FightCityTickets.com
 Handles citation validation and related ticket services.
 """
 
-from typing import Any, Optional
+import logging
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-try:
-    from services.citation import CitationValidator
-except ImportError:
-    from ..services.citation import CitationValidator
+from ..services.citation import CitationValidator
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -20,9 +20,8 @@ router = APIRouter()
 limiter: Optional[object] = None
 
 
-# Legacy ticket types (keep for backward compatibility, but deprecate)
 class TicketType(BaseModel):
-    """Legacy ticket type model."""
+    """Legacy ticket type model - kept for backward compatibility."""
 
     id: str
     name: str
@@ -31,7 +30,6 @@ class TicketType(BaseModel):
     available: bool = True
 
 
-# Citation validation models
 class CitationValidationRequest(BaseModel):
     """Request model for citation validation."""
 
@@ -86,38 +84,13 @@ def validate_citation(request: CitationValidationRequest):
     - Appeal deadline calculation
     - Deadline status (urgent/past due)
     """
-    # #region agent log
-    import json
-    import time
-
-    try:
-        with open(r"c:\Comapnyfiles\provethat.io\.cursor\debug.log", "a") as f:
-            f.write(
-                json.dumps(
-                    {
-                        "location": "tickets.py:91",
-                        "message": "validate_citation called",
-                        "data": {
-                            "citation_number": request.citation_number,
-                            "city_id": request.city_id,
-                        },
-                        "timestamp": int(time.time() * 1000),
-                        "sessionId": "debug-session",
-                        "hypothesisId": "C,E",
-                    }
-                )
-                + "\n"
-            )
-    except:
-        pass
-    # #endregion
     try:
         # Use the citation validation service
         validation = CitationValidator.validate_citation(
             citation_number=request.citation_number,
             violation_date=request.violation_date,
             license_plate=request.license_plate,
-            city_id=request.city_id,  # Pass selected city for validation
+            city_id=request.city_id,
         )
 
         # Check for city mismatch if city_id was provided
@@ -152,19 +125,19 @@ def validate_citation(request: CitationValidationRequest):
                         )
 
                         selected_city_mismatch_message = (
-                            "The citation number appears to be from {detected_name}, "
-                            "but you selected {selected_name}. Please verify your selection or citation number."
+                            f"The citation number appears to be from {detected_name}, "
+                            f"but you selected {selected_name}. Please verify your selection or citation number."
                         )
                     else:
                         selected_city_mismatch_message = (
-                            "The citation number appears to be from {validation.city_id}, "
-                            "but you selected {request.city_id}. Please verify your selection or citation number."
+                            f"The citation number appears to be from {validation.city_id}, "
+                            f"but you selected {request.city_id}. Please verify your selection or citation number."
                         )
                 except Exception:
                     # Fallback if city registry not available
                     selected_city_mismatch_message = (
-                        "The citation number appears to be from {validation.city_id}, "
-                        "but you selected {request.city_id}. Please verify your selection or citation number."
+                        f"The citation number appears to be from {validation.city_id}, "
+                        f"but you selected {request.city_id}. Please verify your selection or citation number."
                     )
 
         # Convert service response to API response
@@ -178,47 +151,20 @@ def validate_citation(request: CitationValidationRequest):
             is_urgent=validation.is_urgent,
             error_message=validation.error_message,
             formatted_citation=validation.formatted_citation,
-            # Multi-city metadata
             city_id=validation.city_id,
             section_id=validation.section_id,
             appeal_deadline_days=validation.appeal_deadline_days,
             phone_confirmation_required=validation.phone_confirmation_required,
             phone_confirmation_policy=validation.phone_confirmation_policy,
-            # City mismatch detection
             city_mismatch=city_mismatch,
             selected_city_mismatch_message=selected_city_mismatch_message,
         )
 
     except Exception as e:
-        # #region agent log
-        import json
-        import time
-        import traceback
-
-        try:
-            with open(r"c:\Comapnyfiles\provethat.io\.cursor\debug.log", "a") as f:
-                f.write(
-                    json.dumps(
-                        {
-                            "location": "tickets.py:160",
-                            "message": "validate_citation exception",
-                            "data": {
-                                "error": str(e),
-                                "traceback": traceback.format_exc(),
-                            },
-                            "timestamp": int(time.time() * 1000),
-                            "sessionId": "debug-session",
-                            "hypothesisId": "E",
-                        }
-                    )
-                    + "\n"
-                )
-        except:
-            pass
-        # #endregion
+        logger.error(f"Citation validation failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Citation validation failed: {str(e)}",
+            detail=f"Citation validation failed: {str(e)}",
         ) from e
 
 
@@ -275,7 +221,8 @@ def get_citation_info(citation_number: str):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Failed to get citation info: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get citation info: {str(e)}",
+            detail=f"Failed to get citation info: {str(e)}",
         ) from e
