@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const cityNames: Record<string, string> = {
     sf: "San Francisco",
@@ -48,6 +49,7 @@ export default function CheckoutPage() {
   };
 
   const handleCheckout = async () => {
+    // Block payment unless terms are accepted
     if (!acceptedTerms) {
       setError("Please acknowledge the service terms to proceed");
       return;
@@ -83,7 +85,7 @@ export default function CheckoutPage() {
 
     try {
       const apiBase =
-        process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       const response = await fetch(`${apiBase}/checkout/create-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
