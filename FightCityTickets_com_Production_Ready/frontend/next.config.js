@@ -2,14 +2,36 @@
 const nextConfig = {
   reactStrictMode: true,
   // Disable static export for pages that use client-side context
-  output: 'standalone',
+  output: "standalone",
   // Enable subdomain routing
   async rewrites() {
     return [];
   },
-  // Allow all hostnames for subdomain routing
+  // Security headers
   async headers() {
-    return [];
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "X-Frame-Options",
+            value: "DENY",
+          },
+          {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+    ];
   },
 };
 
