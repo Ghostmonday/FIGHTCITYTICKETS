@@ -36,6 +36,8 @@ class CheckoutRequest:
     payment_id: Optional[int] = None
     intake_id: Optional[int] = None
     draft_id: Optional[int] = None
+    # CYCLE 3: Chargeback prevention - user acknowledgment of service terms
+    user_attestation: bool = False
 
 
 @dataclass
@@ -175,6 +177,7 @@ class StripeService:
 
         # Prepare metadata for webhook
         # AUDIT FIX: Database-first - store only IDs in metadata, not full data
+        # CYCLE 3: Chargeback prevention - add dispute armor metadata
         metadata = {
             # Only store IDs for webhook lookup (database-first approach)
             "payment_id": str(request.payment_id) if request.payment_id else "",
@@ -186,6 +189,10 @@ class StripeService:
             # BACKLOG PRIORITY 3: Multi-city support - store city_id in metadata
             "city_id": (request.city_id or "")[:50],
             "section_id": (request.section_id or "")[:50],
+            # CYCLE 3: DISPUTE ARMOR - Evidence for chargeback defense
+            "service_type": "clerical_document_preparation",
+            "user_attestation": "true" if request.user_attestation else "false",
+            "delivery_method": "physical_mail_via_lob",
         }
 
         try:

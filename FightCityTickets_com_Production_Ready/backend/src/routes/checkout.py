@@ -82,6 +82,12 @@ class AppealCheckoutRequest(BaseModel):
         description="Base64-encoded signature image",
     )
 
+    # CYCLE 3: Chargeback prevention - user attestation of service terms
+    user_attestation: bool = Field(
+        False,
+        description="User has acknowledged they are paying for document preparation only",
+    )
+
     # BACKLOG PRIORITY 3: Multi-city support
     city_id: Optional[str] = Field(
         None,
@@ -193,6 +199,7 @@ def create_appeal_checkout(request: Request, appeal_request: AppealCheckoutReque
             appeal_type=appeal_request.appeal_type,
             selected_evidence=appeal_request.selected_evidence,
             signature_data=appeal_request.signature_data,
+            user_attestation=appeal_request.user_attestation,
             city_id=appeal_request.city_id,  # BACKLOG PRIORITY 3: Multi-city support
             section_id=appeal_request.section_id,  # BACKLOG PRIORITY 3: Multi-city support
         )

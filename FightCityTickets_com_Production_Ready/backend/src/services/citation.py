@@ -15,8 +15,12 @@ from typing import Any, Dict, Optional, Tuple
 # Import CityRegistry if available - try multiple import strategies
 CITY_REGISTRY_AVAILABLE = False
 CityRegistry = Any
+
+
 def get_city_registry(cities_dir=None):
     return None
+
+
 AppealMailAddress = Any
 PhoneConfirmationPolicy = Any
 
@@ -89,6 +93,11 @@ class CitationValidationResult:
     appeal_deadline_days: int = 21  # Default SF deadline
     phone_confirmation_required: bool = False
     phone_confirmation_policy: Optional[Dict[str, Any]] = None
+
+    # Clerical defect detection (not legal conclusions)
+    # Indicates potential documentation issues (missing date, mismatched info, etc.)
+    clerical_defect_detected: bool = False
+    clerical_defect_description: Optional[str] = None
 
 
 @dataclass
@@ -632,9 +641,21 @@ if __name__ == "__main__":
 
     # Test cases including SF citations that should match
     test_cases = [
-        ("912345678", "2024-01-15", "ABC123"),  # Valid SFMTA (should match us-ca-san_francisco.json)
-        ("SF123456", "2024-01-15", "TEST123"),  # SFPD-like (should match us-ca-san_francisco.json)
-        ("SFSU12345", "2024-01-15", "CAMPUS"),  # SFSU (should match us-ca-san_francisco.json)
+        (
+            "912345678",
+            "2024-01-15",
+            "ABC123",
+        ),  # Valid SFMTA (should match us-ca-san_francisco.json)
+        (
+            "SF123456",
+            "2024-01-15",
+            "TEST123",
+        ),  # SFPD-like (should match us-ca-san_francisco.json)
+        (
+            "SFSU12345",
+            "2024-01-15",
+            "CAMPUS",
+        ),  # SFSU (should match us-ca-san_francisco.json)
         ("123456", "2024-01-15", "XYZ789"),  # Too short (no city match)
         ("ABCDEFGHIJKLMNOP", "2024-01-15", "TEST"),  # Too long (no city match)
         ("", "2024-01-15", "TEST"),  # Empty

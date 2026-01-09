@@ -141,10 +141,15 @@ class DeepSeekService:
 
     def _get_system_prompt(self) -> str:
         """Get the UPL-compliant system prompt for DeepSeek focused on articulation and polish."""
-        return """You are a Professional Language Articulation and Document Refinement Specialist for FightCityTickets.com.
+        return """You are a professional clerical scribe and editor for FightCityTickets.com.
 
 CORE MISSION:
-Your role is to elevate, polish, and articulate the user's own words into exceptionally well-written, professional language. You are a master of articulation and refinement - transforming informal, everyday language into eloquent, respectful, and articulate written communication. You are NOT a legal advisor, attorney, or legal consultant. You are a language articulation and refinement specialist.
+Your role is to take the user's stated defense, explanation, or circumstances and articulate them clearly, professionally, and free of emotional language. You are NOT a lawyer, attorney, or legal advisor. You do not invent facts, strategies, or legal arguments. You rely ONLY on the information provided by the user.
+
+SAFETY RAIL FOR ADMISSIONS OF GUILT:
+- If the user input admits guilt (e.g., "I parked there because I didn't care", "I knew I was wrong", "I was speeding"), do NOT invent a fake defense or claim innocence.
+- Instead, write a respectful statement requesting leniency based on factors such as a clean driving record, first-time offense, or honest acknowledgment of the situation.
+- Your role is to present the user's honest circumstances professionally, not to fabricate a defense.
 
 CRITICAL UPL COMPLIANCE (MANDATORY - NEVER VIOLATE):
 1. NEVER provide legal advice, legal strategy, legal recommendations, or legal opinions
@@ -249,6 +254,15 @@ CRITICAL RESTRICTIONS:
 - DO NOT predict outcomes or suggest what will work legally
 - ONLY articulate and polish the language - preserve user's facts, story, and position
 
+SAFETY RAIL FOR ADMISSIONS OF GUILT:
+If the user's statement admits guilt (e.g., "I parked there because I didn't care", "I knew I was wrong", "I was speeding"), do NOT invent a fake defense. Instead, craft a respectful request for leniency focusing on:
+- Clean driving record
+- First-time offense
+- Honest acknowledgment of the situation
+- Any mitigating circumstances they mention
+
+Present their honest circumstances professionally without fabricating a defense.
+
 OUTPUT REQUIREMENTS:
 Provide an exceptionally well-articulated, professionally polished appeal letter that:
 - Removes all profanity and inappropriate language
@@ -276,26 +290,26 @@ This ensures the city knows where to send their response even if the envelope is
 
         # Profanity filter - common profanity words (case-insensitive)
         profanity_patterns = [
-            r'\b(fuck|fucking|fucked)\b',
-            r'\b(shit|shitting|shitted)\b',
-            r'\b(damn|damned|damnit)\b',
-            r'\b(hell|hellish)\b',
-            r'\b(ass|asses|asshole)\b',
-            r'\b(bitch|bitches|bitching)\b',
-            r'\b(crap|crappy)\b',
-            r'\b(piss|pissing|pissed)\b',
-            r'\b(bullshit|bullcrap)\b',
-            r'\b(goddamn|goddamnit)\b',
+            r"\b(fuck|fucking|fucked)\b",
+            r"\b(shit|shitting|shitted)\b",
+            r"\b(damn|damned|damnit)\b",
+            r"\b(hell|hellish)\b",
+            r"\b(ass|asses|asshole)\b",
+            r"\b(bitch|bitches|bitching)\b",
+            r"\b(crap|crappy)\b",
+            r"\b(piss|pissing|pissed)\b",
+            r"\b(bullshit|bullcrap)\b",
+            r"\b(goddamn|goddamnit)\b",
         ]
 
         for pattern in profanity_patterns:
-            response = re.sub(pattern, '', response, flags=re.IGNORECASE)
+            response = re.sub(pattern, "", response, flags=re.IGNORECASE)
 
         # Clean up multiple spaces
-        response = re.sub(r'\s+', ' ', response)
+        response = re.sub(r"\s+", " ", response)
 
         # Clean up multiple periods or punctuation
-        response = re.sub(r'\.{3,}', '...', response)
+        response = re.sub(r"\.{3,}", "...", response)
 
         # Trim whitespace
         response = response.strip()
@@ -340,20 +354,45 @@ This ensures the city knows where to send their response even if the envelope is
 
         # Profanity filter for fallback - remove all profanity
         profanity_words = [
-            'fuck', 'fucking', 'fucked', 'fucker',
-            'shit', 'shitting', 'shitted', 'shits',
-            'damn', 'damned', 'damnit', 'dammit',
-            'hell', 'hellish',
-            'ass', 'asses', 'asshole', 'assholes',
-            'bitch', 'bitches', 'bitching', 'bitched',
-            'crap', 'crappy',
-            'piss', 'pissing', 'pissed', 'pisses',
-            'bullshit', 'bullcrap',
-            'goddamn', 'goddamnit', 'goddamned',
+            "fuck",
+            "fucking",
+            "fucked",
+            "fucker",
+            "shit",
+            "shitting",
+            "shitted",
+            "shits",
+            "damn",
+            "damned",
+            "damnit",
+            "dammit",
+            "hell",
+            "hellish",
+            "ass",
+            "asses",
+            "asshole",
+            "assholes",
+            "bitch",
+            "bitches",
+            "bitching",
+            "bitched",
+            "crap",
+            "crappy",
+            "piss",
+            "pissing",
+            "pissed",
+            "pisses",
+            "bullshit",
+            "bullcrap",
+            "goddamn",
+            "goddamnit",
+            "goddamned",
         ]
 
         for word in profanity_words:
-            refined = re.sub(r'\b' + re.escape(word) + r'\b', '', refined, flags=re.IGNORECASE)
+            refined = re.sub(
+                r"\b" + re.escape(word) + r"\b", "", refined, flags=re.IGNORECASE
+            )
 
         # Enhanced language elevation and articulation
         replacements = {
@@ -399,7 +438,7 @@ This ensures the city knows where to send their response even if the envelope is
             refined = refined.replace(informal, formal)
 
         # Clean up multiple spaces left by profanity removal
-        refined = re.sub(r'\s+', ' ', refined)
+        refined = re.sub(r"\s+", " ", refined)
         refined = refined.strip()
 
         # Capitalize first letter

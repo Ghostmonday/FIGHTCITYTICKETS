@@ -3,11 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppeal } from "./lib/appeal-context";
-import {
-  CITIES,
-  getCityDisplayName,
-  getCityById,
-} from "./lib/cities";
+import { CITIES, getCityDisplayName, getCityById } from "./lib/cities";
 import LegalDisclaimer from "../components/LegalDisclaimer";
 
 interface CitationValidationResponse {
@@ -61,7 +57,7 @@ export default function Home() {
       const apiBase =
         process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:62',message:'API Base URL',data:{apiBase,envVar:process.env.NEXT_PUBLIC_API_BASE,fullUrl:`${apiBase}/tickets/validate`},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:62',message:'API Base URL',data:{apiBase,envVar:process.env.NEXT_PUBLIC_API_BASE,fullUrl:`${apiBase}/tickets/validate`},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
       const response = await fetch(`${apiBase}/tickets/validate`, {
         method: "POST",
@@ -77,13 +73,12 @@ export default function Home() {
       });
 
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:78',message:'Fetch response received',data:{status:response.status,statusText:response.statusText,ok:response.ok,type:response.type,url:response.url},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D,E'})}).catch(()=>{});
+      // fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:78',message:'Fetch response received',data:{status:response.status,statusText:response.statusText,ok:response.ok,type:response.type,url:response.url},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D,E'})}).catch(()=>{});
       // #endregion
 
       if (!response.ok) {
         // #region agent log
-        const errBody = await response.text().catch(() => 'could not read body');
-        fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:85',message:'Response not OK',data:{status:response.status,statusText:response.statusText,body:errBody},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
+        // fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:85',message:'Response not OK',data:{status:response.status,statusText:response.statusText,body:errBody},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
         // #endregion
         throw new Error(`Validation failed: ${response.statusText}`);
       }
@@ -111,10 +106,10 @@ export default function Home() {
       }
     } catch (err) {
       // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:115',message:'Catch block error',data:{errorType:err?.constructor?.name,errorMessage:err instanceof Error ? err.message : String(err),errorStack:err instanceof Error ? err.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
+      // fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:115',message:'Catch block error',data:{errorType:err?.constructor?.name,errorMessage:err instanceof Error ? err.message : String(err),errorStack:err instanceof Error ? err.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
       // #endregion
       setError(
-        err instanceof Error ? err.message : "Failed to validate citation",
+        err instanceof Error ? err.message : "Failed to validate citation"
       );
     } finally {
       setIsValidating(false);
@@ -167,28 +162,40 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen" style={{ background: 'linear-gradient(180deg, #faf8f5 0%, #f5f2ed 100%)' }}>
+    <main
+      className="min-h-screen"
+      style={{
+        background: "linear-gradient(180deg, #faf8f5 0%, #f5f2ed 100%)",
+      }}
+    >
       {/* Hero Banner */}
-      <div 
+      <div
         className="py-16 sm:py-20 px-4 sm:px-6"
         style={{
-          background: 'linear-gradient(180deg, #f7f3ed 0%, #efe9df 40%, #e9e2d6 100%)'
+          background:
+            "linear-gradient(180deg, #f7f3ed 0%, #efe9df 40%, #e9e2d6 100%)",
         }}
       >
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extralight mb-8 tracking-tight text-stone-800 leading-tight">
-            Don't Stress.<br className="hidden sm:block" /> Fight Your Ticket.
+            Don't Stress.
+            <br className="hidden sm:block" /> Respond Correctly.
           </h1>
           <p className="text-xl sm:text-2xl mb-3 font-light text-stone-500 max-w-xl mx-auto tracking-wide">
             A citation is not a conviction.
           </p>
           <p className="text-lg sm:text-xl mb-10 text-stone-600 max-w-xl mx-auto">
-            You have the right to respond.<br className="hidden sm:block" />
-            <span className="font-normal text-stone-700">We help you say it clearly.</span>
+            You have the right to respond.
+            <br className="hidden sm:block" />
+            <span className="font-normal text-stone-700">
+              We help you say it clearly.
+            </span>
           </p>
           <div className="inline-flex items-center gap-8 px-8 py-4 rounded-full bg-white/60 backdrop-blur-sm border border-stone-200/80 shadow-sm">
             <div className="text-center">
-              <span className="text-3xl sm:text-4xl font-light text-stone-800">$9</span>
+              <span className="text-3xl sm:text-4xl font-light text-stone-800">
+                $9
+              </span>
             </div>
             <div className="h-8 w-px bg-stone-200"></div>
             <div className="text-center">
@@ -205,8 +212,8 @@ export default function Home() {
             Your Appeal, Ready to Send
           </h2>
           <p className="text-base sm:text-lg max-w-lg mx-auto font-light text-stone-500">
-            Appeal your parking ticket and potentially save $100 or more.
-            No legal knowledge needed.
+            Appeal your parking ticket and potentially save $100 or more. No
+            legal knowledge needed.
           </p>
         </div>
 
@@ -231,11 +238,13 @@ export default function Home() {
                   disabled={isValidating}
                 >
                   <option value="">Select a city...</option>
-                  {CITIES.sort((a, b) => a.name.localeCompare(b.name)).map((city) => (
-                    <option key={city.cityId} value={city.cityId}>
-                      {getCityDisplayName(city)}
-                    </option>
-                  ))}
+                  {CITIES.sort((a, b) => a.name.localeCompare(b.name)).map(
+                    (city) => (
+                      <option key={city.cityId} value={city.cityId}>
+                        {getCityDisplayName(city)}
+                      </option>
+                    )
+                  )}
                 </select>
                 <p className="mt-2 text-xs text-stone-400">
                   Select the city where you received the parking citation.
@@ -413,7 +422,7 @@ export default function Home() {
                         <p className="text-xs mb-1 text-stone-400">City</p>
                         <p className="font-medium text-base text-stone-700">
                           {formatCityName(
-                            validationResult.city_id || selectedCity,
+                            validationResult.city_id || selectedCity
                           )}
                         </p>
                       </div>
@@ -422,7 +431,7 @@ export default function Home() {
                         <p className="font-medium text-sm text-stone-700">
                           {formatAgency(
                             validationResult.agency,
-                            validationResult.section_id,
+                            validationResult.section_id
                           )}
                         </p>
                       </div>
@@ -457,8 +466,8 @@ export default function Home() {
                             </p>
                             <p className="text-xs mt-1 text-blue-700">
                               This citation section requires phone confirmation
-                              before appeal submission. We&apos;ll guide you through
-                              this process.
+                              before appeal submission. We&apos;ll guide you
+                              through this process.
                             </p>
                           </div>
                         </div>
@@ -502,7 +511,7 @@ export default function Home() {
                       onClick={handleStartAppeal}
                       className="w-full py-3.5 px-6 rounded-xl font-medium transition-all duration-200 bg-stone-800 text-white hover:bg-stone-900 shadow-sm hover:shadow-md"
                     >
-                      Get My Ticket Dismissed →
+                      Validate Citation & Start Appeal →
                     </button>
                   </div>
                 ) : (
@@ -556,11 +565,11 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-medium text-sm text-stone-700">
-                      You Keep Your Money
+                      Protect Your Rights
                     </h3>
                     <p className="text-sm text-stone-700">
-                      Save $50-$500+ per ticket. That&apos;s money back in your
-                      pocket.
+                      Ensure you aren&apos;t paying fines due to clerical
+                      errors.
                     </p>
                   </div>
                 </div>
@@ -580,11 +589,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-medium text-sm text-stone-700">
-                      Your Record Stays Clean
+                      Official Documentation
                     </h3>
                     <p className="text-sm text-stone-700">
-                      No points. No insurance rate increases. No future
-                      consequences.
+                      We generate the exact paperwork required by the city.
                     </p>
                   </div>
                 </div>
@@ -615,10 +623,9 @@ export default function Home() {
               </div>
               <div className="mt-6 p-3 rounded-lg border bg-white border-stone-300">
                 <p className="text-xs text-stone-700">
-                  <strong className="text-stone-700">The math is simple:</strong>{" "}
-                  If you pay a $100 ticket, you lose $100. If you appeal and
-                  win, you keep $100. The cost to appeal is a fraction of what
-                  you save.
+                  <strong className="text-stone-700">Procedure matters:</strong>{" "}
+                  Municipal code requires specific documentation for appeals. We
+                  ensure your submission meets all procedural requirements.
                 </p>
               </div>
             </div>

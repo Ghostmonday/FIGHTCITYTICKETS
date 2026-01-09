@@ -7,23 +7,23 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FightCityTickets.com - Appeal Parking Tickets in 23 Cities",
+  title: "FightCityTickets.com - Procedural Parking Ticket Assistance",
   description:
-    "Fight parking tickets in 23 cities across the US. Automated appeal system that handles everything including mailing your appeal directly to the city.",
+    "Document preparation service for parking ticket appeals in 23 cities across the US. We help you generate the exact paperwork required by municipal code.",
   keywords:
     "parking ticket appeal, contest parking ticket, fight parking citation, appeal parking violation, parking ticket help",
   authors: [{ name: "FightCityTickets.com" }],
   openGraph: {
-    title: "FightCityTickets.com - Appeal Parking Tickets",
-    description: "Automated parking ticket appeals for 23 US cities",
+    title: "FightCityTickets.com - Procedural Parking Ticket Assistance",
+    description: "Document preparation service for parking ticket appeals",
     type: "website",
     url: "https://fightcitytickets.com",
     siteName: "FightCityTickets.com",
   },
   twitter: {
     card: "summary_large_image",
-    title: "FightCityTickets.com - Appeal Parking Tickets",
-    description: "Automated parking ticket appeals for 23 US cities",
+    title: "FightCityTickets.com - Procedural Parking Ticket Assistance",
+    description: "Document preparation service for parking ticket appeals",
   },
   robots: {
     index: true,
@@ -60,7 +60,7 @@ export default function RootLayout({
               url: "https://fightcitytickets.com",
               logo: "https://fightcitytickets.com/logo.png",
               description:
-                "Automated parking ticket appeal service for major US cities",
+                "Document preparation service for parking ticket appeals",
               sameAs: [],
             }),
           }}
@@ -85,9 +85,7 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <Providers>
-          {children}
-        </Providers>
+        <Providers>{children}</Providers>
         <FooterDisclaimer />
       </body>
     </html>

@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const cityNames: Record<string, string> = {
     sf: "San Francisco",
@@ -48,6 +49,12 @@ export default function CheckoutPage() {
   };
 
   const handleCheckout = async () => {
+    // Validate terms acceptance
+    if (!acceptedTerms) {
+      setError("Please acknowledge the service terms to proceed");
+      return;
+    }
+
     if (!state.userInfo.name || !state.userInfo.addressLine1) {
       setError("Please complete your information");
       return;
@@ -56,7 +63,7 @@ export default function CheckoutPage() {
     // Validate address components
     if (!state.userInfo.city || !state.userInfo.state || !state.userInfo.zip) {
       setError(
-        "Please ensure your address is complete. Use the autocomplete for best results.",
+        "Please ensure your address is complete. Use the autocomplete for best results."
       );
       return;
     }
@@ -100,6 +107,7 @@ export default function CheckoutPage() {
           signature_data: state.signature,
           city_id: state.cityId,
           section_id: state.sectionId,
+          user_attestation: acceptedTerms,
         }),
       });
 
@@ -288,11 +296,32 @@ export default function CheckoutPage() {
             <p>City: {formatCityName(state.cityId)}</p>
             <p>Citation: {state.citationNumber}</p>
             <p>
-              Type:{" "}
+              Document Processing Fee:{" "}
               {state.appealType === "certified"
                 ? "Certified Mail ($19.89)"
                 : "Standard Mail ($9.89)"}
             </p>
+          </div>
+
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <label className="flex items-start cursor-pointer">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 mr-3 h-5 w-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              />
+              <span className="text-sm text-amber-900">
+                I understand I am paying for{" "}
+                <strong>document preparation and mailing services only</strong>.
+                The outcome of my appeal is decided solely by the city. This fee
+                is non-refundable even if the ticket is upheld. I have read the{" "}
+                <Link href="/refund" className="underline hover:text-amber-700">
+                  Refund Policy
+                </Link>
+                .
+              </span>
+            </label>
           </div>
 
           {error && <div className="mb-4 text-red-600">{error}</div>}
@@ -306,10 +335,10 @@ export default function CheckoutPage() {
             </Link>
             <button
               onClick={handleCheckout}
-              disabled={loading}
+              disabled={loading || !acceptedTerms}
               className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-4 rounded-lg font-bold text-lg shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:shadow-none transition"
             >
-              {loading ? "Processing..." : "Get My Ticket Dismissed →"}
+              {loading ? "Processing..." : "Pay Document Processing Fee →"}
             </button>
           </div>
         </div>
