@@ -1,7 +1,4 @@
-provethat.io\FightCityTickets_com_Production_Ready\backend\src\services\email_service.py
-```
 
-```python
 """
 Email Service for FightCityTickets.com
 

@@ -28,3 +28,6 @@ slowapi==0.1.9
 
 # Error tracking and monitoring
 sentry-sdk[fastapi]==2.19.0
+
+# Email validation
+email-validator

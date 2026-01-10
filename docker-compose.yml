@@ -31,10 +31,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: "1"
           memory: 1G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
 
   web:
@@ -50,6 +50,7 @@ services:
       - .env
     environment:
       - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE:-http://localhost:8000}
+      - PORT=3000
     # Remove direct port exposure - nginx will proxy
     expose:
       - "3000"
@@ -57,21 +58,25 @@ services:
       - api
     # AUDIT ITEM #7: Health check for frontend service
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 90s  # Next.js needs more time to start
+      start_period: 90s # Next.js needs more time to start
     # Restart policy for production reliability
     restart: unless-stopped
     # Resource limits to prevent resource exhaustion
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: "1"
           memory: 1G
         reservations:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
 
   nginx:
@@ -89,7 +94,11 @@ services:
       - api
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/health || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --quiet --tries=1 --spider http://localhost/health || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
