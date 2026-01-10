@@ -271,6 +271,9 @@ class LobMailService:
 
         story = []
 
+        # Top spacer for return address window (2 inches = 144 points)
+        story.append(Spacer(1, 144))
+
         # Header
         story.append(Paragraph("PARKING CITATION APPEAL", title_style))
         story.append(Spacer(1, 12))
@@ -525,7 +528,7 @@ class LobMailService:
                 "mail_type": "usps_first_class",  # Default for standard
                 "color": False,
                 "double_sided": True,  # Save cost on Standard
-                "address_placement": "insert_blank_page",  # Let Lob add cover sheet
+                "address_placement": "top_first_page",  # Use top of first page for address
                 "merge_variables": {
                     "name": user_first_name,
                 },
@@ -538,6 +541,7 @@ class LobMailService:
                     "certified_return_receipt"  # Green Card proof
                 )
                 payload["double_sided"] = False  # Professional single-sided look
+                payload["return_envelope"] = False  # City pays for return envelope
 
             # Send via Lob API
             async with httpx.AsyncClient(timeout=60.0) as client:
