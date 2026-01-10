@@ -1,10 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppeal } from "../../lib/appeal-context";
 import Link from "next/link";
 import AddressAutocomplete from "../../../components/AddressAutocomplete";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
+
+// Citation format patterns by city
+const CITATION_PATTERNS: Record<string, RegExp> = {
+  sf: /^[A-Z0-9]{6,12}$/i,
+  "us-ca-san_francisco": /^[A-Z0-9]{6,12}$/i,
+  la: /^[A-Z0-9]{6,10}$/i,
+  "us-ca-los_angeles": /^[A-Z0-9]{6,10}$/i,
+  nyc: /^[A-Z0-9]{8,12}$/i,
+  "us-ny-new_york": /^[A-Z0-9]{8,12}$/i,
+  "us-ca-san_diego": /^[A-Z0-9]{7,12}$/i,
+  "us-az-phoenix": /^[A-Z0-9]{7,12}$/i,
+  "us-co-denver": /^[A-Z0-9]{6,10}$/i,
+  "us-il-chicago": /^[A-Z0-9]{8,12}$/i,
+  "us-or-portland": /^[A-Z0-9]{6,10}$/i,
+  "us-pa-philadelphia": /^[A-Z0-9]{6,12}$/i,
+  "us-tx-dallas": /^[A-Z0-9]{6,12}$/i,
+  "us-tx-houston": /^[A-Z0-9]{6,12}$/i,
+  "us-ut-salt_lake_city": /^[A-Z0-9]{6,12}$/i,
+  "us-wa-seattle": /^[A-Z0-9]{6,12}$/i,
+};
 
 // Force dynamic rendering - this page uses client-side context
 export const dynamic = "force-dynamic";
@@ -17,6 +37,22 @@ export default function CheckoutPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showStandardMailWarning, setShowStandardMailWarning] = useState(false);
   const [confirmedStandardRisk, setConfirmedStandardRisk] = useState(false);
+
+  // Get citation pattern for current city
+  const getCitationPattern = (cityId: string | undefined): RegExp => {
+    if (!cityId) return /^[A-Z0-9]{6,12}$/i;
+    return CITATION_PATTERNS[cityId] || /^[A-Z0-9]{6,12}$/i;
+  };
+
+  // Validate citation format in real-time
+  const validateCitationFormat = (citation: string, cityId: string | null): string | null => {
+    if (!citation.trim()) return null;
+    const pattern = getCitationPattern(cityId || undefined);
+    if (!pattern.test(citation.trim())) {
+      return "Citation number format is invalid for this city";
+    }
+    return null;
+  };
 
   const cityNames: Record<string, string> = {
     sf: "San Francisco",
