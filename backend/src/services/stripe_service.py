@@ -6,15 +6,18 @@ Integrates with citation validation and mail fulfillment.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import stripe
 
 from ..config import settings
-from .appeal_storage import AppealData, get_appeal_storage
-
-# Import mail service for triggering letter after payment
+from .appeal_storage import get_appeal_storage
+from .citation import CitationValidator
 from .mail import AppealLetterRequest, send_appeal_letter
+
+# Constants for magic numbers
+ZIP_CODE_LENGTH = 5
+STATE_CODE_LENGTH = 2
 
 
 @dataclass
@@ -25,21 +28,21 @@ class CheckoutRequest:
     appeal_type: str  # "standard" or "certified"
     user_name: str
     user_address_line1: str
-    user_address_line2: Optional[str] = None
+    user_address_line2: str | None = None
     user_city: str = ""
     user_state: str = ""
     user_zip: str = ""
     violation_date: str = ""
     vehicle_info: str = ""
     appeal_reason: str = ""
-    email: Optional[str] = None
-    license_plate: Optional[str] = None
-    city_id: Optional[str] = None  # BACKLOG PRIORITY 3: Multi-city support
-    section_id: Optional[str] = None  # BACKLOG PRIORITY 3: Multi-city support
+    email: str | None = None
+    license_plate: str | None = None
+    city_id: str | None = None  # BACKLOG PRIORITY 3: Multi-city support
+    section_id: str | None = None  # BACKLOG PRIORITY 3: Multi-city support
     # AUDIT FIX: Database-first - IDs from pre-created records
-    payment_id: Optional[int] = None
-    intake_id: Optional[int] = None
-    draft_id: Optional[int] = None
+    payment_id: int | None = None
+    intake_id: int | None = None
+    draft_id: int | None = None
     # CYCLE 3: Chargeback prevention - user acknowledgment of service terms
     user_attestation: bool = False
 
@@ -63,30 +66,30 @@ class SessionStatus:
     payment_status: str  # "paid", "unpaid", "no_payment_required"
     amount_total: int
     currency: str
-    citation_number: Optional[str] = None
-    appeal_type: Optional[str] = None
-    user_email: Optional[str] = None
+    citation_number: str | None = None
+    appeal_type: str | None = None
+    user_email: str | None = None
 
 
 class StripeService:
     """Handles all Stripe payment operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Stripe with API key from settings."""
         stripe.api_key = settings.stripe_secret_key
 
         # Determine if we're in test or live mode
-        self.is_live_mode = settings.stripe_secret_key.startswith("sk_live_")
-        self.mode = "live" if self.is_live_mode else "test"
+        self.is_live_mode: bool = settings.stripe_secret_key.startswith("sk_live_")
+        self.mode: str = "live" if self.is_live_mode else "test"
 
         # Get price IDs based on mode
-        self.price_ids = {
+        self.price_ids: dict[str, str] = {
             "standard": settings.stripe_price_standard,
             "certified": settings.stripe_price_certified,
         }
 
         # Base URLs for redirects
-        self.base_url = settings.app_url.rstrip("/")
+        self.base_url: str = settings.app_url.rstrip("/")
 
     def get_price_id(self, appeal_type: str) -> str:
         """
@@ -98,17 +101,18 @@ class StripeService:
         Returns:
             Stripe price ID
         """
-        appeal_type = appeal_type.lower()
-        if appeal_type not in self.price_ids:
-            raise ValueError(
-                "Invalid appeal type: {appeal_type}. Must be 'standard' or 'certified'"
+        appeal_type_lower = appeal_type.lower()
+        if appeal_type_lower not in self.price_ids:
+            msg = (
+                f"Invalid appeal type: {appeal_type}. Must be 'standard' or 'certified'"
             )
+            raise ValueError(msg)
 
-        return self.price_ids[appeal_type]
+        return self.price_ids[appeal_type_lower]
 
     def validate_checkout_request(
         self, request: CheckoutRequest
-    ) -> Tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """
         Validate checkout request data.
 
@@ -119,7 +123,8 @@ class StripeService:
             Tuple of (is_valid, error_message)
         """
         # Validate citation number
-        validation = CitationValidator.validate_citation(
+        validator = CitationValidator()
+        validation = validator.validate_citation(
             request.citation_number, request.violation_date, request.license_plate
         )
 
@@ -151,12 +156,13 @@ class StripeService:
             return False, "ZIP code is required"
 
         # Validate state format (2 letters)
-        if len(request.user_state.strip()) != 2:
+        state_clean = request.user_state.strip()
+        if len(state_clean) != STATE_CODE_LENGTH:
             return False, "State must be 2-letter code (e.g., CA)"
 
         # Validate ZIP code format
         zip_clean = request.user_zip.strip()
-        if not (zip_clean.isdigit() and len(zip_clean) == 5):
+        if not (zip_clean.isdigit() and len(zip_clean) == ZIP_CODE_LENGTH):
             return False, "ZIP code must be 5 digits"
 
         return True, None
@@ -174,7 +180,8 @@ class StripeService:
         # Validate request
         is_valid, error_msg = self.validate_checkout_request(request)
         if not is_valid:
-            raise ValueError("Invalid checkout request: {error_msg}")
+            msg = f"Invalid checkout request: {error_msg}"
+            raise ValueError(msg)
 
         # Get price ID for appeal type
         price_id = self.get_price_id(request.appeal_type)
@@ -182,7 +189,7 @@ class StripeService:
         # Prepare metadata for webhook
         # AUDIT FIX: Database-first - store only IDs in metadata, not full data
         # CYCLE 3: Chargeback prevention - add dispute armor metadata
-        metadata = {
+        metadata: dict[str, str] = {
             # Only store IDs for webhook lookup (database-first approach)
             "payment_id": str(request.payment_id) if request.payment_id else "",
             "intake_id": str(request.intake_id) if request.intake_id else "",
@@ -213,7 +220,7 @@ class StripeService:
                 metadata=metadata,
                 success_url=f"{self.base_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
                 cancel_url=f"{self.base_url}/appeal",
-                customer_email=request.email,
+                customer_email=request.email or None,
                 billing_address_collection="required",
                 shipping_address_collection={
                     "allowed_countries": ["US"],
@@ -221,16 +228,18 @@ class StripeService:
             )
 
             return CheckoutResponse(
-                checkout_url=session.url,
+                checkout_url=session.url or "",
                 session_id=session.id,
-                amount_total=session.amount_total,
-                currency=session.currency,
+                amount_total=session.amount_total or 0,
+                currency=session.currency or "usd",
             )
 
         except stripe.error.StripeError as e:
-            raise Exception(f"Stripe error creating checkout session: {str(e)}") from e
+            msg = f"Stripe error creating checkout session: {str(e)}"
+            raise Exception(msg) from e
         except Exception as e:
-            raise Exception(f"Error creating checkout session: {str(e)}") from e
+            msg = f"Error creating checkout session: {str(e)}"
+            raise Exception(msg) from e
 
     def get_session_status(self, session_id: str) -> SessionStatus:
         """
@@ -248,15 +257,20 @@ class StripeService:
             return SessionStatus(
                 session_id=session.id,
                 payment_status=session.payment_status,
-                amount_total=session.amount_total,
-                currency=session.currency,
-                citation_number=session.metadata.get("citation_number"),
-                appeal_type=session.metadata.get("appeal_type"),
+                amount_total=session.amount_total or 0,
+                currency=session.currency or "usd",
+                citation_number=session.metadata.get("citation_number")
+                if session.metadata
+                else None,
+                appeal_type=session.metadata.get("appeal_type")
+                if session.metadata
+                else None,
                 user_email=session.customer_email,
             )
 
         except stripe.error.StripeError as e:
-            raise Exception(f"Stripe error retrieving session: {str(e)}") from e
+            msg = f"Stripe error retrieving session: {str(e)}"
+            raise Exception(msg) from e
 
     def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
         """
@@ -279,7 +293,7 @@ class StripeService:
         except Exception:
             return False
 
-    async def handle_webhook_event(self, event: Dict) -> Dict:
+    async def handle_webhook_event(self, event: dict[str, Any]) -> dict[str, Any]:
         """
         Handle Stripe webhook event.
 
@@ -293,7 +307,7 @@ class StripeService:
         data = event.get("data", {})
         object_data = data.get("object", {})
 
-        result = {
+        result: dict[str, Any] = {
             "event_type": event_type,
             "processed": False,
             "message": "",
@@ -313,6 +327,7 @@ class StripeService:
             if payment_status == "paid":
                 # IDEMPOTENCY CHECK: Prevent duplicate processing if Stripe retries webhook
                 storage = get_appeal_storage()
+                existing_appeal = None
                 if intake_id:
                     existing_appeal = storage.get_appeal(intake_id)
                     if existing_appeal and existing_appeal.payment_status in [
@@ -396,8 +411,8 @@ def create_checkout_link(
     violation_date: str = "",
     vehicle_info: str = "",
     appeal_reason: str = "",
-    email: Optional[str] = None,
-) -> Optional[str]:
+    email: str | None = None,
+) -> str | None:
     """
     Quick helper function to create checkout link.
 
@@ -434,27 +449,27 @@ def create_checkout_link(
 
 # Test function
 if __name__ == "__main__":
-    print("🧪 Testing Stripe Service")
+    print("Testing Stripe Service")
     print("=" * 50)
 
     # Note: This requires Stripe API keys to be set
     try:
         service = StripeService()
-        print(f"✅ Stripe service initialized (mode: {service.mode})")
+        print(f"Stripe service initialized (mode: {service.mode})")
 
         # Test price IDs
         standard_price = service.get_price_id("standard")
         certified_price = service.get_price_id("certified")
         print(
-            f"✅ Price IDs loaded - Standard: {standard_price[:20]}..., Certified: {certified_price[:20]}..."
+            f"Price IDs loaded - Standard: {standard_price[:20]}..., Certified: {certified_price[:20]}..."
         )
 
-        print("\n⚠️  Note: Full testing requires valid Stripe API keys")
+        print("\nNote: Full testing requires valid Stripe API keys")
         print("   Set STRIPE_SECRET_KEY in .env file to test checkout creation")
 
     except Exception as e:
-        print(f"❌ Error initializing Stripe service: {e}")
+        print(f"Error initializing Stripe service: {e}")
         print("   Make sure stripe package is installed: pip install stripe")
 
     print("\n" + "=" * 50)
-    print("✅ Stripe Service Test Complete")
+    print("Stripe Service Test Complete")
