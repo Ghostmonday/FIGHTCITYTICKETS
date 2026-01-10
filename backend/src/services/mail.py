@@ -515,24 +515,29 @@ class LobMailService:
                 request.user_name.split()[0] if request.user_name else "Customer"
             )
 
+            # DEFAULT SETTINGS (For $9 Standard Mail)
             payload = {
                 "description": f"Appeal letter for citation {request.citation_number}",
                 "to": agency_address.to_lob_dict(),
                 "from": user_address.to_lob_dict(),
                 "file": pdf_base64,
                 "file_type": "application/pdf",
-                "mail_type": mail_type,
-                "color": False,  # Black and white is sufficient and cheaper
-                "double_sided": True,
+                "mail_type": "usps_first_class",  # Default for standard
+                "color": False,
+                "double_sided": True,  # Save cost on Standard
+                "address_placement": "insert_blank_page",  # Let Lob add cover sheet
                 "merge_variables": {
                     "name": user_first_name,
                 },
             }
 
-            # Certified mail specific settings
-            if mail_type == "usps_certified":
-                payload["extra_service"] = "certified"
-                payload["return_envelope"] = True
+            # OVERRIDE FOR CERTIFIED MAIL ($12 Premium)
+            if request.appeal_type == "certified":
+                payload["mail_type"] = "usps_certified"
+                payload["extra_service"] = (
+                    "certified_return_receipt"  # Green Card proof
+                )
+                payload["double_sided"] = False  # Professional single-sided look
 
             # Send via Lob API
             async with httpx.AsyncClient(timeout=60.0) as client:

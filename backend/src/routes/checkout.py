@@ -5,6 +5,63 @@ Handles payment session creation and status checking for appeal processing.
 Uses database for persistent storage before creating Stripe checkout sessions.
 """
 
+import httpx
+
+from ..config import settings
+
+# States where service is blocked due to UPL regulations
+BLOCKED_STATES = ["TX", "NC", "NJ", "WA"]
+
+
+async def verify_user_address(
+    address1: str, city: str, state: str, zip_code: str
+) -> tuple:
+    """
+    Validate user return address using Lob's US verification API.
+
+    Returns:
+        tuple: (is_valid: bool, error_message: str or None)
+    """
+    try:
+        auth = (settings.lob_api_key, "")
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                "https://api.lob.com/v1/us_verifications",
+                auth=auth,
+                json={
+                    "primary_line": address1,
+                    "city": city,
+                    "state": state,
+                    "zip_code": zip_code,
+                },
+            )
+
+        if resp.status_code != 200:
+            logger.warning(f"Lob address verification returned {resp.status_code}")
+            return True, None  # Allow through if API fails
+
+        data = resp.json()
+        deliverability = data.get("deliverability", "unknown")
+
+        # "deliverable" or "deliverable_missing_unit" are acceptable
+        if deliverability == "undeliverable":
+            return (
+                False,
+                "The return address provided is invalid or undeliverable. Please check your address and try again.",
+            )
+        elif deliverability == "missing_information":
+            return (
+                False,
+                "Please complete your address with street, city, state, and ZIP code.",
+            )
+
+        return True, None
+
+    except Exception as e:
+        logger.warning(f"Address verification API error: {e}")
+        return True, None  # Allow through if API fails
+
+
 from __future__ import annotations
 
 import logging
@@ -162,6 +219,7 @@ class SessionStatusResponse(BaseModel):
     payment_id: Optional[int]
     intake_id: Optional[int]
     draft_id: Optional[int]
+    tracking_visible: bool = True  # False for standard mail ($9) users
 
 
 @router.post("/create-session", response_model=AppealCheckoutResponse)
@@ -179,6 +237,25 @@ def create_appeal_checkout(request: Request, appeal_request: AppealCheckoutReque
     Rate limited to 10 requests per minute per IP address.
     """
     try:
+        # BLOCKED STATE CHECK - Prevent UPL liability
+        if appeal_request.user_state in BLOCKED_STATES:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="We are currently unable to offer our services in your state due to local regulations.",
+            )
+
+        # USER ADDRESS VALIDATION - Prevent undeliverable mail burn
+        is_valid_addr, addr_error = await verify_user_address(
+            appeal_request.user_address_line1,
+            appeal_request.user_city,
+            appeal_request.user_state,
+            appeal_request.user_zip,
+        )
+        if not is_valid_addr:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=addr_error
+            )
+
         # Initialize Stripe service
         stripe_service = StripeService()
 
@@ -320,6 +397,9 @@ def get_session_status(session_id: str):
         stripe_service = StripeService()
         status_info = stripe_service.get_session_status(session_id)
 
+        # Determine if tracking is visible (only for certified mail)
+        is_certified = status_info.appeal_type == "certified"
+
         # Convert to API response
         api_response = SessionStatusResponse(
             session_id=status_info.session_id,
@@ -334,6 +414,7 @@ def get_session_status(session_id: str):
             payment_id=status_info.payment_id,
             intake_id=status_info.intake_id,
             draft_id=status_info.draft_id,
+            tracking_visible=is_certified,
         )
 
         return api_response
