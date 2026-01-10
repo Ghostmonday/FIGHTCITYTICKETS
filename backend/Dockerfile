@@ -9,18 +9,18 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     && rm -rf /var/lib/apt-lists/*
 
+WORKDIR /app
+
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
-WORKDIR /app
-
 # Copy requirements and install Python dependencies
-COPY requirements.txt /app/requirements.txt
+COPY backend/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy application code
-COPY src /app/src
+COPY backend/src /app/src
 
 # Switch to non-root user
 USER appuser
