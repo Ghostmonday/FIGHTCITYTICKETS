@@ -57,7 +57,7 @@ export default function AppealStatusPage() {
         citation_number: data.citation_number,
         payment_status: data.payment_status,
         mailing_status: data.mailing_status || "pending",
-        tracking_number: data.lob_tracking_id,
+        tracking_number: data.tracking_number,
         expected_delivery: data.expected_delivery,
         amount_paid: data.amount_total || 0,
         appeal_type: data.appeal_type || "standard",
@@ -190,12 +190,21 @@ export default function AppealStatusPage() {
               </div>
             </div>
 
-            {/* Tracking Information */}
+            {/* Tracking Information - Certified Mail */}
             {appealData.tracking_number && (
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border-2 border-green-200 p-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-4">
-                  Tracking Information
-                </h3>
+                <div className="flex items-center gap-2 mb-4">
+                  <svg
+                    className="w-6 h-6 text-green-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Certified Mail with Tracking
+                  </h3>
+                </div>
                 <div className="space-y-3">
                   <div>
                     <div className="text-sm text-gray-600 mb-1">
@@ -216,12 +225,52 @@ export default function AppealStatusPage() {
                     </div>
                   )}
                   <p className="text-sm text-gray-700 mt-4">
-                    You can track your appeal letter delivery using the tracking
-                    number above.
+                    Track your delivery at{" "}
+                    <a
+                      href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${appealData.tracking_number}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-700 underline hover:text-green-900"
+                    >
+                      USPS.com
+                    </a>
                   </p>
                 </div>
               </div>
             )}
+
+            {/* Standard Mail - No Tracking */}
+            {!appealData.tracking_number &&
+              appealData.mailing_status === "mailed" && (
+                <div className="bg-gray-100 rounded-2xl border border-gray-300 p-8">
+                  <div className="flex items-center gap-2 mb-4">
+                    <svg
+                      className="w-6 h-6 text-gray-500"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                      <path
+                        fillRule="evenodd"
+                        d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <h3 className="text-xl font-bold text-gray-700">
+                      Standard Mail Sent
+                    </h3>
+                  </div>
+                  <p className="text-gray-600 mb-2">
+                    <strong>
+                      Mailed on {appealData.mailed_date || "recently"}
+                    </strong>
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Standard Mail does not include tracking. Your appeal has
+                    been sent via regular USPS mail.
+                  </p>
+                </div>
+              )}
 
             {/* What This Means - Transformation Focus */}
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">

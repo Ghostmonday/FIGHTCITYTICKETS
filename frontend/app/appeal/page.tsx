@@ -101,11 +101,21 @@ function AppealPageContent() {
             evidence.
           </p>
           <LegalDisclaimer variant="compact" className="mb-6" />
+
+          <div className="mb-6">
+            <Link
+              href="/appeal/pricing"
+              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 inline-block"
+            >
+              Choose Mailing Option →
+            </Link>
+          </div>
+
           <Link
             href="/appeal/camera"
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+            className="text-blue-600 hover:text-blue-800"
           >
-            Continue to Photos →
+            Or skip to photos →
           </Link>
         </div>
       </div>

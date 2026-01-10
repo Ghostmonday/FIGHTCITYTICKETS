@@ -15,6 +15,8 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showStandardMailWarning, setShowStandardMailWarning] = useState(false);
+  const [confirmedStandardRisk, setConfirmedStandardRisk] = useState(false);
 
   const cityNames: Record<string, string> = {
     sf: "San Francisco",
@@ -52,6 +54,11 @@ export default function CheckoutPage() {
     // Block payment unless terms are accepted
     if (!acceptedTerms) {
       setError("Please acknowledge the service terms to proceed");
+      return;
+    }
+    // Block if standard mail and user hasn't acknowledged risk
+    if (state.appealType === "standard" && !confirmedStandardRisk) {
+      setShowStandardMailWarning(true);
       return;
     }
 
@@ -303,6 +310,41 @@ export default function CheckoutPage() {
             </p>
           </div>
 
+          {state.appealType !== "certified" && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="font-semibold text-red-800 mb-2">
+                ⚠️ Standard Mail Has No Tracking
+              </p>
+              <p className="text-sm text-red-700 mb-2">
+                You chose Standard Mail which does not include tracking. We
+                cannot confirm delivery or provide status updates after mailing.
+              </p>
+              <p className="text-sm text-red-700">
+                <strong>We strongly recommend Certified Mail</strong> for proof
+                of delivery and to track your appeal's status online.
+              </p>
+            </div>
+
+            {/* Standard Mail Risk Checkbox */}
+            {state.appealType === "standard" && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <label className="flex items-start cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={confirmedStandardRisk}
+                    onChange={(e) => setConfirmedStandardRisk(e.target.checked)}
+                    className="mt-1 mr-3 h-5 w-5 text-yellow-600 border-yellow-300 rounded focus:ring-yellow-500"
+                  />
+                  <span className="text-sm text-yellow-900">
+                    I acknowledge that Standard Mail is <strong>untracked</strong> and
+                    I waive liability for lost mail. I understand the city may not
+                    receive my appeal.
+                  </span>
+                </label>
+              </div>
+            )}
+          )}
+
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <label className="flex items-start cursor-pointer">
               <input
@@ -312,10 +354,8 @@ export default function CheckoutPage() {
                 className="mt-1 mr-3 h-5 w-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
               />
               <span className="text-sm text-amber-900">
-                I understand I am paying for{" "}
-                <strong>document preparation and mailing services only</strong>.
-                The outcome of my appeal is decided solely by the city. This fee
-                is non-refundable even if the ticket is upheld. I have read the{" "}
+                I understand that <strong>FightCityTickets is not a law firm</strong> and does not provide legal advice or representation. The outcome of my appeal is decided solely by the city. I understand that{" "}
+                <strong>no guarantee can be made regarding the appeal outcome</strong>. This fee is for document preparation and mailing services only and is non-refundable. I have read the{" "}
                 <Link href="/refund" className="underline hover:text-amber-700">
                   Refund Policy
                 </Link>
@@ -324,7 +364,61 @@ export default function CheckoutPage() {
             </label>
           </div>
 
+          {/* Trust Signals */}
+          <div className="mb-6 flex items-center justify-center gap-6 text-sm text-gray-500">
+            <div className="flex items-center gap-1">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd"/>
+              </svg>
+              <span>256-bit SSL Secure</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+                <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd"/>
+              </svg>
+              <span>Powered by Stripe</span>
+            </div>
+          </div>
+
           {error && <div className="mb-4 text-red-600">{error}</div>}
+
+          {/* Standard Mail Warning Modal */}
+          {showStandardMailWarning && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl max-w-md w-full p-6">
+                <div className="flex items-center gap-3 mb-4 text-red-600">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <h3 className="text-lg font-bold">Warning: No Tracking</h3>
+                </div>
+                <p className="text-gray-700 mb-4">
+                  Standard Mail does <strong>not include proof of delivery</strong>. We cannot guarantee the city receives your appeal.
+                </p>
+                <p className="text-sm text-gray-600 mb-6">
+                  If your appeal is lost in the mail, you may miss your deadline with no recourse.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowStandardMailWarning(false)}
+                    className="flex-1 py-3 px-4 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50"
+                  >
+                    Go Back
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowStandardMailWarning(false);
+                      setConfirmedStandardRisk(true);
+                    }}
+                    className="flex-1 py-3 px-4 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700"
+                  >
+                    I Accept the Risk
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-between">
             <Link

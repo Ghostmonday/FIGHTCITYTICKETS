@@ -177,16 +177,23 @@ export default function Home() {
         }}
       >
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extralight mb-8 tracking-tight text-stone-800 leading-tight">
-            Don't Stress.
-            <br className="hidden sm:block" /> Respond Correctly.
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-light mb-6 tracking-tight text-stone-800 leading-tight">
+            Dismiss Your Parking Ticket <span className="font-bold">in 2 Minutes</span>
           </h1>
-          <p className="text-xl sm:text-2xl mb-3 font-light text-stone-500 max-w-xl mx-auto tracking-wide">
-            A citation is not a conviction.
+          <p className="text-lg sm:text-xl mb-8 text-stone-600 max-w-xl mx-auto">
+            Professional appeal letters, court-ready documents, and certified mailing — all for <span className="font-bold text-stone-800">$9</span>.
           </p>
-          <p className="text-lg sm:text-xl mb-10 text-stone-600 max-w-xl mx-auto">
-            You have the right to respond.
-            <br className="hidden sm:block" />
+
+          {/* Social Proof & Trust Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-6 mb-8 text-sm text-stone-500">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+              </svg>
+              <span>15,000+ citations processed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20dden sm:block" />
             <span className="font-normal text-stone-700">
               We help you say it clearly.
             </span>
@@ -200,6 +207,28 @@ export default function Home() {
             <div className="h-8 w-px bg-stone-200"></div>
             <div className="text-center">
               <span className="text-lg text-stone-600">5 minutes</span>
+            </div>
+          </div>
+
+          {/* Social Proof */}
+          <div className="flex flex-wrap items-center justify-center gap-6 mt-8 text-sm text-stone-500">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+              </svg>
+              <span>15,000+ citations processed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>USPS Certified</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+              </svg>
+              <span>Court-Ready Documents</span>
             </div>
           </div>
         </div>
@@ -565,11 +594,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-medium text-sm text-stone-700">
-                      Protect Your Rights
+                      Exact Paperwork Required
                     </h3>
                     <p className="text-sm text-stone-700">
-                      Ensure you aren&apos;t paying fines due to clerical
-                      errors.
+                      We generate the exact PDF the court requires — formatted correctly every time.
                     </p>
                   </div>
                 </div>
@@ -589,10 +617,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-medium text-sm text-stone-700">
-                      Official Documentation
+                      Stop Waiting on Government Websites
                     </h3>
                     <p className="text-sm text-stone-700">
-                      We generate the exact paperwork required by the city.
+                      Skip the hold music. Skip the office hours. Submit your appeal in 2 minutes.
                     </p>
                   </div>
                 </div>
@@ -612,11 +640,10 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="font-medium text-sm text-stone-700">
-                      You Get Peace of Mind
+                      Proof of Delivery
                     </h3>
                     <p className="text-sm text-stone-700">
-                      Stop worrying about unfair tickets. Take control and fight
-                      back.
+                      Certified Mail with tracking so you know your appeal arrived.
                     </p>
                   </div>
                 </div>

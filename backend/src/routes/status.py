@@ -8,7 +8,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from ..services.database import get_db_service
 
@@ -21,7 +21,9 @@ class StatusLookupRequest(BaseModel):
     """Request model for appeal status lookup."""
 
     email: EmailStr = Field(..., description="Email address used for appeal")
-    citation_number: str = Field(..., min_length=3, max_length=20, description="Citation number")
+    citation_number: str = Field(
+        ..., min_length=3, max_length=20, description="Citation number"
+    )
 
 
 class StatusLookupResponse(BaseModel):
@@ -54,14 +56,13 @@ def lookup_appeal_status(request: StatusLookupRequest):
 
         # Find intake by email and citation number
         intake = db_service.get_intake_by_email_and_citation(
-            email=request.email,
-            citation_number=request.citation_number
+            email=request.email, citation_number=request.citation_number
         )
 
         if not intake:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No appeal found with that email and citation number"
+                detail="No appeal found with that email and citation number",
             )
 
         # Get latest payment for this intake
@@ -70,7 +71,7 @@ def lookup_appeal_status(request: StatusLookupRequest):
         if not payment:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No payment found for this appeal"
+                detail="No payment found for this appeal",
             )
 
         # Determine mailing status
@@ -89,12 +90,17 @@ def lookup_appeal_status(request: StatusLookupRequest):
         if payment.fulfilled_at:
             mailed_date = payment.fulfilled_at.isoformat()
 
+        # TRACKING GATE: Hide tracking for standard mail users
+        is_certified = payment.appeal_type.value == "certified"
+        tracking_number = payment.lob_tracking_id if is_certified else None
+        expected_delivery = None  # Would need to calculate from Lob API
+
         return StatusLookupResponse(
             citation_number=intake.citation_number,
             payment_status=payment.status.value,
             mailing_status=mailing_status,
-            tracking_number=payment.lob_tracking_id,
-            expected_delivery=None,  # Would need to calculate from Lob API
+            tracking_number=tracking_number,
+            expected_delivery=expected_delivery,
             amount_total=payment.amount_total,
             appeal_type=payment.appeal_type.value,
             payment_date=payment_date,
@@ -107,7 +113,5 @@ def lookup_appeal_status(request: StatusLookupRequest):
         logger.error(f"Error looking up appeal status: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to lookup appeal status"
+            detail="Failed to lookup appeal status",
         ) from e
-
-
