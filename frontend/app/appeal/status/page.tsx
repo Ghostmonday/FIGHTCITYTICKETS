@@ -17,6 +17,7 @@ export default function AppealStatusPage() {
     expected_delivery?: string;
     amount_paid: number;
     appeal_type: string;
+    tracking_visible: boolean;
   } | null>(null);
 
   const handleLookup = async (e: React.FormEvent) => {
@@ -61,6 +62,7 @@ export default function AppealStatusPage() {
         expected_delivery: data.expected_delivery,
         amount_paid: data.amount_total || 0,
         appeal_type: data.appeal_type || "standard",
+        tracking_visible: data.tracking_visible !== false,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to lookup appeal");
@@ -190,8 +192,8 @@ export default function AppealStatusPage() {
               </div>
             </div>
 
-            {/* Tracking Information - Certified Mail */}
-            {appealData.tracking_number && (
+            {/* Tracking Information - Certified Mail Only */}
+            {appealData.tracking_number && appealData.tracking_visible && (
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border-2 border-green-200 p-8">
                 <div className="flex items-center gap-2 mb-4">
                   <svg
