@@ -6,11 +6,15 @@ Integrates with citation validation and mail fulfillment.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import stripe
 
 from ..config import settings
+from .appeal_storage import AppealData, get_appeal_storage
+
+# Import mail service for triggering letter after payment
+from .mail import AppealLetterRequest, send_appeal_letter
 
 
 @dataclass
@@ -207,8 +211,8 @@ class StripeService:
                     }
                 ],
                 metadata=metadata,
-                success_url="{self.base_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url="{self.base_url}/appeal",
+                success_url=f"{self.base_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
+                cancel_url=f"{self.base_url}/appeal",
                 customer_email=request.email,
                 billing_address_collection="required",
                 shipping_address_collection={
@@ -275,7 +279,7 @@ class StripeService:
         except Exception:
             return False
 
-    def handle_webhook_event(self, event: Dict) -> Dict:
+    async def handle_webhook_event(self, event: Dict) -> Dict:
         """
         Handle Stripe webhook event.
 
@@ -299,24 +303,74 @@ class StripeService:
         # Handle checkout.session.completed event
         if event_type == "checkout.session.completed":
             session = object_data
+            session_id = session.get("id")
 
             # Extract metadata for fulfillment
             metadata = session.get("metadata", {})
             payment_status = session.get("payment_status")
+            intake_id = metadata.get("intake_id")
 
             if payment_status == "paid":
+                # IDEMPOTENCY CHECK: Prevent duplicate processing if Stripe retries webhook
+                storage = get_appeal_storage()
+                if intake_id:
+                    existing_appeal = storage.get_appeal(intake_id)
+                    if existing_appeal and existing_appeal.payment_status in [
+                        "paid",
+                        "processing",
+                        "mailed",
+                    ]:
+                        result["processed"] = True
+                        result["message"] = (
+                            f"Duplicate webhook: Appeal {intake_id} already {existing_appeal.payment_status}"
+                        )
+                        return result
+
                 result["processed"] = True
-                result["message"] = "Payment successful, ready for fulfillment"
+                result["message"] = "Payment successful, triggering mail fulfillment"
                 result["metadata"] = metadata
 
-                # Here you would trigger:
-                # 1. PDF generation
-                # 2. Lob mail sending
-                # 3. Email confirmation
-                # 4. Database update
+                # Update payment status in storage
+                if intake_id:
+                    storage.update_payment_status(intake_id, session_id, "paid")
+
+                # TRIGGER MAIL SERVICE: Send appeal letter after successful payment
+                if intake_id and existing_appeal:
+                    try:
+                        print(f"Triggering mail service for intake {intake_id}...")
+
+                        # Build AppealLetterRequest from stored appeal data
+                        mail_request = AppealLetterRequest(
+                            citation_number=existing_appeal.citation_number,
+                            appeal_type=existing_appeal.appeal_type,
+                            user_name=existing_appeal.user_name,
+                            user_address=existing_appeal.user_address,
+                            user_city=existing_appeal.user_city,
+                            user_state=existing_appeal.user_state,
+                            user_zip=existing_appeal.user_zip,
+                            letter_text=existing_appeal.appeal_letter_text,
+                        )
+
+                        # Send to Lob
+                        mail_result = await send_appeal_letter(mail_request)
+                        print(
+                            f"SUCCESS: Letter queued for intake {intake_id}, Lob ID: {mail_result.letter_id}"
+                        )
+
+                        # Update status to processing
+                        storage.update_payment_status(
+                            intake_id, session_id, "processing"
+                        )
+
+                    except Exception as e:
+                        # CRITICAL FAILURE: Money taken, letter failed
+                        error_msg = f"CRITICAL: Payment received but letter failed for {intake_id}: {str(e)}"
+                        print(error_msg)
+                        result["message"] = error_msg
+                        # TODO: Alert via Sentry/PagerDuty
 
             else:
-                result["message"] = "Payment not completed: {payment_status}"
+                result["message"] = f"Payment not completed: {payment_status}"
 
         # Handle payment_intent.succeeded (backup)
         elif event_type == "payment_intent.succeeded":
