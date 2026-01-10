@@ -249,7 +249,7 @@ export default function CityPage() {
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to validate citation",
+        err instanceof Error ? err.message : "Failed to validate citation"
       );
     } finally {
       setIsValidating(false);
@@ -261,7 +261,7 @@ export default function CityPage() {
       const redirectSlug = cityMapping?.slug || citySlug;
       const cityId = validationResult.city_id || redirectSlug;
       router.push(
-        `/appeal?city=${encodeURIComponent(cityId)}&citation=${encodeURIComponent(citationNumber.trim())}`,
+        `/appeal?city=${encodeURIComponent(cityId)}&citation=${encodeURIComponent(citationNumber.trim())}`
       );
     }
   };
@@ -314,10 +314,10 @@ export default function CityPage() {
       <div className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-700 text-white py-6 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-2xl sm:text-3xl font-extrabold mb-3">
-            Get Your {cityData.name} Parking Ticket Dismissed
+            {cityData.name} Parking Appeal
           </h2>
           <p className="text-lg sm:text-xl text-green-100 mb-4 font-medium">
-            Stop paying unfair tickets. Keep your money. Protect your record.
+            Procedural compliance. Clerical precision. Your voice, perfected.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-sm sm:text-base">
             <div className="flex items-center gap-2">
@@ -365,19 +365,19 @@ export default function CityPage() {
               {cityData.state} • {cityData.appealDeadlineDays} Day Appeal Window
             </span>
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 sm:text-5xl md:text-6xl lg:text-7xl mb-4 sm:mb-6 leading-tight">
-            Get Your{" "}
-            <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              {cityData.name}
-            </span>{" "}
-            Parking Ticket Dismissed
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extralight mb-6 sm:mb-8 tracking-tight text-stone-800 leading-tight">
+            They Demand Perfection.
+            <br className="hidden sm:block" /> We Deliver It.
           </h1>
-          <p className="mt-3 max-w-3xl mx-auto text-lg sm:text-xl md:text-2xl text-gray-700 sm:mt-4 sm:mt-6 leading-relaxed px-2 font-semibold">
-            Stop paying unfair tickets. Keep your money. Protect your record.
+          <p className="text-xl sm:text-2xl mb-4 font-light text-stone-500 max-w-xl mx-auto tracking-wide">
+            A parking citation is a procedural document.
           </p>
-          <p className="mt-4 max-w-2xl mx-auto text-base sm:text-lg text-gray-600 leading-relaxed px-2">
-            Every ticket you pay is money you'll never see again. Appeal now and
-            potentially save hundreds of dollars.
+          <p className="text-lg sm:text-xl text-stone-600 max-w-xl mx-auto mb-6 sm:mb-8">
+            Municipalities win through clerical precision.
+            <br className="hidden sm:block" />
+            <span className="font-normal text-stone-700">
+              We make their weapon our shield.
+            </span>
           </p>
         </div>
 
@@ -401,7 +401,7 @@ export default function CityPage() {
                 </svg>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                Start Your Appeal
+                Validate Your Citation
               </h2>
             </div>
             <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6 -mt-2 sm:mt-0 ml-12 sm:ml-16">
@@ -537,7 +537,7 @@ export default function CityPage() {
                         onClick={handleStartAppeal}
                         className="mt-5 w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-4 px-6 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                       >
-                        Get My Ticket Dismissed →
+                        Submit Appeal →
                       </button>
                     </div>
                   </div>
@@ -585,8 +585,8 @@ export default function CityPage() {
                   <div>
                     <h3 className="font-bold text-gray-900">Keep Your Money</h3>
                     <p className="text-sm text-gray-700">
-                      Save $50-$500+ per ticket. That's real money back in your
-                      pocket.
+                      Save $50-$500+ per ticket. That&apos;s real money back in
+                      your pocket.
                     </p>
                   </div>
                 </div>
@@ -640,7 +640,7 @@ export default function CityPage() {
                 <p className="text-sm text-gray-700">
                   <strong className="text-gray-900">The math:</strong> Pay $100
                   ticket = lose $100 forever. Appeal for $10 = potentially save
-                  $100. <strong>That's a 10x return.</strong>
+                  $100. <strong>That&apos;s a 10x return.</strong>
                 </p>
               </div>
             </div>
@@ -844,7 +844,7 @@ export default function CityPage() {
                 </h3>
               </div>
               <p className="text-sm sm:text-base text-blue-800 mb-3 sm:mb-4 font-medium">
-                Our automated system handles {cityData.name}'s specific
+                Our automated system handles {cityData.name}&apos;s specific
                 requirements:
               </p>
               <ul className="text-sm sm:text-base text-blue-800 space-y-2">
@@ -854,7 +854,7 @@ export default function CityPage() {
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-600 mr-2 flex-shrink-0">✓</span>
-                  <span>{cityData.name}'s specific appeal deadlines</span>
+                  <span>{cityData.name}&apos;s specific appeal deadlines</span>
                 </li>
                 <li className="flex items-start">
                   <span className="text-blue-600 mr-2 flex-shrink-0">✓</span>
