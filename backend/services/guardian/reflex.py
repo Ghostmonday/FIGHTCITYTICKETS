@@ -1,7 +1,4 @@
-provethat.io\backend\services\guardian\reflex.py
-```
-
-```python
+#!/usr/bin/env python3
 #!/usr/bin/env python3
 """
 Guardian Reflex Controller
@@ -44,6 +41,7 @@ logger = logging.getLogger("guardian.reflex")
 
 class ReflexAction(Enum):
     """Supported reflex actions."""
+
     BLOCK_IP = "BLOCK_IP"
     UNBLOCK_IP = "UNBLOCK_IP"
     RATE_LIMIT = "RATE_LIMIT"
@@ -55,6 +53,7 @@ class ReflexAction(Enum):
 
 class BlockReason(Enum):
     """Reason for IP block."""
+
     BRUTE_FORCE = "brute_force"
     PORT_SCAN = "port_scan"
     WEB_ATTACK = "web_attack"
@@ -66,6 +65,7 @@ class BlockReason(Enum):
 @dataclass
 class ReflexEvent:
     """Security event requiring reflex action."""
+
     event_id: str
     timestamp: str
     event_type: str
@@ -79,6 +79,7 @@ class ReflexEvent:
 @dataclass
 class BlockRule:
     """Active block rule in the firewall."""
+
     ip_address: str
     action: str
     timestamp: str
@@ -91,6 +92,7 @@ class BlockRule:
 @dataclass
 class ReflexMetrics:
     """Real-time metrics for dashboard."""
+
     total_events: int = 0
     blocked_ips: int = 0
     unblocked_ips: int = 0
@@ -226,12 +228,14 @@ class FirewallManager:
                     "iptables",
                     "-A",
                     "INPUT",
-                    "-s", ip_address,
+                    "-s",
+                    ip_address,
                     "-j",
                     "DROP",
                     "-m",
                     "comment",
-                    "--comment", comment,
+                    "--comment",
+                    comment,
                 ],
                 capture_output=True,
                 text=True,
@@ -258,7 +262,8 @@ class FirewallManager:
                     "iptables",
                     "-D",
                     "INPUT",
-                    "-s", ip_address,
+                    "-s",
+                    ip_address,
                     "-j",
                     "DROP",
                 ],
@@ -375,7 +380,9 @@ class ReflexController:
         """
         self.simulation_mode = simulation_mode
         self.firewall = FirewallManager(firewall_backend)
-        self.rate_limiter = ActionRateLimiter(max_actions_per_minute=max_actions_per_minute)
+        self.rate_limiter = ActionRateLimiter(
+            max_actions_per_minute=max_actions_per_minute
+        )
         self.metrics = ReflexMetrics()
         self._running = False
         self._event_queue: asyncio.Queue = asyncio.Queue()
@@ -512,9 +519,7 @@ class ReflexController:
 
     async def _execute_notify_admin(self, event: ReflexEvent) -> None:
         """Execute NOTIFY_ADMIN action."""
-        logger.critical(
-            f"ADMIN ALERT: {event.event_type} from {event.source_ip}"
-        )
+        logger.critical(f"ADMIN ALERT: {event.event_type} from {event.source_ip}")
 
         # In production, integrate with:
         # - PagerDuty API
@@ -549,7 +554,9 @@ class ReflexController:
 
                 for rule in self.firewall.get_active_blocks():
                     if rule.expires_at:
-                        expires = datetime.fromisoformat(rule.expires_at.replace("Z", "+00:00"))
+                        expires = datetime.fromisoformat(
+                            rule.expires_at.replace("Z", "+00:00")
+                        )
                         if now >= expires:
                             expired_ips.append(rule.ip_address)
 
@@ -606,11 +613,14 @@ async def demo():
             timestamp=datetime.utcnow().isoformat() + "Z",
             event_type="auth_failure",
             source_ip="185.220.101.45",
-            actions=[ReflexAction.BLOCK_IP, ReflexAction.LOG_EVENT, ReflexAction.NOTIFY_ADMIN],
+            actions=[
+                ReflexAction.BLOCK_IP,
+                ReflexAction.LOG_EVENT,
+                ReflexAction.NOTIFY_ADMIN,
+            ],
             priority=1,
             block_reason=BlockReason.BRUTE_FORCE,
         ),
-
     ]
 
     for event in demo_events:

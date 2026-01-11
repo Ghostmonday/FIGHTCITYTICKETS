@@ -49,6 +49,12 @@ from .reflex import (
     ReflexEvent,
     get_reflex_controller,
 )
+from .scrubber import (
+    get_scrub_stats,
+    scrub_data,
+    scrub_headers,
+    scrub_request_data,
+)
 
 # Configure module logging
 logging.basicConfig(
@@ -80,6 +86,11 @@ __all__ = [
     "ReflexController",
     "BlockReason",
     "get_reflex_controller",
+    # PII Scrubber
+    "scrub_data",
+    "scrub_headers",
+    "scrub_request_data",
+    "get_scrub_stats",
     # Utilities
     "log_security_event",
     "create_attack_report",
@@ -135,6 +146,12 @@ class GuardianService:
         """
         Handle a security event with evidence collection and optional attribution.
 
+        The pipeline:
+        1. SCRUB: Remove PII from event data (GDPR/CCPA compliance)
+        2. COLLECT: Sign and hash evidence for legal admissibility
+        3. HUNTER: Run attribution in background (fire-and-forget)
+        4. REFLEX: Execute defensive actions if threshold met
+
         Args:
             event_type: Type of security event (auth_failure, port_scan, etc.)
             event_data: Event details
@@ -143,6 +160,9 @@ class GuardianService:
         Returns:
             Dictionary with evidence_id, threat_info, and actions
         """
+        # STEP 1: SCRUB PII FIRST - This is our GDPR/CCPA defense
+        clean_data = scrub_request_data(event_data)
+
         result = {
             "event_type": event_type,
             "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -151,51 +171,51 @@ class GuardianService:
             "actions": [],
         }
 
-        # Collect evidence
+        # Collect evidence using scrubbed data
         evidence_metadata = None
 
         if event_type == "auth_failure":
             evidence_metadata = self.evidence_service.collect_auth_evidence(
-                username=event_data.get("username", "unknown"),
-                source_ip=event_data.get("source_ip", "0.0.0.0"),
-                auth_method=event_data.get("auth_method", "password"),
-                failure_reason=event_data.get("failure_reason", "unknown"),
-                attempt_count=event_data.get("attempt_count", 1),
+                username=clean_data.get("username", "unknown"),
+                source_ip=clean_data.get("source_ip", "0.0.0.0"),
+                auth_method=clean_data.get("auth_method", "password"),
+                failure_reason=clean_data.get("failure_reason", "unknown"),
+                attempt_count=clean_data.get("attempt_count", 1),
             )
             result["evidence_id"] = evidence_metadata.evidence_id
 
         elif event_type == "network_scan":
             evidence_metadata = self.evidence_service.collect_network_evidence(
-                source_ip=event_data.get("source_ip", "0.0.0.0"),
-                destination_ip=event_data.get("destination_ip", "0.0.0.0"),
-                source_port=event_data.get("source_port", 0),
-                destination_port=event_data.get("destination_port", 0),
-                protocol=event_data.get("protocol", "TCP"),
-                bytes_sent=event_data.get("bytes_sent", 0),
-                bytes_received=event_data.get("bytes_received", 0),
-                duration_ms=event_data.get("duration_ms", 0),
-                flags=event_data.get("flags", ""),
-                user_agent=event_data.get("user_agent"),
-                ssl_fingerprint=event_data.get("ssl_fingerprint"),
-                headers=event_data.get("headers", {}),
+                source_ip=clean_data.get("source_ip", "0.0.0.0"),
+                destination_ip=clean_data.get("destination_ip", "0.0.0.0"),
+                source_port=clean_data.get("source_port", 0),
+                destination_port=clean_data.get("destination_port", 0),
+                protocol=clean_data.get("protocol", "TCP"),
+                bytes_sent=clean_data.get("bytes_sent", 0),
+                bytes_received=clean_data.get("bytes_received", 0),
+                duration_ms=clean_data.get("duration_ms", 0),
+                flags=clean_data.get("flags", ""),
+                user_agent=clean_data.get("user_agent"),
+                ssl_fingerprint=clean_data.get("ssl_fingerprint"),
+                headers=scrub_headers(clean_data.get("headers", {})),
             )
             result["evidence_id"] = evidence_metadata.evidence_id
 
         elif event_type == "file_modification":
             evidence_metadata = self.evidence_service.collect_file_evidence(
-                file_path=event_data.get("file_path", "/unknown"),
-                operation=event_data.get("operation", "unknown"),
-                file_hash=event_data.get("file_hash", ""),
-                file_size=event_data.get("file_size", 0),
-                file_permissions=event_data.get("file_permissions", "000"),
-                user_id=event_data.get("user_id", "unknown"),
-                process_name=event_data.get("process_name"),
+                file_path=clean_data.get("file_path", "/unknown"),
+                operation=clean_data.get("operation", "unknown"),
+                file_hash=clean_data.get("file_hash", ""),
+                file_size=clean_data.get("file_size", 0),
+                file_permissions=clean_data.get("file_permissions", "000"),
+                user_id=clean_data.get("user_id", "unknown"),
+                process_name=clean_data.get("process_name"),
             )
             result["evidence_id"] = evidence_metadata.evidence_id
 
         # Run attribution if enabled - FIRE AND FORGET for defense speed
-        if attribution_enabled and event_data.get("source_ip"):
-            source_ip = event_data["source_ip"]
+        if attribution_enabled and clean_data.get("source_ip"):
+            source_ip = clean_data["source_ip"]
             evidence_id = evidence_metadata.evidence_id if evidence_metadata else None
 
             # Fire-and-forget: Don't await Hunter - defense comes first
@@ -203,9 +223,9 @@ class GuardianService:
                 try:
                     threat_result = await self.hunter_service.investigate_ip(
                         ip_address=source_ip,
-                        user_agent=event_data.get("user_agent"),
-                        ssl_fingerprint=event_data.get("ssl_fingerprint"),
-                        headers=event_data.get("headers", {}),
+                        user_agent=clean_data.get("user_agent"),
+                        ssl_fingerprint=clean_data.get("ssl_fingerprint"),
+                        headers=scrub_headers(clean_data.get("headers", {})),
                         evidence_id=evidence_id,
                     )
 
@@ -235,7 +255,7 @@ class GuardianService:
 
         # Default actions based on event type
         if event_type == "auth_failure":
-            attempts = event_data.get("attempt_count", 1)
+            attempts = clean_data.get("attempt_count", 1)
             if attempts >= 5:
                 result["actions"].append("BLOCK_IP")
             result["actions"].append("LOG_EVENT")
@@ -246,7 +266,7 @@ class GuardianService:
             result["actions"].append("LOG_EVENT")
 
         # Execute reflex actions immediately
-        self._execute_reflex_actions(result["actions"], event_data)
+        self._execute_reflex_actions(result["actions"], clean_data)
 
         return result
 
@@ -258,7 +278,7 @@ class GuardianService:
 
         Args:
             actions: List of actions to execute
-            event_data: Event context for action execution
+            event_data: Event context for action execution (already scrubbed)
         """
         source_ip = event_data.get("source_ip")
 
