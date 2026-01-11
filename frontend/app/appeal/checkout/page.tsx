@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppeal } from "../../lib/appeal-context";
 import Link from "next/link";
 import AddressAutocomplete from "../../../components/AddressAutocomplete";
@@ -15,6 +15,17 @@ export default function CheckoutPage() {
   const [error, setError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [clericalId, setClericalId] = useState<string>("");
+
+  // Generate Clerical ID on component mount
+  useEffect(() => {
+    const generateClericalId = () => {
+      const timestamp = Date.now().toString(36).toUpperCase();
+      const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+      return `ND-${timestamp.slice(-4)}-${random}`;
+    };
+    setClericalId(generateClericalId());
+  }, []);
 
   const cityNames: Record<string, string> = {
     sf: "San Francisco",
@@ -46,6 +57,15 @@ export default function CheckoutPage() {
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ")
     );
+  };
+
+  // Calculate totals
+  const baseFee = 1989; // $19.89 in cents
+  const processingFee = state.appealType === "certified" ? baseFee : 989;
+  const totalFee = processingFee;
+
+  const formatPrice = (cents: number) => {
+    return `$${(cents / 100).toFixed(2)}`;
   };
 
   const handleCheckout = async () => {
@@ -86,36 +106,35 @@ export default function CheckoutPage() {
     try {
       const apiBase =
         process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const response = await fetch(`${apiBase}/checkout/create-session`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          citation_number: state.citationNumber,
-          violation_date: state.violationDate,
-          vehicle_info: state.vehicleInfo,
-          license_plate: state.licensePlate,
-          user_name: state.userInfo.name,
-          user_address_line1: state.userInfo.addressLine1,
-          user_address_line2: state.userInfo.addressLine2,
-          user_city: state.userInfo.city,
-          user_state: state.userInfo.state,
-          user_zip: state.userInfo.zip,
-          user_email: state.userInfo.email,
-          draft_text: state.draftLetter,
-          appeal_type: state.appealType,
-          selected_evidence: state.photos,
-          signature_data: state.signature,
-          city_id: state.cityId,
-          section_id: state.sectionId,
-          user_attestation: acceptedTerms,
-        }),
-      });
+      const response = await fetch(
+        `${apiBase}/checkout/create-appeal-checkout`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            citation_number: state.citationNumber,
+            city_id: state.cityId,
+            section_id: state.sectionId,
+            user_attestation: acceptedTerms,
+          }),
+        }
+      );
 
       if (!response.ok) {
-        throw new Error("Failed to create checkout session");
+        const errorData = await response.json();
+        throw new Error(
+          errorData.detail || "Failed to create checkout session"
+        );
       }
 
       const data = await response.json();
+
+      // Store Clerical ID from response if available
+      if (data.clerical_id) {
+        setClericalId(data.clerical_id);
+      }
+
+      // Redirect to Stripe checkout
       window.location.href = data.checkout_url;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Checkout failed");
@@ -229,10 +248,15 @@ export default function CheckoutPage() {
                   }
                   title={
                     state.userInfo.addressLine1 && state.userInfo.city
-                      ? "Auto-filled from address autocomplete"
+                      ? "Auto-filled and locked - do not edit"
                       : ""
                   }
                 />
+                {!!state.userInfo.addressLine1 && !!state.userInfo.city && (
+                  <p className="mt-1 text-xs text-stone-400">
+                    Auto-filled from address • Locked for accuracy
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block mb-2 font-medium text-stone-700">
@@ -258,10 +282,15 @@ export default function CheckoutPage() {
                   }
                   title={
                     state.userInfo.addressLine1 && state.userInfo.state
-                      ? "Auto-filled from address autocomplete"
+                      ? "Auto-filled and locked - do not edit"
                       : ""
                   }
                 />
+                {!!state.userInfo.addressLine1 && !!state.userInfo.state && (
+                  <p className="mt-1 text-xs text-stone-400">
+                    Auto-filled from address • Locked for accuracy
+                  </p>
+                )}
               </div>
             </div>
             <div>
@@ -282,7 +311,7 @@ export default function CheckoutPage() {
                 readOnly={!!state.userInfo.addressLine1 && !!state.userInfo.zip}
                 title={
                   state.userInfo.addressLine1 && state.userInfo.zip
-                    ? "Auto-filled from address autocomplete"
+                    ? "Auto-filled from address"
                     : ""
                 }
               />
@@ -310,26 +339,60 @@ export default function CheckoutPage() {
             <p className="font-semibold mb-3 text-stone-800">
               Procedural Submission Summary
             </p>
-            <div className="space-y-1 text-sm text-stone-600">
-              <p>
-                <span className="text-stone-500">City:</span>{" "}
-                {formatCityName(state.cityId)}
-              </p>
-              <p>
-                <span className="text-stone-500">Citation:</span>{" "}
-                {state.citationNumber || "Pending"}
-              </p>
-              <p>
-                <span className="text-stone-500">Processing Fee:</span>{" "}
-                {state.appealType === "certified"
-                  ? "Certified Mail ($19.89)"
-                  : "Standard Mail ($9.89)"}
-              </p>
-              <p>
-                <span className="text-stone-500">Service:</span> Procedural
-                Compliance Document Preparation
-              </p>
+            <div className="space-y-2 text-sm text-stone-600">
+              <div className="flex justify-between">
+                <span className="text-stone-500">City:</span>
+                <span className="text-stone-800 font-medium">
+                  {formatCityName(state.cityId)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-stone-500">Citation:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-stone-800">
+                    {state.citationNumber || "Pending"}
+                  </span>
+                  {clericalId && (
+                    <span className="px-2 py-0.5 bg-stone-200 text-stone-600 text-xs font-mono rounded">
+                      {clericalId}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stone-500">Submission Type:</span>
+                <span className="text-stone-800">
+                  {state.appealType === "certified"
+                    ? "Certified Mail"
+                    : "Standard Mail"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-stone-500">Service:</span>
+                <span className="text-stone-800">
+                  Procedural Compliance Document Preparation
+                </span>
+              </div>
             </div>
+          </div>
+
+          {/* Total Procedural Fee */}
+          <div className="mb-6 p-4 bg-stone-100 border border-stone-300 rounded-lg">
+            <div className="flex justify-between items-center">
+              <span className="font-semibold text-stone-800">
+                Total Procedural Fee
+              </span>
+              <span className="text-2xl font-light text-stone-800">
+                {formatPrice(totalFee)}
+              </span>
+            </div>
+            <p className="text-xs text-stone-500 mt-2">
+              Includes document preparation, processing, and{" "}
+              {state.appealType === "certified"
+                ? "certified mailing"
+                : "standard mailing"}
+              .
+            </p>
           </div>
 
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -342,10 +405,12 @@ export default function CheckoutPage() {
               />
               <span className="text-sm text-stone-800">
                 I understand I am purchasing{" "}
-                <strong>procedural compliance and document preparation
-                services only</strong>. The outcome of my appeal is determined
-                solely by the municipal authority. This fee is non-refundable
-                regardless of the citation outcome. I have reviewed the{" "}
+                <strong>
+                  procedural compliance and document preparation services only
+                </strong>
+                . The outcome of my appeal is determined solely by the municipal
+                authority. This fee is non-refundable regardless of the citation
+                outcome. I have reviewed the{" "}
                 <Link href="/refund" className="underline hover:text-amber-900">
                   Refund Policy
                 </Link>
@@ -354,7 +419,11 @@ export default function CheckoutPage() {
             </label>
           </div>
 
-          {error && <div className="mb-4 text-red-700 font-medium">{error}</div>}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
 
           <div className="flex justify-between items-center pt-4 border-t border-stone-200">
             <Link
@@ -368,7 +437,7 @@ export default function CheckoutPage() {
               disabled={loading || !acceptedTerms}
               className="bg-stone-900 hover:bg-stone-800 text-white px-8 py-4 rounded-lg font-medium text-lg transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
             >
-              {loading ? "Processing..." : "Pay Document Processing Fee →"}
+              {loading ? "Processing..." : "Complete Procedural Fee →"}
             </button>
           </div>
         </div>

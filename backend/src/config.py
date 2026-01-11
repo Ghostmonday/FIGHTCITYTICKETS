@@ -23,8 +23,12 @@ class Settings(BaseSettings):
     # IMPORTANT: Set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET in .env
     # Use sk_live_... for production, sk_test_... for testing
     stripe_secret_key: str = "sk_live_dummy"  # Override with STRIPE_SECRET_KEY env var
-    stripe_publishable_key: str = "pk_live_dummy"  # Override with STRIPE_PUBLISHABLE_KEY env var
-    stripe_webhook_secret: str = "whsec_dummy"  # Override with STRIPE_WEBHOOK_SECRET env var
+    stripe_publishable_key: str = (
+        "pk_live_dummy"  # Override with STRIPE_PUBLISHABLE_KEY env var
+    )
+    stripe_webhook_secret: str = (
+        "whsec_dummy"  # Override with STRIPE_WEBHOOK_SECRET env var
+    )
 
     # Stripe Price IDs - Set these in .env for production
     # Get live price IDs from: https://dashboard.stripe.com/products
@@ -37,7 +41,9 @@ class Settings(BaseSettings):
 
     # Hetzner Cloud Configuration
     hetzner_api_token: str = "change-me"  # Override with HETZNER_API_TOKEN env var
-    hetzner_droplet_name: Optional[str] = None  # Override with HETZNER_DROPLET_NAME env var
+    hetzner_droplet_name: Optional[str] = (
+        None  # Override with HETZNER_DROPLET_NAME env var
+    )
 
     # AI Services - DeepSeek
     deepseek_api_key: str = "sk_dummy"
@@ -53,6 +59,14 @@ class Settings(BaseSettings):
 
     # Security
     secret_key: str = "dev_secret_change_in_production"
+
+    # Civil Shield Compliance Versioning
+    clerical_engine_version: str = "2.1.0"
+    compliance_version: str = "civil_shield_v1"
+
+    # Service Fees (in cents)
+    fightcity_service_fee: int = 1989  # $19.89 for certified
+    fightcity_standard_fee: int = 989  # $9.89 for standard
 
     @property
     def debug(self) -> bool:

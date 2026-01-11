@@ -3,9 +3,14 @@ Checkout Routes for FightCityTickets.com (Database-First Approach)
 
 Handles payment session creation and status checking for appeal processing.
 Uses database for persistent storage before creating Stripe checkout sessions.
+
+Civil Shield Compliance: Includes Clerical ID and compliance metadata.
 """
 
+import hashlib
 import logging
+import secrets
+from datetime import datetime
 from typing import Optional
 
 import httpx
@@ -27,8 +32,41 @@ limiter = Limiter(key_func=get_remote_address)
 # States where service is blocked due to UPL regulations
 BLOCKED_STATES = ["TX", "NC", "NJ", "WA"]
 
+# Compliance version for document tracking
+COMPLIANCE_VERSION = "civil_shield_v1"
+CLERICAL_ENGINE_VERSION = "2.1.0"
+
 # Create router
 router = APIRouter()
+
+
+def generate_clerical_id(citation_number: str) -> str:
+    """
+    Generate a unique Clerical ID for compliance tracking.
+
+    Format: ND-XXXX-XXXX where X is alphanumeric
+    Uses citation number and timestamp for uniqueness.
+
+    Args:
+        citation_number: The citation number to base the ID on
+
+    Returns:
+        str: Unique Clerical ID (e.g., ND-A1B2-C3D4)
+    """
+    timestamp = datetime.now().isoformat()
+    random_suffix = secrets.token_hex(4).upper()
+
+    # Create hash from citation + timestamp
+    hash_input = f"{citation_number}-{timestamp}-{random_suffix}"
+    hash_output = hashlib.sha256(hash_input.encode()).hexdigest()
+
+    # Extract 8 characters for the middle portion
+    middle = hash_output[:8].upper()
+
+    # Generate first portion from citation
+    prefix = "ND"
+
+    return f"{prefix}-{middle[:4]}-{middle[4:8]}"
 
 
 async def verify_user_address(
@@ -116,6 +154,7 @@ class AppealCheckoutResponse(BaseModel):
     checkout_url: str
     session_id: str
     amount: int
+    clerical_id: str
 
 
 class SessionStatusResponse(BaseModel):
@@ -126,6 +165,7 @@ class SessionStatusResponse(BaseModel):
     mailing_status: str
     tracking_number: Optional[str] = None
     expected_delivery: Optional[str] = None
+    clerical_id: Optional[str] = None
 
 
 @router.post("/create-appeal-checkout", response_model=AppealCheckoutResponse)
@@ -137,11 +177,14 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
     This endpoint:
     1. Validates the citation and city
     2. Creates a database record (Intake)
-    3. Creates a Stripe checkout session
-    4. Returns the checkout URL
+    3. Generates a unique Clerical ID for compliance tracking
+    4. Creates a Stripe checkout session with compliance metadata
+    5. Returns the checkout URL and Clerical ID
 
-    The database record ensures we have the appeal data even if
-    the user doesn't complete payment.
+    Civil Shield Compliance:
+    - Each submission gets a unique Clerical ID
+    - Metadata includes compliance_version and clerical_id
+    - Enables audit trail for procedural compliance
     """
     # Import here to avoid circular imports
     from ..services.citation import validate_citation
@@ -168,28 +211,36 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
             detail=validation_error or "Invalid citation number for this city",
         )
 
-    # Step 4: Create database record (Intake) - happens BEFORE payment
+    # Step 4: Generate Clerical ID for compliance tracking
+    clerical_id = generate_clerical_id(data.citation_number.upper())
+    logger.info(
+        f"Generated Clerical ID: {clerical_id} for citation: {data.citation_number.upper()}"
+    )
+
+    # Step 5: Create database record (Intake) - happens BEFORE payment
     db_service = get_db_service()
     intake_id = None
 
     try:
         with db_service.get_session() as session:
-            # Upsert intake record
+            # Upsert intake record with Clerical ID
             result = session.execute(
                 """
                 INSERT INTO appeals (
                     citation_number, city_id, section_id, status,
                     payment_status, mailing_status, amount_paid,
-                    created_at, updated_at
+                    clerical_id, compliance_version, created_at, updated_at
                 )
                 VALUES (
                     :citation_number, :city_id, :section_id, 'draft',
                     'pending', 'pending', 0,
-                    NOW(), NOW()
+                    :clerical_id, :compliance_version, NOW(), NOW()
                 )
                 ON CONFLICT (citation_number) DO UPDATE SET
                     city_id = EXCLUDED.city_id,
                     section_id = EXCLUDED.section_id,
+                    clerical_id = EXCLUDED.clerical_id,
+                    compliance_version = EXCLUDED.compliance_version,
                     updated_at = NOW()
                 RETURNING id
                 """,
@@ -197,6 +248,8 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
                     "citation_number": data.citation_number.upper(),
                     "city_id": city_id,
                     "section_id": data.section_id,
+                    "clerical_id": clerical_id,
+                    "compliance_version": COMPLIANCE_VERSION,
                 },
             )
             intake_row = result.fetchone()
@@ -205,17 +258,28 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
             if not intake_id:
                 # Try to fetch existing
                 existing = session.execute(
-                    "SELECT id FROM appeals WHERE citation_number = :citation",
+                    "SELECT id, clerical_id FROM appeals WHERE citation_number = :citation",
                     {"citation": data.citation_number.upper()},
                 )
                 existing_row = existing.fetchone()
-                intake_id = existing_row[0] if existing_row else None
+                if existing_row:
+                    intake_id = existing_row[0]
+                    # Update clerical_id if not set
+                    if existing_row[1] is None:
+                        session.execute(
+                            "UPDATE appeals SET clerical_id = :clerical_id, compliance_version = :compliance_version WHERE id = :id",
+                            {
+                                "clerical_id": clerical_id,
+                                "compliance_version": COMPLIANCE_VERSION,
+                                "id": intake_id,
+                            },
+                        )
 
     except Exception as e:
         logger.error(f"Database error creating intake: {e}")
         intake_id = None
 
-    # Step 5: Create Stripe checkout session
+    # Step 6: Create Stripe checkout session with compliance metadata
     try:
         # Map city_id to display name
         city_names = {
@@ -242,6 +306,8 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
         )
 
         stripe_svc = StripeService()
+
+        # Create checkout session with comprehensive metadata
         checkout_session = stripe_svc.create_checkout_session(
             amount=settings.fightcity_service_fee,
             currency="usd",
@@ -252,12 +318,16 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
                 "city_id": city_id,
                 "intake_id": str(intake_id) if intake_id else "",
                 "service_type": "appeal_processing",
+                "clerical_id": clerical_id,
+                "compliance_version": COMPLIANCE_VERSION,
+                "clerical_engine_version": CLERICAL_ENGINE_VERSION,
+                "document_type": "PROCEDURAL_COMPLIANCE_SUBMISSION",
             },
             customer_email=settings.service_email,
-            payment_description=f"Appeal processing for {display_city} ticket #{data.citation_number.upper()}",
+            payment_description=f"Procedural Compliance Submission - {display_city} Ticket #{data.citation_number.upper()} | Clerical ID: {clerical_id}",
         )
 
-        # Update database with Stripe session ID
+        # Update database with Stripe session ID and Clerical ID
         if intake_id:
             try:
                 with db_service.get_session() as session:
@@ -268,10 +338,15 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
             except Exception as e:
                 logger.warning(f"Failed to update session ID: {e}")
 
+        logger.info(
+            f"Checkout session created: {checkout_session['id']} with Clerical ID: {clerical_id}"
+        )
+
         return AppealCheckoutResponse(
             checkout_url=checkout_session["url"],
             session_id=checkout_session["id"],
             amount=settings.fightcity_service_fee,
+            clerical_id=clerical_id,
         )
 
     except Exception as e:
@@ -291,7 +366,7 @@ async def get_session_status(request: Request, session_id: str):
     This endpoint:
     1. Checks the Stripe session status
     2. Updates the database record
-    3. Returns the current status
+    3. Returns the current status including Clerical ID
     """
     try:
         # Get Stripe session
@@ -309,6 +384,7 @@ async def get_session_status(request: Request, session_id: str):
         mailing_status = "pending"
         tracking_number = None
         expected_delivery = None
+        clerical_id = None
 
         if session["payment_status"] == "paid":
             payment_status = "paid"
@@ -317,7 +393,7 @@ async def get_session_status(request: Request, session_id: str):
             db_service = get_db_service()
             with db_service.get_session() as db:
                 result = db.execute(
-                    "SELECT mailing_status, tracking_number FROM appeals WHERE stripe_session_id = :session_id",
+                    "SELECT mailing_status, tracking_number, clerical_id FROM appeals WHERE stripe_session_id = :session_id",
                     {"session_id": session_id},
                 )
                 row = result.fetchone()
@@ -325,6 +401,7 @@ async def get_session_status(request: Request, session_id: str):
                 if row:
                     mailing_status = row[0] or "pending"
                     tracking_number = row[1]
+                    clerical_id = row[2]
 
         return SessionStatusResponse(
             status=session["status"],
@@ -332,6 +409,7 @@ async def get_session_status(request: Request, session_id: str):
             mailing_status=mailing_status,
             tracking_number=tracking_number,
             expected_delivery=expected_delivery,
+            clerical_id=clerical_id,
         )
 
     except HTTPException:
@@ -351,6 +429,8 @@ async def test_checkout_endpoint():
         "status": "ok",
         "message": "Checkout endpoint is working",
         "stripe_configured": bool(settings.stripe_secret_key),
+        "clerical_engine_version": CLERICAL_ENGINE_VERSION,
+        "compliance_version": COMPLIANCE_VERSION,
     }
 
 
@@ -361,7 +441,7 @@ def create_checkout_legacy(
     Legacy function for creating checkout sessions without FastAPI dependency.
 
     Returns:
-        dict: Checkout session data with 'url' and 'id' keys
+        dict: Checkout session data with 'url', 'id', and 'clerical_id' keys
     """
     # Create minimal request data
     data = AppealCheckoutRequest(
@@ -386,6 +466,7 @@ def create_checkout_legacy(
             "url": result.checkout_url,
             "id": result.session_id,
             "amount": result.amount,
+            "clerical_id": result.clerical_id,
         }
     finally:
         loop.close()

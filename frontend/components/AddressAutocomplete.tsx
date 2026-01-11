@@ -71,7 +71,9 @@ export default function AddressAutocomplete({
     };
     script.onerror = () => {
       setIsLoading(false);
-      onError?.("Failed to load address autocomplete. Please enter your address manually.");
+      onError?.(
+        "Failed to load address autocomplete. Please enter your address manually."
+      );
     };
     document.head.appendChild(script);
 
@@ -145,23 +147,28 @@ export default function AddressAutocomplete({
           return;
         }
 
-        // Update parent component
+        // Update parent component with parsed address
+        // City and State are now locked - do not allow user edits
         onChange({
           addressLine1: addressLine1.trim(),
           addressLine2: addressLine2 || undefined,
-          city,
-          state,
+          city, // Pre-filled and locked
+          state, // Pre-filled and locked
           zip,
         });
       });
     } catch (error) {
       console.error("Error initializing Google Places:", error);
-      onError?.("Address autocomplete unavailable. Please enter address manually.");
+      onError?.(
+        "Address autocomplete unavailable. Please enter address manually."
+      );
     }
 
     return () => {
       if (autocompleteRef.current) {
-        window.google?.maps?.event?.clearInstanceListeners?.(autocompleteRef.current);
+        window.google?.maps?.event?.clearInstanceListeners?.(
+          autocompleteRef.current
+        );
       }
     };
   }, [isLoaded, onChange, onError]);
@@ -172,7 +179,9 @@ export default function AddressAutocomplete({
         ref={inputRef}
         type="text"
         value={value}
-        placeholder={isLoading ? "Loading address autocomplete..." : placeholder}
+        placeholder={
+          isLoading ? "Loading address autocomplete..." : placeholder
+        }
         required={required}
         className={`w-full p-3 border rounded-lg ${className} ${
           isLoading ? "bg-gray-100" : ""
@@ -192,4 +201,3 @@ export default function AddressAutocomplete({
     </div>
   );
 }
-
