@@ -15,6 +15,7 @@ export default function AppealStatusPage() {
     mailing_status: string;
     tracking_number?: string;
     expected_delivery?: string;
+    mailed_date?: string;
     amount_paid: number;
     appeal_type: string;
     tracking_visible: boolean;

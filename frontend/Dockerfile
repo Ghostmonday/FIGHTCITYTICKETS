@@ -15,4 +15,4 @@ RUN npm run build --no-eslint
 
 EXPOSE 3000
 
-CMD ["npm", "run", "start", "--", "-p", "${PORT:-3000}"]
+CMD ["npm", "run", "start", "--", "-p", "3000"]

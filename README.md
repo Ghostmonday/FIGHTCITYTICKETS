@@ -1,381 +1,387 @@
-# FightCityTickets - Multi-City Parking Ticket Appeal System
+# FightCityTickets - Parking Ticket Appeal SaaS Platform
 
-**Status**: 🚀 **PRODUCTION READY** | **Version**: 1.0.0 | **Last Updated**: 2025-01-09
-
-**🤖 AI Assistant Note**: For AI assistants working on this project, please read `AI_START_HERE.md` first - it contains the complete consolidated project context and serves as the single source of truth.
-
-## 🎉 Project Overview
-
-FightCityTickets.com is a complete, production-ready SaaS application that automates parking ticket appeals for 15+ cities via physical mail. The system provides an end-to-end solution for users to submit evidence, record their story, receive AI-drafted appeal letters, and have them professionally printed and mailed via Lob API.
-
-### ✨ Key Features
-- **Complete Appeal Flow**: Citation entry → Photo upload → Voice recording → Letter review → Signature → Payment → Success
-- **State Management**: Persistent multi-step form with session storage
-- **Real Payment Processing**: Stripe integration with database-first architecture
-- **Physical Mailing**: Lob API integration for professional letter printing and mailing
-- **AI Integration**: Audio transcription and statement refinement
-- **Legal Compliance**: UPL-compliant with complete Terms of Service and Privacy Policy
-- **Professional UI**: Modern, responsive design with Tailwind CSS
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │    Backend      │    │  External       │
-│   Next.js 14    │◄──►│   FastAPI       │◄──►│  Services       │
-│   TypeScript    │    │   Python        │    │                 │
-│   Tailwind CSS  │    │   SQLAlchemy    │    │  • Stripe       │
-│   React 18      │    │   Alembic       │    │  • Lob          │
-└─────────────────┘    └─────────────────┘    │  • AI Services  │
-                                              └─────────────────┘
-```
-
-## 🚀 DEPLOY NOW - Hetzner Cloud (Recommended)
-
-### Automated Deployment (15 minutes)
-
-Your application is ready for immediate deployment to Hetzner Cloud:
-
-```bash
-# Step 1: Set your Hetzner API token
-export HETZNER_API_TOKEN="YOUR_HETZNER_API_TOKEN"
-
-# Step 2: Optional - Set your domain
-export DOMAIN="yourdomain.com"
-
-# Step 3: Run deployment script
-cd FightSFTickets_Starter_Kit
-chmod +x scripts/deploy_hetzner.sh
-./scripts/deploy_hetzner.sh
-```
-
-**The script will automatically:**
-- ✅ Create Hetzner Cloud server (CX21: 2 vCPU, 4GB RAM)
-- ✅ Install Docker and all dependencies
-- ✅ Configure firewall and security
-- ✅ Deploy your application
-- ✅ Start all services (frontend, backend, database, nginx)
-- ✅ Run database migrations
-
-**You'll need these API keys (get them ready):**
-- Stripe: https://dashboard.stripe.com/apikeys
-- Lob: https://dashboard.lob.com/settings/keys
-- OpenAI: https://platform.openai.com/api-keys
-- DeepSeek: https://platform.deepseek.com/api-keys
-
-**📚 Deployment Guides:**
-- **Quick Start:** `DEPLOY_NOW.md` ⭐ Start here!
-- **Complete Guide:** `docs/DEPLOYMENT_GUIDE.md`
-- **Service Integration:** `docs/SERVICE_INTEGRATION_CHECKLIST.md`
-- **Archived Guides:** See `docs/archive/` for historical documentation
+**Production-Ready Multi-City Parking Ticket Appeal System**
 
 ---
 
-## 🚀 Alternative: Manual Setup
+## Quick Start for AI Assistants
 
-### Option 1: Docker (Recommended for Development & Production)
+### Connect to Production Server
+
 ```bash
-# Clone and navigate to project
-cd FightSFTickets_Starter_Kit
+ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
+```
 
-# Copy environment templates
-cp .env.template .env
-# Edit .env with your API keys (see Configuration section)
+### Deploy Updates
+
+```bash
+# On server
+cd /var/www/fightcitytickets
+git pull
+docker compose down
+docker compose up -d --build
+curl http://localhost/api/health
+```
+
+---
+
+## Server Access
+
+| Property | Value |
+|----------|-------|
+| **Droplet IP** | 143.198.131.213 |
+| **SSH User** | root |
+| **SSH Key** | `/c/Users/Amirp/.ssh/do_deploy_key` |
+| **Region** | sfo3 (San Francisco) |
+| **Specs** | 2 vCPU, 4GB RAM, 80GB Disk |
+
+**DO Token**: Configure via `doctl auth init`
+
+---
+
+## Architecture
+
+```
++--------------------------------------------------------------+
+|                     Production Server                         |
+|                    143.198.131.213                           |
++--------------------------------------------------------------+
+|  +---------+   +---------+   +---------+   +-------------+   |
+|  |  Nginx  |   |   Web   |   |   API   |   |     DB      |   |
+|  |  :80,443|   | :3000   |   | :8000   |   |   :5432     |   |
+|  +---------+   +---------+   +---------+   +-------------+   |
+|       |              |              |             |          |
+|       +--------------+--------------+-------------+          |
+|                     Docker Network                            |
++--------------------------------------------------------------+
+         |                    |                    |
+         v                    v                    v
+    +---------+         +---------+         +---------+
+    | Stripe  |         |   Lob   |         | OpenAI  |
+    |Payments |         |  Mail   |         |   AI    |
+    +---------+         +---------+         +---------+
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS |
+| **Backend** | FastAPI (Python 3.11+), SQLAlchemy 2.0, Alembic |
+| **Database** | PostgreSQL 16 |
+| **Reverse Proxy** | Nginx (Alpine) |
+| **Containerization** | Docker, Docker Compose |
+| **Payments** | Stripe API |
+| **Physical Mail** | Lob API |
+| **AI Services** | OpenAI (transcription), DeepSeek (reasoning) |
+
+---
+
+## Project Structure
+
+```
+provethat.io/
+├── README.md                    # This file - START HERE
+├── .env.example                 # Environment template (copy to .env)
+├── .gitignore
+├── docker-compose.yml           # Production Docker orchestration
+├── .git/                        # Git repository
+│
+├── frontend/                    # Next.js 15 frontend
+│   ├── app/                     # App router pages
+│   │   ├── appeal/              # Multi-step appeal flow
+│   │   │   ├── camera/          # Photo upload
+│   │   │   ├── checkout/        # Payment
+│   │   │   ├── review/          # Letter review
+│   │   │   ├── signature/       # Signature capture
+│   │   │   └── voice/           # Voice recording
+│   │   ├── lib/                 # API client, state management
+│   │   └── components/          # Reusable UI components
+│   ├── Dockerfile
+│   ├── package.json
+│   └── next.config.js
+│
+├── backend/                     # FastAPI backend
+│   ├── src/
+│   │   ├── routes/              # API endpoints
+│   │   │   ├── checkout.py      # Stripe payments
+│   │   │   ├── tickets.py       # Citation validation
+│   │   │   ├── transcribe.py    # Audio transcription
+│   │   │   ├── statement.py     # AI statement refinement
+│   │   │   └── webhooks.py      # Stripe webhooks
+│   │   ├── services/            # Business logic
+│   │   │   ├── stripe_service.py
+│   │   │   ├── mail.py          # Lob mailing
+│   │   │   └── citation.py
+│   │   ├── models/              # SQLAlchemy models
+│   │   └── middleware/          # Rate limiting, security
+│   ├── alembic/                 # Database migrations
+│   ├── tests/                   # Pytest test suite
+│   ├── Dockerfile
+│   └── requirements.txt
+│
+├── nginx/                       # Nginx configuration
+│   ├── nginx.conf               # Main config
+│   └── conf.d/                  # Site configs
+│
+└── CIVIL_SHIELD_COMPLIANCE_AUDIT.md
+```
+
+---
+
+## Environment Configuration
+
+### Required API Keys
+
+```bash
+# Stripe (Payments)
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_PUBLISHABLE_KEY=pk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Lob (Physical Mail)
+LOB_API_KEY=...
+
+# AI Services
+OPENAI_API_KEY=sk-...
+DEEPSEEK_API_KEY=...
+
+# Database (auto-configured in docker-compose.yml)
+DATABASE_URL=postgresql://postgres:...@db:5432/fightsf
+```
+
+Copy `.env.example` to `.env` and fill in your values.
+
+---
+
+## Development
+
+### Local Setup
+
+```bash
+# Clone and enter
+git clone <repo>
+cd provethat.io
+
+# Configure environment
+cp .env.example .env
+# Edit .env with your API keys
 
 # Start all services
 docker compose up --build
 
-# Services will be available at:
+# Available at:
 # - Frontend: http://localhost:3000
-# - Backend API: http://localhost:8000
-# - Health Check: http://localhost:8000/health
+# - API: http://localhost:8000
+# - Health: http://localhost:8000/health
 ```
 
-### Option 2: Manual Setup
+### Manual Development
+
 ```bash
-# Backend Setup
+# Backend
 cd backend
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+.venv/Scripts/activate  # Linux/Mac: source .venv/bin/activate
 pip install -r requirements.txt
-
-# Frontend Setup
-cd ../frontend
-npm install
-
-# Start Backend (in one terminal)
-cd backend
 uvicorn src.app:app --reload --port 8000
 
-# Start Frontend (in another terminal)
+# Frontend (new terminal)
 cd frontend
+npm install
 npm run dev
 ```
-
-## 📁 Project Structure
-
-```
-FightSFTickets_Starter_Kit/
-├── frontend/                    # Next.js 14 frontend application
-│   ├── app/                     # App router directory
-│   │   ├── appeal/              # Complete appeal flow pages
-│   │   │   ├── camera/          # Photo upload page
-│   │   │   ├── checkout/        # Payment page with user info
-│   │   │   ├── review/          # Letter review & AI polish
-│   │   │   ├── signature/       # Signature capture
-│   │   │   └── voice/           # Voice recording & transcription
-│   │   ├── terms/               # Terms of Service page
-│   │   ├── privacy/             # Privacy Policy page (CCPA compliant)
-│   │   ├── success/             # Success confirmation page
-│   │   ├── lib/                 # Utilities & hooks
-│   │   │   ├── api.ts           # Complete API client library
-│   │   │   └── appeal-context.tsx # State management with session storage
-│   │   └── components/          # Reusable components
-├── backend/                     # FastAPI backend service
-│   ├── src/
-│   │   ├── routes/              # API endpoints
-│   │   │   ├── checkout.py      # Payment processing with database-first flow
-│   │   │   ├── tickets.py       # Citation validation
-│   │   │   ├── transcribe.py    # Audio transcription
-│   │   │   ├── statement.py     # AI statement refinement
-│   │   │   └── webhooks.py      # Stripe webhook handling
-│   │   ├── services/            # Business logic
-│   │   │   ├── stripe_service.py # Stripe integration
-│   │   │   ├── mail.py          # Lob mailing service
-│   │   │   ├── citation.py      # Citation validation logic
-│   │   │   └── webhook_errors.py # Dead-letter queue system
-│   │   ├── models/              # Database models
-│   │   └── middleware/          # Rate limiting & security
-│   ├── alembic/                 # Database migrations
-│   └── tests/                   # Comprehensive test suite
-├── scripts/                     # Deployment & utility scripts
-│   └── deploy_prod.sh           # Production deployment script
-├── credentials/                 # Service account credentials
-├── docs/                        # Project documentation
-└── docker-compose.yml           # Docker orchestration
-```
-
-## ⚙️ Configuration
-
-### Required API Keys
-1. **Stripe** - Payment processing
-   - `STRIPE_SECRET_KEY`
-   - `STRIPE_WEBHOOK_SECRET`
-
-2. **Lob** - Physical letter mailing
-   - `LOB_API_KEY`
-
-3. **AI Services** - Transcription & refinement
-   - `OPENAI_API_KEY` (or alternative)
-
-4. **Database** - PostgreSQL (optional, SQLite for development)
-   - `DATABASE_URL`
-
-### Environment Setup
-```bash
-# Development and Production
-cp .env.template .env
-# Edit .env with your API keys for your environment
-```
-
-## 🔧 Development
-
-### Running Tests
-```bash
-# Backend tests
-cd backend
-pytest tests/ -v --cov=src
-
-# Frontend development
-cd frontend
-npm run dev
-```
-
-### Database Migrations
-```bash
-cd backend
-
-# Create new migration
-alembic revision --autogenerate -m "description"
-
-# Apply migrations
-alembic upgrade head
-
-# Rollback
-alembic downgrade -1
-```
-
-## 🚀 Deployment
-
-### Recommended: Automated Hetzner Cloud Deployment ⭐
-
-**Ready to deploy in 3 commands:**
-```bash
-export HETZNER_API_TOKEN="YOUR_HETZNER_API_TOKEN"
-cd FightSFTickets_Starter_Kit
-./scripts/deploy_hetzner.sh
-```
-
-**Time:** ~15 minutes | **Cost:** ~$7/month | **Difficulty:** ⭐ Easy
-
-See `DEPLOY_NOW.md` for complete quick start guide.
-
-### Alternative: Manual Deployment
-
-For other hosting providers:
-```bash
-# Using the provided deployment script
-cd FightSFTickets_Starter_Kit
-./scripts/deploy_prod.sh
-
-# Or manually
-docker compose -f docker-compose.prod.yml up --build -d
-```
-
-### Update Existing Deployment
-
-When you make code changes:
-```bash
-SERVER_IP=xxx.xxx.xxx.xxx ./scripts/update_deployment.sh
-```
-
-### Deployment Documentation
-
-- **Quick Start:** `DEPLOY_NOW.md` - Deploy in 15 minutes
-- **Complete Guide:** `docs/DEPLOYMENT_GUIDE.md` - Step-by-step instructions
-- **Service Integration:** `docs/SERVICE_INTEGRATION_CHECKLIST.md` - API setup
-- **Scripts Guide:** `scripts/README.md` - All deployment scripts
-- **Deployment Summary:** `DEPLOYMENT_SUMMARY.md` - Overview and costs
-- **Ready Status:** `DEPLOYMENT_COMPLETE.md` - Everything you need
-
-### Deployment Checklist
-- [ ] Have Hetzner API token ready
-- [ ] Get API keys: Stripe, Lob, OpenAI, DeepSeek
-- [ ] Run: `./scripts/deploy_hetzner.sh`
-- [ ] Configure DNS to point to server IP
-- [ ] Set up SSL: `certbot --nginx -d yourdomain.com`
-- [ ] Configure Stripe webhook
-- [ ] Test complete payment flow
-- [ ] Switch to live API keys when ready
-
-## 📊 Monitoring & Maintenance
-
-### Health Checks
-- **API Health**: `GET /health`
-- **Database Connection**: Automatic health check
-- **External Services**: Stripe & Lob connectivity checks
-
-### Logging
-- Structured JSON logging for production
-- Request ID tracking for debugging
-- Error aggregation and alerting
-
-### Performance Monitoring
-- Rate limiting metrics
-- Response time tracking
-- Error rate monitoring
-
-## 🔒 Security
-
-### Implemented Security Measures
-- **Rate Limiting**: Protection against abuse
-- **Input Validation**: Pydantic models for all endpoints
-- **Webhook Security**: Stripe signature verification
-- **Database Security**: SQL injection protection via SQLAlchemy
-- **CORS Configuration**: Restricted origins
-- **Environment Separation**: Development vs production configuration
-
-### Compliance
-- **UPL Compliance**: No legal advice, user makes all decisions
-- **CCPA Compliance**: Privacy policy with California user rights
-- **Payment Compliance**: PCI DSS via Stripe
-- **Data Protection**: Secure storage and transmission
-
-## 📈 Scaling Considerations
-
-### Horizontal Scaling
-- Stateless backend services
-- Database connection pooling
-- Redis for session storage (if needed)
-- Load balancer configuration
-
-### Performance Optimization
-- Database indexing on frequently queried fields
-- Query optimization and caching
-- CDN for static assets
-- Image optimization and compression
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **Database Connection Errors**
-   - Verify `DATABASE_URL` in environment variables
-   - Check database service is running
-   - Run migrations: `alembic upgrade head`
-
-2. **Payment Processing Failures**
-   - Verify Stripe API keys are correct
-   - Check webhook endpoint configuration
-   - Test with Stripe test mode
-
-3. **Frontend Build Errors**
-   - Clear Next.js cache: `rm -rf .next`
-   - Reinstall dependencies: `npm install`
-   - Check TypeScript compilation
-
-### Getting Help
-- Check the `docs/` directory for detailed documentation
-- Review `IMPLEMENTATION_STATUS.md` for current status
-- Examine logs for error details
-
-## 📄 License & Legal
-
-### Important Legal Notice
-FightCityTickets is not a law firm and does not provide legal advice. We are a document preparation service that helps you format and submit your own appeal. We do not recommend specific evidence, promise outcomes, or provide legal representation. You are responsible for the content of your appeal.
-
-### Compliance Documents
-- [Terms of Service](/terms)
-- [Privacy Policy](/privacy) (CCPA compliant)
-
-## 🎯 Project Status
-
-**Completion**: 100% ✅  
-**Production Readiness**: Ready for deployment  
-**Last Major Update**: Jules' implementation (2025-12-22)  
-**Key Contributors**: AI-assisted development with critical contributions from Jules
-
-### What Was Recently Completed (Jules' Work)
-1. ✅ Complete state management with session storage
-2. ✅ Real API integration across all frontend components
-3. ✅ Database-first payment flow (Intake/Draft before Stripe)
-4. ✅ Legal compliance pages (Terms & Privacy)
-5. ✅ Production deployment scripts and configuration
-6. ✅ Enhanced error handling and testing
 
 ---
 
-## 🎯 Deployment Status
+## Production Deployment
 
-**The FightCityTickets application is 100% complete and ready for immediate production deployment.**
+### Deploy to Existing Server
 
-### ✅ What's Ready
-- ✅ **Automated Hetzner Cloud deployment** - One command deploys everything
-- ✅ **Complete documentation** - Quick start to advanced guides
-- ✅ **Service integrations** - Stripe, Lob, OpenAI, DeepSeek ready
-- ✅ **Update/rollback scripts** - Easy maintenance and recovery
-- ✅ **Security configured** - Firewall, SSL, rate limiting
-- ✅ **Production tested** - All critical paths verified
-
-### 🚀 Deploy Now
 ```bash
-export HETZNER_API_TOKEN="YOUR_HETZNER_API_TOKEN"
-./scripts/deploy_hetzner.sh
+# From project root on local machine
+ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
+
+# On server:
+cd /var/www/fightcitytickets
+git pull
+docker compose down
+docker compose up -d --build
+docker compose ps
+
+# Verify
+curl http://localhost/api/health
 ```
 
-**Time to deploy:** 15 minutes | **Monthly cost:** ~$7 + variable | **Difficulty:** ⭐ Easy
+### Fresh Server Setup
 
-For deployment assistance, see:
-- `DEPLOY_NOW.md` - Quick start guide ⭐
-- `DEPLOYMENT_COMPLETE.md` - Everything you need
-- `docs/DEPLOYMENT_GUIDE.md` - Complete instructions
+```bash
+# 1. SSH to server
+ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
+
+# 2. Install Docker
+apt-get update
+apt-get install -y docker.io docker-compose git
+systemctl enable docker
+systemctl start docker
+
+# 3. Clone and deploy
+git clone <repo> /var/www/fightcitytickets
+cd /var/www/fightcitytickets
+cp .env.example .env
+# Edit .env with production API keys
+docker compose up -d --build
+
+# 4. Verify
+curl http://localhost/api/health
+```
+
+---
+
+## Service Endpoints
+
+| Service | Port | Endpoint | Health Check |
+|---------|------|----------|--------------|
+| Nginx | 80, 443 | http://143.198.131.213 | - |
+| Frontend | 3000 | http://143.198.131.213/ | / |
+| API | 8000 | http://143.198.131.213/api/ | /health |
+| Database | 5432 | db:5432 (internal) | - |
+
+---
+
+## Common Commands
+
+```bash
+# View logs
+docker compose logs -f
+docker compose logs -f api    # Backend only
+docker compose logs -f web    # Frontend only
+
+# Restart service
+docker compose restart api
+docker compose restart web
+
+# Rebuild after code change
+docker compose up -d --build
+
+# Database migration
+docker compose exec api alembic upgrade head
+
+# Check disk usage
+docker system df
+
+# SSH into container
+docker compose exec api /bin/bash
+docker compose exec web /bin/sh
+```
+
+---
+
+## Supported Cities
+
+Currently supports parking ticket appeals for 15+ cities including:
+- San Francisco
+- Los Angeles
+- New York
+- Chicago
+- Austin
+- Seattle
+- And more...
+
+See `backend/src/services/citation.py` for validation patterns.
+
+---
+
+## Legal Compliance
+
+**FightCityTickets is NOT a law firm.**
+
+- Document preparation service only
+- No legal advice provided
+- Users make all decisions
+- UPL-compliant architecture implemented
+
+See `CIVIL_SHIELD_COMPLIANCE_AUDIT.md` for details.
+
+---
+
+## Troubleshooting
+
+### Container won't start
+
+```bash
+docker compose logs api
+docker compose logs web
+```
+
+### Database connection failed
+
+```bash
+docker compose restart db
+docker compose exec db pg_isready -U postgres
+```
+
+### Frontend 502 Bad Gateway
+
+```bash
+docker compose logs nginx
+docker compose restart web
+```
+
+### API returns 500
+
+```bash
+docker compose exec api cat /app/logs/app.log
+```
+
+---
+
+## Backup & Recovery
+
+```bash
+# Backup database
+docker compose exec db pg_dump -U postgres fightsf > backup_$(date +%Y%m%d).sql
+
+# Restore database
+docker compose exec -T db psql -U postgres fightsf < backup_20240101.sql
+```
+
+---
+
+## Security Notes
+
+- **NEVER** commit `.env` or API keys to git
+- SSH key stored at `/c/Users/Amirp/.ssh/do_deploy_key` (keep safe!)
+- Rate limiting enabled on all API endpoints
+- CORS configured for production domain only
+- Database not exposed externally (Docker network only)
+
+---
+
+## For Future AI Sessions
+
+**START HERE.** Read this file first.
+
+**To deploy updates:**
+
+```bash
+ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
+cd /var/www/fightcitytickets
+git pull
+docker compose down
+docker compose up -d --build
+curl http://localhost/api/health
+```
+
+**Required context:**
+- Server IP: 143.198.131.213
+- SSH key: `/c/Users/Amirp/.ssh/do_deploy_key`
+- DO Token: Configured via `doctl auth init`
+- All configs in `docker-compose.yml` and `.env`
+
+---
+
+**Last Updated**: January 10, 2026
+**Status**: Production Ready
