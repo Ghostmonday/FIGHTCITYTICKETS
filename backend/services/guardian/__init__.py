@@ -23,7 +23,9 @@ Version: 1.0.0
 Compliance: Civil Shield v1
 """
 
+import asyncio
 import logging
+import subprocess
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -39,6 +41,13 @@ from .hunter import (
     HunterService,
     ThreatIntelResult,
     get_hunter_service,
+)
+from .reflex import (
+    BlockReason,
+    ReflexAction,
+    ReflexController,
+    ReflexEvent,
+    get_reflex_controller,
 )
 
 # Configure module logging
@@ -65,6 +74,12 @@ __all__ = [
     "get_hunter_service",
     # Main Service
     "GuardianService",
+    # Reflex Controller
+    "ReflexAction",
+    "ReflexEvent",
+    "ReflexController",
+    "BlockReason",
+    "get_reflex_controller",
     # Utilities
     "log_security_event",
     "create_attack_report",
@@ -178,54 +193,45 @@ class GuardianService:
             )
             result["evidence_id"] = evidence_metadata.evidence_id
 
-        # Run attribution if enabled
+        # Run attribution if enabled - FIRE AND FORGET for defense speed
         if attribution_enabled and event_data.get("source_ip"):
-            try:
-                threat_result = await self.hunter_service.investigate_ip(
-                    ip_address=event_data["source_ip"],
-                    user_agent=event_data.get("user_agent"),
-                    ssl_fingerprint=event_data.get("ssl_fingerprint"),
-                    headers=event_data.get("headers", {}),
-                    evidence_id=evidence_metadata.evidence_id
-                    if evidence_metadata
-                    else None,
-                )
+            source_ip = event_data["source_ip"]
+            evidence_id = evidence_metadata.evidence_id if evidence_metadata else None
 
-                # Collect threat intel as evidence
-                self.evidence_service.collect_threat_intel(
-                    target_ip=event_data["source_ip"],
-                    query_service="hunter_attribution",
-                    threat_score=threat_result.threat_score,
-                    is_malicious=threat_result.is_malicious,
-                    threat_categories=[threat_result.threat_level.value],
-                    asn_info=threat_result.asn_info,
-                    geolocation=threat_result.geolocation.to_dict()
-                    if threat_result.geolocation
-                    else {},
-                    abuse_ipdb_score=threat_result.abuse_ipdb_score,
-                    virustotal_detections=threat_result.virustotal_positives,
-                    shodan_data=threat_result.raw_responses.get("shodan", {}),
-                )
+            # Fire-and-forget: Don't await Hunter - defense comes first
+            async def _background_investigation():
+                try:
+                    threat_result = await self.hunter_service.investigate_ip(
+                        ip_address=source_ip,
+                        user_agent=event_data.get("user_agent"),
+                        ssl_fingerprint=event_data.get("ssl_fingerprint"),
+                        headers=event_data.get("headers", {}),
+                        evidence_id=evidence_id,
+                    )
 
-                result["threat_info"] = {
-                    "threat_score": threat_result.threat_score,
-                    "threat_level": threat_result.threat_level.value,
-                    "is_malicious": threat_result.is_malicious,
-                    "location": (
-                        f"{threat_result.geolocation.city}, {threat_result.geolocation.country_name}"
+                    # Collect threat intel as evidence (background)
+                    self.evidence_service.collect_threat_intel(
+                        target_ip=source_ip,
+                        query_service="hunter_attribution",
+                        threat_score=threat_result.threat_score,
+                        is_malicious=threat_result.is_malicious,
+                        threat_categories=[threat_result.threat_level.value],
+                        asn_info=threat_result.asn_info,
+                        geolocation=threat_result.geolocation.to_dict()
                         if threat_result.geolocation
-                        else "Unknown"
-                    ),
-                    "infrastructure": threat_result.infrastructure_type.value,
-                }
+                        else {},
+                        abuse_ipdb_score=threat_result.abuse_ipdb_score,
+                        virustotal_detections=threat_result.virustotal_positives,
+                        shodan_data=threat_result.raw_responses.get("shodan", {}),
+                    )
 
-                # Generate recommended actions
-                if threat_result.is_micious:
-                    result["actions"].append("BLOCK_IP")
-                    result["actions"].append("GENERATE_REPORT")
+                    logger.info(f"Background investigation complete for {source_ip}")
 
-            except Exception as e:
-                logger.error(f"Attribution failed: {e}")
+                except Exception as e:
+                    logger.error(f"Background investigation failed: {e}")
+
+            # Launch investigation without blocking defense response
+            asyncio.create_task(_background_investigation())
 
         # Default actions based on event type
         if event_type == "auth_failure":
@@ -239,7 +245,93 @@ class GuardianService:
             result["actions"].append("BLOCK_IP")
             result["actions"].append("LOG_EVENT")
 
+        # Execute reflex actions immediately
+        self._execute_reflex_actions(result["actions"], event_data)
+
         return result
+
+    def _execute_reflex_actions(
+        self, actions: List[str], event_data: Dict[str, Any]
+    ) -> None:
+        """
+        Execute reflex actions immediately - the "Trigger Puller".
+
+        Args:
+            actions: List of actions to execute
+            event_data: Event context for action execution
+        """
+        source_ip = event_data.get("source_ip")
+
+        for action in actions:
+            if action == "BLOCK_IP" and source_ip:
+                self._block_ip(source_ip)
+            elif action == "LOG_EVENT":
+                self._log_event(event_data)
+            elif action == "NOTIFY_ADMIN":
+                self._notify_admin(event_data)
+
+    def _block_ip(self, ip_address: str) -> bool:
+        """
+        Execute firewall block via iptables.
+
+        Args:
+            ip_address: IP address to block
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Add to drop chain - immediate effect
+            result = subprocess.run(
+                [
+                    "iptables",
+                    "-A",
+                    "INPUT",
+                    "-s",
+                    ip_address,
+                    "-j",
+                    "DROP",
+                    "-m",
+                    "comment",
+                    "--comment",
+                    f"GuardianBlock-{datetime.now().isoformat()}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+
+            if result.returncode == 0:
+                logger.warning(f"BLOCKED IP via iptables: {ip_address}")
+                return True
+            else:
+                logger.error(f"iptables block failed: {result.stderr}")
+                return False
+
+        except subprocess.TimeoutExpired:
+            logger.error(f"iptables timeout for {ip_address}")
+            return False
+        except FileNotFoundError:
+            logger.error("iptables not available - running in simulation mode")
+            logger.info(f"[SIMULATION] Would block: {ip_address}")
+            return True  # Simulated success for dev environments
+
+    def _log_event(self, event_data: Dict[str, Any]) -> None:
+        """Log event to Guardian audit trail."""
+        log_security_event(
+            sensor_id=self.sensor_id,
+            event_type=event_data.get("event_type", "unknown"),
+            description=f"Security event from {event_data.get('source_ip', 'unknown')}",
+            severity="WARNING",
+            metadata=event_data,
+        )
+
+    def _notify_admin(self, event_data: Dict[str, Any]) -> None:
+        """Trigger admin notification."""
+        # In production, integrate with PagerDuty, Slack, email, etc.
+        logger.critical(
+            f"ADMIN NOTIFICATION: Security event from {event_data.get('source_ip')}"
+        )
 
     async def generate_case_report(
         self,

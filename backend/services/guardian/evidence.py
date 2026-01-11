@@ -479,7 +479,15 @@ class EvidenceService:
         evidence_id = self._generate_evidence_id()
         timestamp = datetime.utcnow().isoformat() + "Z"
 
-        # Create evidence object
+        # PII Header Scrubbing: Remove sensitive headers before storage
+        # GDPR/CCPA compliance - prevents storing session cookies, auth tokens
+        SENSITIVE_HEADERS = {'cookie', 'authorization', 'set-cookie', 'x-api-key', 'proxy-authorization'}
+        sanitized_headers = {
+            k: '[SCRUBBED]' for k, v in (headers or {}).items()
+            if k.lower() not in SENSITIVE_HEADERS
+        }
+
+        # Create evidence object with sanitized headers
         network_evidence = NetworkEvidence(
             evidence_id=evidence_id,
             timestamp=timestamp,
@@ -494,7 +502,7 @@ class EvidenceService:
             flags=flags,
             user_agent=user_agent,
             ssl_fingerprint=ssl_fingerprint,
-            headers=headers or {}
+            headers=sanitized_headers
         )
 
         # Compute hash
