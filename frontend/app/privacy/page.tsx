@@ -25,7 +25,7 @@ export default function PrivacyPage() {
         <div className="mb-8">
           <Link
             href="/"
-            className="text-indigo-600 hover:text-indigo-700 font-medium"
+            className="text-stone-600 hover:text-stone-800 font-medium"
           >
             ← Back to Home
           </Link>
@@ -36,16 +36,18 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
 
-          <div className="prose prose-indigo max-w-none text-gray-700">
+          <div className="prose prose-stone max-w-none text-gray-700">
             <p className="lead text-lg text-gray-600 mb-8">
-              <strong>We aren't lawyers. We're paperwork experts.</strong> We
-              respect your privacy. This policy explains how we handle your
-              data.
+              <strong>
+                We aren&apos;t lawyers. We&apos;re paperwork experts.
+              </strong>{" "}
+              And in a bureaucracy, paperwork is power. We respect your privacy.
+              This policy explains how we handle your data.
             </p>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8">
-              <p className="text-sm text-blue-800">
-                <strong>Important:</strong> We are a document preparation
+            <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-8">
+              <p className="text-sm text-stone-800">
+                <strong>Important:</strong> We are a procedural compliance
                 service, not a law firm. We do not sell, share, or monetize your
                 personal data. Your information is used only to process and
                 submit your appeal as you direct.
@@ -99,8 +101,8 @@ export default function PrivacyPage() {
             <p>Your information is used only for these specific purposes:</p>
             <ul>
               <li>
-                <strong>Appeal Preparation:</strong> Formatting your appeal
-                letter according to municipal requirements
+                <strong>The Clerical Engine™:</strong> Formatting your appeal
+                letter to meet municipal procedural requirements
               </li>
               <li>
                 <strong>Submission:</strong> Mailing your appeal to the
@@ -270,7 +272,7 @@ export default function PrivacyPage() {
               </li>
             </ul>
 
-            <h2>9. Children's Privacy</h2>
+            <h2>9. Children&apos;s Privacy</h2>
             <p>
               Our service is not intended for individuals under 13 years of age.
               We do not knowingly collect personal information from children.
@@ -287,7 +289,8 @@ export default function PrivacyPage() {
             <p>
               We may update this Privacy Policy from time to time. We will
               notify you of any material changes by posting the new Privacy
-              Policy on this page and updating the "Last Updated" date.
+              Policy on this page and updating the &quot;Last Updated&quot;
+              date.
             </p>
 
             <h2>12. Contact Us</h2>
@@ -302,15 +305,18 @@ export default function PrivacyPage() {
               </p>
             </div>
 
-            <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-              <h3 className="font-semibold text-blue-900 mb-2">
+            <div className="mt-8 p-4 bg-stone-50 rounded-lg">
+              <h3 className="font-semibold text-stone-900 mb-2">
                 Important Disclaimer
               </h3>
-              <p className="text-sm text-blue-800">
-                <strong>We aren't lawyers. We're paperwork experts.</strong>{" "}
-                This Privacy Policy describes how we handle your data for our
-                document preparation services. We do not provide legal advice.
-                For legal matters, please consult with a licensed attorney.
+              <p className="text-sm text-stone-800">
+                <strong>
+                  We aren&apos;t lawyers. We&apos;re paperwork experts.
+                </strong>{" "}
+                And in a bureaucracy, paperwork is power. This Privacy Policy
+                describes how we handle your data for our procedural compliance
+                services. We do not provide legal advice. For legal matters,
+                please consult with a licensed attorney.
               </p>
             </div>
 

@@ -7,50 +7,69 @@ interface LegalDisclaimerProps {
   className?: string;
 }
 
-export default function LegalDisclaimer({ variant = "elegant", className = "" }: LegalDisclaimerProps) {
+export default function LegalDisclaimer({
+  variant = "elegant",
+  className = "",
+}: LegalDisclaimerProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const disclaimerText = {
     full: (
       <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
         <p>
-          FightCityTickets.com is a document preparation service. We help you articulate and refine 
-          your own reasons for appealing a parking ticket. We act as a scribe, helping you express 
-          what <strong className="text-gray-800">you</strong> tell us is your reason for appealing.
+          <strong className="text-gray-800">
+            We aren't lawyers. We're paperwork experts.
+          </strong>{" "}
+          In a bureaucracy, paperwork is power. We help you articulate and
+          refine your own reasons for appealing a parking ticket. We act as a
+          scribe, helping you express what{" "}
+          <strong className="text-gray-800">you</strong> tell us is your reason
+          for appealing.
         </p>
         <p>
-          We are not a law firm, and we do not provide legal advice, legal representation, or legal 
-          recommendations. We do not suggest legal strategies, interpret laws, or guarantee outcomes. 
-          The decision to appeal and the arguments presented are entirely yours.
+          FightCityTickets.com is a{" "}
+          <strong>procedural compliance service</strong>. We do not provide
+          legal advice, legal representation, or legal recommendations. We do
+          not interpret laws or guarantee outcomes. We ensure your appeal meets
+          the exacting clerical standards that municipalities use to reject
+          citizen submissions.
         </p>
-        <p className="text-xs text-gray-500 italic">
+        <p className="text-xs text-gray-500 italic border-t border-gray-200 pt-3">
           If you require legal advice, please consult with a licensed attorney.
         </p>
       </div>
     ),
     compact: (
       <p className="text-xs text-gray-500 leading-relaxed">
-        FightCityTickets.com is a document preparation service. We help you articulate your own reasons 
-        for appealing. We are not a law firm and do not provide legal advice.{" "}
-        <a href="/terms" className="text-gray-700 hover:text-gray-900 underline underline-offset-2">
+        <strong>We aren't lawyers. We're paperwork experts.</strong> We help you
+        articulate your own reasons for appealing. Our service is procedural
+        compliance—not legal advice.{" "}
+        <a
+          href="/terms"
+          className="text-gray-700 hover:text-gray-900 underline underline-offset-2"
+        >
           Terms
         </a>
       </p>
     ),
     inline: (
       <span className="text-xs text-gray-400 italic">
-        Document preparation service. Not a law firm.
+        Procedural compliance service. Not a law firm. Paperwork is power.
       </span>
     ),
     elegant: (
-      <div className="space-y-2 text-sm text-gray-600 leading-relaxed">
+      <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
         <p>
-          FightCityTickets.com is a document preparation service that helps you articulate your own 
-          reasons for appealing a parking ticket. We refine and format the information you provide 
-          to create a professional appeal letter.
+          <strong className="text-gray-800">
+            We aren't lawyers. We're paperwork experts.
+          </strong>{" "}
+          In a bureaucracy, paperwork is power. We help you articulate and
+          refine your own reasons for appealing a parking ticket.
         </p>
-        <p className="text-xs text-gray-500 border-t border-gray-100 pt-2">
-          We are not a law firm and do not provide legal advice. For legal guidance, consult a licensed attorney.
+        <p className="text-xs text-gray-500 border-t border-gray-200 pt-3">
+          FightCityTickets.com is a{" "}
+          <strong>procedural compliance service</strong>. We do not provide
+          legal advice. For legal guidance, consult a licensed attorney.
         </p>
       </div>
     ),
@@ -70,19 +89,24 @@ export default function LegalDisclaimer({ variant = "elegant", className = "" }:
 
   if (variant === "elegant") {
     return (
-      <div className={`bg-gray-50 border border-gray-200 rounded-lg p-5 ${className}`}>
+      <div
+        className={`bg-gray-50 border border-gray-200 rounded-lg p-5 ${className}`}
+      >
         {disclaimerText.elegant}
       </div>
     );
   }
 
   return (
-    <div className={`bg-gray-50 border border-gray-200 rounded-lg p-5 ${className}`}>
+    <div
+      className={`bg-gray-50 border border-gray-200 rounded-lg p-5 ${className}`}
+    >
       {!isExpanded ? (
         <div>
           <p className="text-sm text-gray-700 mb-2">
-            FightCityTickets.com is a document preparation service. We help you articulate your own 
-            reasons for appealing. We are not a law firm and do not provide legal advice.
+            <strong>We aren't lawyers. We're paperwork experts.</strong> We help
+            you articulate your own reasons for appealing. Our service is
+            procedural compliance—not legal advice.
           </p>
           <button
             onClick={() => setIsExpanded(true)}
@@ -105,4 +129,3 @@ export default function LegalDisclaimer({ variant = "elegant", className = "" }:
     </div>
   );
 }
-

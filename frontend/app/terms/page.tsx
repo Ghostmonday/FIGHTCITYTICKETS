@@ -7,7 +7,7 @@ export default function TermsPage() {
         <div className="mb-8">
           <Link
             href="/"
-            className="text-indigo-600 hover:text-indigo-700 font-medium"
+            className="text-stone-600 hover:text-stone-800 font-medium"
           >
             ← Back to Home
           </Link>
@@ -18,33 +18,35 @@ export default function TermsPage() {
             Terms of Service
           </h1>
 
-          <div className="prose prose-indigo max-w-none text-gray-700">
+          <div className="prose prose-stone max-w-none text-gray-700">
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-8">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
                 Service Description
               </h3>
               <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
                 <p>
-                  FightCityTickets.com is a document preparation service. We
-                  help you articulate and refine your own reasons for appealing
-                  a parking ticket. We act as a scribe, helping you express what{" "}
+                  <strong className="text-gray-900">
+                    We aren&apos;t lawyers. We&apos;re paperwork experts.
+                  </strong>{" "}
+                  And in a bureaucracy, paperwork is power.
+                </p>
+                <p>
+                  FightCityTickets.com is a{" "}
+                  <strong>procedural compliance service</strong>. We help you
+                  articulate and refine your own reasons for appealing a parking
+                  ticket. We act as a scribe, helping you express what{" "}
                   <strong className="text-gray-900">you</strong> tell us is your
                   reason for appealing. We make the appeal process frictionless
                   so you are not intimidated into paying a ticket you believe is
                   unfair.
                 </p>
                 <p>
-                  We are not a law firm, and we are not attorneys, legal
-                  practitioners, or legal professionals. We do not provide legal
-                  advice, legal representation, legal recommendations, or legal
-                  guidance. We do not suggest legal strategies, interpret laws,
-                  guarantee outcomes, or make representations about the success
-                  of your appeal.
-                </p>
-                <p>
-                  Our tools assist you in formatting and articulating your own
-                  appeal based on the information
-                  <strong className="text-gray-900"> you</strong> provide. You
+                  We do not provide legal advice, legal representation, or legal
+                  recommendations. We do not interpret laws, guarantee outcomes,
+                  or make representations about the success of your appeal. Our
+                  tools assist you in formatting and articulating your own
+                  appeal based on the information{" "}
+                  <strong className="text-gray-900">you</strong> provide. You
                   are solely responsible for the content, accuracy, and
                   submission of your appeal. Using this Service does not create
                   an attorney-client relationship.
@@ -69,7 +71,15 @@ export default function TermsPage() {
               and mail parking ticket appeal letters. Our services include:
             </p>
             <ul>
-              <li>Formatting user-provided information into a letter.</li>
+              <li>
+                <strong>The Clerical Engine™:</strong> Our technology scans your
+                citation for procedural defects and formats your submission to
+                meet municipal specifications.
+              </li>
+              <li>
+                Formatting user-provided information into a professional appeal
+                letter.
+              </li>
               <li>
                 Printing and mailing documents via third-party carriers (e.g.,
                 USPS).
@@ -79,7 +89,7 @@ export default function TermsPage() {
             <p>
               We do <strong>not</strong> guarantee that your appeal will be
               successful. The outcome of your appeal depends entirely on the
-              decision of the issuing agency (e.g., SFMTA).
+              decision of the issuing agency (e.g., SFMTA, LAPD).
             </p>
 
             <h2>3. User Responsibilities</h2>
@@ -117,7 +127,7 @@ export default function TermsPage() {
               <li>
                 <strong>Outcome-Based:</strong> We do <strong>not</strong> offer
                 refunds based on the outcome of your appeal. You are paying for
-                the document preparation and mailing service, not the result.
+                the procedural compliance and mailing service, not the result.
               </li>
             </ul>
 
