@@ -2,114 +2,143 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAppeal } from "./lib/appeal-context";
-import { CITIES, getCityDisplayName, getCityById } from "./lib/cities";
 import LegalDisclaimer from "../components/LegalDisclaimer";
 
-interface CitationValidationResponse {
-  is_valid: boolean;
-  citation_number: string;
+// Force dynamic rendering - this page uses client-side context
+export const dynamic = "force-dynamic";
+
+interface City {
+  cityId: string;
+  name: string;
   agency: string;
-  deadline_date: string | null;
-  days_remaining: number | null;
-  is_past_deadline: boolean;
-  is_urgent: boolean;
-  error_message: string | null;
-  formatted_citation: string | null;
-  city_id: string | null;
-  section_id: string | null;
-  appeal_deadline_days: number;
-  phone_confirmation_required: boolean;
-  phone_confirmation_policy: Record<string, any> | null;
-  city_mismatch?: boolean;
-  selected_city_mismatch_message?: string;
+  sectionId?: string;
+  appealDeadlineDays: number;
 }
 
+const CITIES: City[] = [
+  { cityId: "sf", name: "San Francisco", agency: "sf", appealDeadlineDays: 21 },
+  { cityId: "la", name: "Los Angeles", agency: "la", appealDeadlineDays: 21 },
+  {
+    cityId: "nyc",
+    name: "New York City",
+    agency: "nyc",
+    appealDeadlineDays: 30,
+  },
+  {
+    cityId: "chicago",
+    name: "Chicago",
+    agency: "chicago",
+    appealDeadlineDays: 20,
+  },
+  {
+    cityId: "seattle",
+    name: "Seattle",
+    agency: "seattle",
+    appealDeadlineDays: 20,
+  },
+  {
+    cityId: "denver",
+    name: "Denver",
+    agency: "denver",
+    appealDeadlineDays: 20,
+  },
+  {
+    cityId: "portland",
+    name: "Portland",
+    agency: "portland",
+    appealDeadlineDays: 10,
+  },
+  {
+    cityId: "phoenix",
+    name: "Phoenix",
+    agency: "phoenix",
+    appealDeadlineDays: 15,
+  },
+];
+
 export default function Home() {
-  const [selectedCity, setSelectedCity] = useState<string>("");
+  const router = useRouter();
+  const { state, updateState } = useAppeal();
+  const [selectedCity, setSelectedCity] = useState("");
   const [citationNumber, setCitationNumber] = useState("");
   const [licensePlate, setLicensePlate] = useState("");
   const [violationDate, setViolationDate] = useState("");
   const [isValidating, setIsValidating] = useState(false);
-  const [validationResult, setValidationResult] =
-    useState<CitationValidationResponse | null>(null);
+  const [validationResult, setValidationResult] = useState<{
+    valid: boolean;
+    citationId: string;
+    detectedCity: string;
+    selectedCityName: string;
+    cityId: string;
+    sectionId: string;
+    appealDeadlineDays: number;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const { updateState } = useAppeal();
+
+  const getCityDisplayName = (city: City): string => {
+    return `${city.name} (${city.agency.toUpperCase()})`;
+  };
 
   const handleValidateCitation = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setValidationResult(null);
-
-    if (!selectedCity) {
-      setError("Please select the city where you received the citation");
-      return;
-    }
-
-    if (!citationNumber.trim()) {
-      setError("Please enter a citation number");
-      return;
-    }
-
     setIsValidating(true);
+
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+
     try {
-      const apiBase =
-        process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-      // #region agent log
-      // fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:62',message:'API Base URL',data:{apiBase,envVar:process.env.NEXT_PUBLIC_API_BASE,fullUrl:`${apiBase}/tickets/validate`},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      const response = await fetch(`${apiBase}/tickets/validate`, {
+      const response = await fetch(`${apiBase}/api/citations/validate`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          citation_number: citationNumber.trim(),
-          license_plate: licensePlate.trim() || null,
-          violation_date: violationDate.trim() || null,
-          city_id: selectedCity, // Send selected city for validation
+          citation_number: citationNumber,
+          license_plate: licensePlate || undefined,
+          violation_date: violationDate || undefined,
+          city_id: selectedCity,
         }),
       });
 
-      // #region agent log
-      // fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:78',message:'Fetch response received',data:{status:response.status,statusText:response.statusText,ok:response.ok,type:response.type,url:response.url},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,C,D,E'})}).catch(()=>{});
-      // #endregion
+      const data = await response.json();
 
-      if (!response.ok) {
-        // #region agent log
-        // fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:85',message:'Response not OK',data:{status:response.status,statusText:response.statusText,body:errBody},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E'})}).catch(()=>{});
-        // #endregion
-        throw new Error(`Validation failed: ${response.statusText}`);
+      if (!response.ok || !data.valid) {
+        setError(
+          data.error ||
+            "We could not validate this citation. Please check the number and try again."
+        );
+        setIsValidating(false);
+        return;
       }
 
-      const result = await response.json();
+      const detectedCity = CITIES.find((c) => c.cityId === selectedCity);
+      const selectedCityName = detectedCity
+        ? getCityDisplayName(detectedCity)
+        : "Unknown City";
 
-      // Check for city mismatch
-      if (result.city_id && result.city_id !== selectedCity) {
-        result.city_mismatch = true;
-        const detectedCity = getCityById(result.city_id);
-        const selectedCityName = getCityById(selectedCity)?.name;
-        result.selected_city_mismatch_message = `The citation number appears to be from ${detectedCity?.name || result.city_id}, but you selected ${selectedCityName}. Please verify your selection or citation number.`;
-      }
+      // Store in context
+      updateState({
+        citationNumber: citationNumber,
+        licensePlate: licensePlate,
+        violationDate: violationDate,
+        cityId: selectedCity,
+        sectionId: detectedCity?.sectionId,
+        appealDeadlineDays: detectedCity?.appealDeadlineDays,
+      });
 
-      setValidationResult(result);
-
-      if (result.is_valid && !result.city_mismatch) {
-        // Update appeal context with citation info
-        updateState({
-          citationNumber: result.citation_number,
-          cityId: result.city_id || selectedCity,
-          sectionId: result.section_id,
-          appealDeadlineDays: result.appeal_deadline_days,
-        });
-      }
+      setValidationResult({
+        valid: true,
+        citationId: data.citation_id,
+        detectedCity: data.detected_city || selectedCity,
+        selectedCityName,
+        cityId: selectedCity,
+        sectionId: detectedCity?.sectionId || "",
+        appealDeadlineDays: detectedCity?.appealDeadlineDays || 21,
+      });
     } catch (err) {
-      // #region agent log
-      // fetch('http://127.0.0.1:7242/ingest/96493b5c-15b2-431a-84c8-c85c02fa001b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'page.tsx:115',message:'Catch block error',data:{errorType:err?.constructor?.name,errorMessage:err instanceof Error ? err.message : String(err),errorStack:err instanceof Error ? err.stack : undefined},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C,D'})}).catch(()=>{});
-      // #endregion
       setError(
-        err instanceof Error ? err.message : "Failed to validate citation"
+        "We could not validate this citation. Please check the number and try again."
       );
     } finally {
       setIsValidating(false);
@@ -117,48 +146,45 @@ export default function Home() {
   };
 
   const handleStartAppeal = () => {
-    if (validationResult?.is_valid && !validationResult.city_mismatch) {
+    if (validationResult) {
+      updateState({
+        citationNumber: validationResult.citationId,
+        cityId: validationResult.cityId,
+        sectionId: validationResult.sectionId,
+        appealDeadlineDays: validationResult.appealDeadlineDays,
+      });
       router.push("/appeal");
     }
   };
 
-  const formatCityName = (cityId: string | null) => {
-    if (!cityId) return "Unknown City";
-    const city = getCityById(cityId);
-    return city
-      ? getCityDisplayName(city)
-      : cityId
-          .replace(/us-ca-|-/g, " ")
-          .replace(/_/g, " ")
-          .split(" ")
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ");
-  };
-
-  const formatAgency = (agency: string, sectionId: string | null) => {
-    if (sectionId) {
-      const sections: Record<string, string> = {
-        // San Francisco
-        sfmta: "SFMTA (San Francisco Municipal Transportation Agency)",
-        sfpd: "SFPD (San Francisco Police Department)",
-        sfsu: "SFSU (San Francisco State University)",
-        sfmud: "SFMUD (San Francisco Municipal Utility District)",
-        // Los Angeles
-        lapd: "LAPD (Los Angeles Police Department)",
-        ladot: "LADOT (Los Angeles Department of Transportation)",
-        ladot_pvb: "LADOT Parking Violations Bureau",
-        // New York City
-        nypd: "NYPD (New York Police Department)",
-        nydot: "NYC DOT (New York City Department of Transportation)",
-        // Other cities (add as needed)
-        chicago_parking: "Chicago Department of Finance",
-        seattle_parking: "Seattle Department of Transportation",
-        phoenix_parking: "Phoenix Parking Enforcement",
-        denver_parking: "Denver Public Works",
-      };
-      return sections[sectionId] || `${agency} - ${sectionId}`;
-    }
-    return agency;
+  const formatAgency = (agency: string): string => {
+    const agencies: Record<string, { name: string; sectionId: string }> = {
+      sfmta: { name: "SFMTA", sectionId: "parking" },
+      sfpd: { name: "SF Police", sectionId: "traffic" },
+      sfsu: { name: "SFSU Police", sectionId: "parking" },
+      sfmud: { name: "SF Municipal", sectionId: "utilities" },
+      lapd: { name: "LAPD", sectionId: "parking" },
+      ladot: { name: "LA DOT", sectionId: "parking" },
+      nyc: { name: "NYC Finance", sectionId: "parking" },
+      nypd: { name: "NY Police", sectionId: "traffic" },
+      chicago: {
+        name: "Chicago Finance",
+        sectionId: "parking",
+      },
+      seattle: {
+        name: "Seattle DOT",
+        sectionId: "parking",
+      },
+      denver: {
+        name: "Denver Public Works",
+        sectionId: "parking",
+      },
+      portland: {
+        name: "Portland Transportation",
+        sectionId: "parking",
+      },
+    };
+    return agencies[agency.toLowerCase()]?.name || agency;
   };
 
   return (
@@ -204,7 +230,7 @@ export default function Home() {
           <div className="flex flex-wrap items-center justify-center gap-6 mb-8 text-sm text-stone-500">
             <div className="flex items-center gap-2">
               <svg
-                className="w-5 h-5 text-green-600"
+                className="w-5 h-5 text-stone-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -214,25 +240,11 @@ export default function Home() {
                   clipRule="evenodd"
                 />
               </svg>
-              <span>15,000+ citations processed</span>
+              <span>Procedural Compliance Engine</span>
             </div>
             <div className="flex items-center gap-2">
               <svg
-                className="w-5 h-5 text-green-600"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>15,000+ citations processed</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg
-                className="w-5 h-5 text-blue-600"
+                className="w-5 h-5 text-stone-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -242,7 +254,7 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-2">
               <svg
-                className="w-5 h-5 text-green-600"
+                className="w-5 h-5 text-stone-600"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -260,7 +272,7 @@ export default function Home() {
           <div className="inline-flex items-center gap-8 px-8 py-4 rounded-full bg-white/60 backdrop-blur-sm border border-stone-200/80 shadow-sm">
             <div className="text-center">
               <span className="text-3xl sm:text-4xl font-light text-stone-800">
-                $9
+                $19
               </span>
             </div>
             <div className="h-8 w-px bg-stone-200"></div>
@@ -275,11 +287,11 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-extralight mb-4 tracking-tight text-stone-700">
-            Your Appeal, Ready to Send
+            Your Submission, Procedurally Compliant
           </h2>
           <p className="text-base sm:text-lg max-w-lg mx-auto font-light text-stone-500">
-            Appeal your parking ticket with procedural compliance. No legal
-            knowledge needed.
+            The Clerical Engine™ ensures your appeal meets the exacting
+            standards municipalities use to reject citizen submissions.
           </p>
         </div>
 
@@ -371,334 +383,252 @@ export default function Home() {
 
               {/* Error Message */}
               {error && (
-                <div className="px-4 py-3 rounded-lg text-sm bg-red-50 border border-red-200 text-red-700">
-                  {error}
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                  <p className="text-sm text-red-700">{error}</p>
                 </div>
               )}
 
-              {/* City Mismatch Warning */}
-              {validationResult?.city_mismatch && (
-                <div className="px-4 py-3 rounded-lg text-sm bg-yellow-50 border border-yellow-300 text-yellow-800">
-                  <div className="flex items-start gap-2">
+              {/* Validation Result */}
+              {validationResult && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
                     <svg
-                      className="w-5 h-5 mt-0.5 flex-shrink-0"
+                      className="w-5 h-5 text-green-600"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                     >
                       <path
                         fillRule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
                         clipRule="evenodd"
                       />
                     </svg>
-                    <div>
-                      <p className="font-medium mb-1">Citation City Mismatch</p>
-                      <p>{validationResult.selected_city_mismatch_message}</p>
-                    </div>
+                    <span className="font-medium text-green-800">
+                      Citation Validated
+                    </span>
                   </div>
+                  <p className="text-sm text-green-700">
+                    <strong>
+                      {formatAgency(validationResult.detectedCity)}
+                    </strong>{" "}
+                    will process your appeal.
+                  </p>
+                  <p className="text-xs text-green-600 mt-1">
+                    Deadline: {validationResult.appealDeadlineDays} days from
+                    violation date
+                  </p>
                 </div>
               )}
 
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={
-                  isValidating || !citationNumber.trim() || !selectedCity
-                }
-                className={`w-full py-3.5 px-4 rounded-xl font-medium transition-all duration-200 ${
-                  isValidating
-                    ? "bg-stone-200 text-stone-400 cursor-not-allowed"
-                    : "bg-stone-800 text-white hover:bg-stone-900 shadow-sm hover:shadow-md"
-                }`}
-              >
-                {isValidating ? (
-                  <span className="flex items-center justify-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Validating...
-                  </span>
+              {/* Buttons */}
+              <div className="flex gap-3 pt-2">
+                {!validationResult ? (
+                  <button
+                    type="submit"
+                    disabled={isValidating}
+                    className="flex-1 bg-stone-800 text-white px-6 py-3.5 rounded-xl font-medium hover:bg-stone-900 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isValidating ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg
+                          className="animate-spin h-5 w-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Validating...
+                      </span>
+                    ) : (
+                      "Validate Citation →"
+                    )}
+                  </button>
                 ) : (
-                  "Validate Citation"
+                  <button
+                    type="button"
+                    onClick={handleStartAppeal}
+                    className="flex-1 bg-stone-800 text-white px-6 py-3.5 rounded-xl font-medium hover:bg-stone-900 transition"
+                  >
+                    Begin Appeal →
+                  </button>
                 )}
-              </button>
+              </div>
             </form>
           </div>
 
-          {/* Right Column: Results & Info */}
-          <div className="space-y-8">
-            {/* Validation Results */}
-            {validationResult && (
-              <div className="rounded-xl shadow-lg p-6 md:p-8 border bg-stone-100 border-stone-300">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-medium text-stone-700">
-                    Validation Results
-                  </h2>
-                  <div
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      validationResult.is_valid &&
-                      !validationResult.city_mismatch
-                        ? validationResult.is_urgent
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}
-                  >
-                    {validationResult.is_valid &&
-                    !validationResult.city_mismatch
-                      ? validationResult.is_urgent
-                        ? "URGENT"
-                        : "VALID"
-                      : "INVALID"}
-                  </div>
-                </div>
+          {/* Right Column: How It Works */}
+          <div className="space-y-6">
+            <h2 className="text-lg font-medium mb-4 text-stone-700 tracking-wide">
+              Procedural Compliance Process
+            </h2>
 
-                {validationResult.is_valid &&
-                !validationResult.city_mismatch ? (
-                  <div className="space-y-6">
-                    {/* Citation Info */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs mb-1 text-stone-400">
-                          Citation Number
-                        </p>
-                        <p className="font-medium text-base text-stone-700">
-                          {validationResult.formatted_citation ||
-                            validationResult.citation_number}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs mb-1 text-stone-400">City</p>
-                        <p className="font-medium text-base text-stone-700">
-                          {formatCityName(
-                            validationResult.city_id || selectedCity
-                          )}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs mb-1 text-stone-400">Agency</p>
-                        <p className="font-medium text-sm text-stone-700">
-                          {formatAgency(
-                            validationResult.agency,
-                            validationResult.section_id
-                          )}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs mb-1 text-stone-400">Deadline</p>
-                        <p className="font-medium text-sm text-stone-700">
-                          {validationResult.days_remaining !== null
-                            ? `${validationResult.days_remaining} days`
-                            : "Check date"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Special Requirements */}
-                    {validationResult.phone_confirmation_required && (
-                      <div className="rounded-lg p-3 bg-blue-50 border border-blue-200">
-                        <div className="flex items-start">
-                          <svg
-                            className="w-4 h-4 mt-0.5 mr-2 text-blue-700"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <div>
-                            <p className="font-medium text-sm text-blue-800">
-                              Phone Confirmation Required
-                            </p>
-                            <p className="text-xs mt-1 text-blue-700">
-                              This citation section requires phone confirmation
-                              before appeal submission. We&apos;ll guide you
-                              through this process.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Deadline Warning */}
-                    {validationResult.is_urgent && (
-                      <div className="rounded-lg p-3 bg-yellow-50 border border-yellow-300">
-                        <div className="flex items-start">
-                          <svg
-                            className="w-4 h-4 mt-0.5 mr-2 text-yellow-800"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <div>
-                            <p className="font-medium text-sm text-yellow-800">
-                              Urgent Deadline
-                            </p>
-                            <p className="text-xs mt-1 text-yellow-700">
-                              Your appeal deadline is approaching! You have{" "}
-                              {validationResult.days_remaining} day(s)
-                              remaining.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Legal Disclaimer */}
-                    <LegalDisclaimer variant="compact" className="mb-4" />
-
-                    {/* Start Appeal Button */}
-                    <button
-                      onClick={handleStartAppeal}
-                      className="w-full py-3.5 px-6 rounded-xl font-medium transition-all duration-200 bg-stone-800 text-white hover:bg-stone-900 shadow-sm hover:shadow-md"
-                    >
-                      Validate Citation & Start Appeal →
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-center py-6">
-                    <div className="mb-3 text-red-600">
-                      <svg
-                        className="w-10 h-10 mx-auto"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                    </div>
-                    <p className="text-sm text-stone-700">
-                      {validationResult.error_message ||
-                        "Invalid citation number format."}
-                    </p>
-                    <p className="text-xs mt-2 text-stone-400">
-                      Please check your citation number and try again.
-                    </p>
-                  </div>
-                )}
+            {/* Step 1 */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center text-stone-600 font-medium">
+                1
               </div>
-            )}
-
-            {/* What You Get */}
-            <div className="rounded-2xl p-6 md:p-8 bg-stone-50/50 border border-stone-100">
-              <h2 className="text-lg font-medium mb-6 text-stone-700 tracking-wide">
-                What Happens When You Appeal
-              </h2>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 bg-stone-700">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm text-stone-700">
-                      Exact Paperwork Required
-                    </h3>
-                    <p className="text-sm text-stone-700">
-                      We generate the exact PDF the court requires — formatted
-                      correctly every time.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 bg-stone-700">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm text-stone-700">
-                      Stop Waiting on Government Websites
-                    </h3>
-                    <p className="text-sm text-stone-700">
-                      Skip the hold music. Skip the office hours. Submit your
-                      appeal in 2 minutes.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5 bg-stone-700">
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm text-stone-700">
-                      Proof of Delivery
-                    </h3>
-                    <p className="text-sm text-stone-700">
-                      Certified Mail with tracking so you know your appeal
-                      arrived.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 p-3 rounded-lg border bg-white border-stone-300">
-                <p className="text-xs text-stone-700">
-                  <strong className="text-stone-700">Procedure matters:</strong>{" "}
-                  Municipal code requires specific documentation for appeals. We
-                  ensure your submission meets all procedural requirements.
+              <div>
+                <h3 className="font-medium text-stone-800 mb-1">
+                  The Clerical Engine™ Scans
+                </h3>
+                <p className="text-sm text-stone-600">
+                  We analyze your citation for procedural defects, timing
+                  errors, and clerical flaws municipalities use to reject
+                  appeals.
                 </p>
               </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center text-stone-600 font-medium">
+                2
+              </div>
+              <div>
+                <h3 className="font-medium text-stone-800 mb-1">
+                  Your Statement Is Articulated
+                </h3>
+                <p className="text-sm text-stone-600">
+                  We transform your description into professionally formatted,
+                  procedurally compliant language.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center text-stone-600 font-medium">
+                3
+              </div>
+              <div>
+                <h3 className="font-medium text-stone-800 mb-1">
+                  Court-Ready Documents Generated
+                </h3>
+                <p className="text-sm text-stone-600">
+                  Your submission includes all required elements for due
+                  process: signature, date, citation number, and statement.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="flex gap-4">
+              <div className="flex-shrink-0 w-8 h-8 bg-stone-100 rounded-full flex items-center justify-center text-stone-600 font-medium">
+                4
+              </div>
+              <div>
+                <h3 className="font-medium text-stone-800 mb-1">
+                  Certified Mailing
+                </h3>
+                <p className="text-sm text-stone-600">
+                  Your appeal is mailed via USPS Certified with tracking, with
+                  delivery confirmation for your records.
+                </p>
+              </div>
+            </div>
+
+            {/* Trust Badges */}
+            <div className="pt-6 mt-6 border-t border-stone-200">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-2 text-sm text-stone-600">
+                  <svg
+                    className="w-4 h-4 text-stone-500"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>Secure Payment</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-stone-600">
+                  <svg
+                    className="w-4 h-4 text-stone-500"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>Document Prep</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-stone-600">
+                  <svg
+                    className="w-4 h-4 text-stone-500"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>No Legal Advice</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-stone-600">
+                  <svg
+                    className="w-4 h-4 text-stone-500"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span>5-Minute Process</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Disclaimer */}
+            <div className="pt-4">
+              <LegalDisclaimer variant="compact" />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t border-stone-200 py-8 px-4">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-stone-500">
+          <p>© 2025 FightCityTickets.com</p>
+          <div className="flex gap-6">
+            <Link href="/terms" className="hover:text-stone-800 transition">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-stone-800 transition">
+              Privacy
+            </Link>
+            <Link
+              href="/what-we-are"
+              className="hover:text-stone-800 transition"
+            >
+              What We Are
+            </Link>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
