@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useAppeal } from "../../lib/appeal-context";
 import Link from "next/link";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
@@ -10,243 +10,187 @@ export const dynamic = "force-dynamic";
 
 export default function PricingPage() {
   const { state, updateState } = useAppeal();
-  const [selectedType, setSelectedType] = useState<"standard" | "certified">(
-    state.appealType || "certified"
-  );
+
+  // Auto-select certified (only option) and store in context
+  useEffect(() => {
+    if (state.appealType !== "certified") {
+      updateState({ appealType: "certified" });
+    }
+  }, []);
 
   const handleContinue = () => {
-    updateState({ appealType: selectedType });
+    updateState({ appealType: "certified" });
   };
+
+  const PRICE = "$14.50";
 
   return (
     <div className="min-h-screen bg-stone-50">
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6 mb-8">
-          <h1 className="text-2xl font-bold mb-2 text-stone-800">
-            Select Mailing Option
+          <h1 className="text-3xl font-bold mb-2 text-stone-800">
+            Certified Defense Package
           </h1>
-          <p className="text-stone-600">
-            Choose your procedural compliance submission method.
+          <p className="text-stone-600 text-lg">
+            Professional procedural compliance with certified mailing and
+            tracking.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Certified Mail Option */}
-          <div
-            className={`bg-white rounded-lg border-2 p-6 cursor-pointer transition-all ${
-              selectedType === "certified"
-                ? "border-stone-800 shadow-md"
-                : "border-stone-200 hover:border-stone-400"
-            }`}
-            onClick={() => setSelectedType("certified")}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl font-semibold text-stone-800">
-                  Certified Mail
+        {/* Single Option - Certified Mail */}
+        <div className="bg-white rounded-lg border-2 border-stone-800 p-8 mb-8 shadow-md">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-stone-800 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-semibold text-stone-800">
+                  Certified Mail with Tracking
                 </h2>
-                <span className="px-2 py-1 bg-stone-100 text-stone-700 text-xs font-medium rounded-full">
-                  Standard
-                </span>
-              </div>
-              <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedType === "certified"
-                    ? "border-stone-800 bg-stone-800"
-                    : "border-stone-300"
-                }`}
-              >
-                {selectedType === "certified" && (
-                  <svg
-                    className="w-3 h-3 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={4}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
+                <p className="text-stone-500">
+                  Electronic Return Receipt Included
+                </p>
               </div>
             </div>
-
-            <div className="mb-6">
-              <p className="text-3xl font-light text-stone-800">
-                $19.89
-                <span className="text-base font-normal text-stone-500 ml-1">
-                  /submission
-                </span>
-              </p>
-            </div>
-
-            <ul className="space-y-3 mb-6">
-              <li className="flex items-start">
-                <svg
-                  className="w-5 h-5 text-stone-700 mr-3 mt-0.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span className="text-stone-700">
-                  <strong className="text-stone-800">Tracking number</strong>{" "}
-                  provided
-                </span>
-              </li>
-              <li className="flex items-start">
-                <svg
-                  className="w-5 h-5 text-stone-700 mr-3 mt-0.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span className="text-stone-700">
-                  <strong className="text-stone-800">
-                    Delivery confirmation
-                  </strong>{" "}
-                  from USPS
-                </span>
-              </li>
-              <li className="flex items-start">
-                <svg
-                  className="w-5 h-5 text-stone-700 mr-3 mt-0.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span className="text-stone-700">
-                  <strong className="text-stone-800">Online status</strong>{" "}
-                  tracking
-                </span>
-              </li>
-              <li className="flex items-start">
-                <svg
-                  className="w-5 h-5 text-stone-700 mr-3 mt-0.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span className="text-stone-700">
-                  <strong className="text-stone-800">Proof of mailing</strong>{" "}
-                  for records
-                </span>
-              </li>
-            </ul>
-
-            <div className="p-3 bg-stone-50 border border-stone-200 rounded">
-              <p className="text-sm text-stone-600">
-                Recommended for procedural compliance and due process
-                documentation.
-              </p>
+            <div className="text-right">
+              <p className="text-4xl font-light text-stone-800">{PRICE}</p>
+              <p className="text-stone-500 text-sm">one-time payment</p>
             </div>
           </div>
 
-          {/* Standard Mail Option */}
-          <div
-            className={`bg-white rounded-lg border-2 p-6 cursor-pointer transition-all ${
-              selectedType === "standard"
-                ? "border-stone-400"
-                : "border-stone-200 hover:border-stone-400"
-            }`}
-            onClick={() => setSelectedType("standard")}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-stone-600">
-                Standard Mail
-              </h2>
-              <div
-                className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                  selectedType === "standard"
-                    ? "border-stone-500 bg-stone-500"
-                    : "border-stone-300"
-                }`}
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="flex items-start">
+              <svg
+                className="w-6 h-6 text-green-600 mr-3 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                {selectedType === "standard" && (
-                  <svg
-                    className="w-3 h-3 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={4}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <div>
+                <p className="text-stone-800 font-medium">
+                  USPS Tracking Number
+                </p>
+                <p className="text-stone-500 text-sm">
+                  Monitor delivery status online
+                </p>
               </div>
             </div>
-
-            <p className="text-3xl font-light text-stone-600 mb-6">
-              $9.89
-              <span className="text-base font-normal text-stone-400 ml-1">
-                /submission
-              </span>
-            </p>
-
-            <div className="p-3 bg-stone-100 border border-stone-200 rounded mb-6">
-              <p className="text-sm text-stone-600 font-medium">
-                ⚠️ No Tracking Available
-              </p>
-              <p className="text-xs text-stone-500 mt-1">
-                Delivery confirmation cannot be provided.
-              </p>
+            <div className="flex items-start">
+              <svg
+                className="w-6 h-6 text-green-600 mr-3 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <div>
+                <p className="text-stone-800 font-medium">
+                  Delivery Confirmation
+                </p>
+                <p className="text-stone-500 text-sm">
+                  Know exactly when it arrives
+                </p>
+              </div>
             </div>
+            <div className="flex items-start">
+              <svg
+                className="w-6 h-6 text-green-600 mr-3 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <div>
+                <p className="text-stone-800 font-medium">Proof of Mailing</p>
+                <p className="text-stone-500 text-sm">
+                  Certificate for your records
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <svg
+                className="w-6 h-6 text-green-600 mr-3 mt-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <div>
+                <p className="text-stone-800 font-medium">
+                  Legal Admissibility
+                </p>
+                <p className="text-stone-500 text-sm">
+                  Court-ready documentation
+                </p>
+              </div>
+            </div>
+          </div>
 
-            <ul className="space-y-2 mb-4">
-              <li className="flex items-start text-stone-500">
-                <span className="mr-3 mt-0.5">•</span>
-                <span className="text-sm">Regular USPS delivery</span>
-              </li>
-              <li className="flex items-start text-stone-500">
-                <span className="mr-3 mt-0.5">•</span>
-                <span className="text-sm">No delivery confirmation</span>
-              </li>
-              <li className="flex items-start text-stone-500">
-                <span className="mr-3 mt-0.5">•</span>
-                <span className="text-sm">No status updates available</span>
-              </li>
-            </ul>
+          {/* What's Included */}
+          <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-6">
+            <p className="text-stone-700 font-medium mb-2">
+              Your $14.50 includes:
+            </p>
+            <div className="grid md:grid-cols-3 gap-4 text-sm text-stone-600">
+              <div>• Professional appeal letter</div>
+              <div>• Certified USPS mailing</div>
+              <div>• Tracking & delivery proof</div>
+            </div>
+          </div>
 
-            <p className="text-sm text-stone-400 italic">Budget option only.</p>
+          {/* Value Proposition */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p className="text-green-800 text-sm">
+              <strong>Worth it:</strong> For the cost of this service, you get a
+              physical tracking number and proof the municipality received your
+              appeal. Critical if they claim "we never got it."
+            </p>
           </div>
         </div>
 
         <LegalDisclaimer variant="compact" className="mb-6" />
 
+        {/* Navigation */}
         <div className="flex justify-between items-center pt-6 border-t border-stone-200">
           <Link
             href="/appeal"
@@ -259,8 +203,7 @@ export default function PricingPage() {
             onClick={handleContinue}
             className="bg-stone-900 hover:bg-stone-800 text-white px-8 py-4 rounded-lg font-medium text-lg transition-colors"
           >
-            Continue with{" "}
-            {selectedType === "certified" ? "Certified" : "Standard"} Mail →
+            Continue to Upload →
           </Link>
         </div>
       </div>

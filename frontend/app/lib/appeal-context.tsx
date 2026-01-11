@@ -23,7 +23,8 @@ interface AppealState {
   violationDate: string;
   licensePlate: string;
   vehicleInfo: string;
-  appealType: "standard" | "certified";
+  // CERTIFIED-ONLY MODEL: All appeals use Certified Mail with tracking
+  appealType: "certified";
   agency?: string;
   cityId?: string;
   sectionId?: string;
@@ -57,7 +58,8 @@ const defaultState: AppealState = {
   violationDate: "",
   licensePlate: "",
   vehicleInfo: "",
-  appealType: "standard",
+  // CERTIFIED-ONLY: All appeals default to certified
+  appealType: "certified",
   agency: undefined,
   cityId: undefined,
   sectionId: undefined,

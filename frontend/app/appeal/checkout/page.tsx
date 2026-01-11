@@ -59,10 +59,8 @@ export default function CheckoutPage() {
     );
   };
 
-  // Calculate totals
-  const baseFee = 1989; // $19.89 in cents
-  const processingFee = state.appealType === "certified" ? baseFee : 989;
-  const totalFee = processingFee;
+  // CERTIFIED-ONLY MODEL: $14.50 flat rate
+  const totalFee = 1450; // $14.50 in cents
 
   const formatPrice = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
@@ -362,9 +360,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between">
                 <span className="text-stone-500">Submission Type:</span>
                 <span className="text-stone-800">
-                  {state.appealType === "certified"
-                    ? "Certified Mail"
-                    : "Standard Mail"}
+                  Certified Mail with Tracking
                 </span>
               </div>
               <div className="flex justify-between">
@@ -387,11 +383,8 @@ export default function CheckoutPage() {
               </span>
             </div>
             <p className="text-xs text-stone-500 mt-2">
-              Includes document preparation, processing, and{" "}
-              {state.appealType === "certified"
-                ? "certified mailing"
-                : "standard mailing"}
-              .
+              Includes professional appeal letter, certified mailing with
+              tracking, and delivery proof.
             </p>
           </div>
 
