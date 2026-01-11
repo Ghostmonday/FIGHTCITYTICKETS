@@ -65,8 +65,11 @@ class Settings(BaseSettings):
     compliance_version: str = "civil_shield_v1"
 
     # Service Fees (in cents)
-    fightcity_service_fee: int = 1989  # $19.89 for certified
-    fightcity_standard_fee: int = 989  # $9.89 for standard
+    # CERTIFIED-ONLY MODEL: $14.50 flat rate for all appeals
+    # Includes Certified Mail with Electronic Return Receipt (ERR)
+    # No subscriptions - single transactional payment
+    fightcity_service_fee: int = 1450  # $14.50 certified only
+    fightcity_standard_fee: int = None  # DEPRECATED - Certified-only model
 
     @property
     def debug(self) -> bool:

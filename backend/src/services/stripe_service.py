@@ -25,7 +25,9 @@ class CheckoutRequest:
     """Complete checkout request data."""
 
     citation_number: str
-    appeal_type: str  # "standard" or "certified"
+    # CERTIFIED-ONLY MODEL: All appeals use Certified Mail with tracking
+    # No subscription, no standard option - single $14.50 transaction
+    appeal_type: str = "certified"
     user_name: str
     user_address_line1: str
     user_address_line2: str | None = None
@@ -91,24 +93,18 @@ class StripeService:
         # Base URLs for redirects
         self.base_url: str = settings.app_url.rstrip("/")
 
-    def get_price_id(self, appeal_type: str) -> str:
+    def get_price_id(self, appeal_type: str = "certified") -> str:
         """
-        Get Stripe price ID for appeal type.
+        Get Stripe price ID for certified appeals only.
 
         Args:
-            appeal_type: "standard" or "certified"
+            appeal_type: Ignored - only certified is supported
 
         Returns:
-            Stripe price ID
+            Stripe price ID for certified service
         """
-        appeal_type_lower = appeal_type.lower()
-        if appeal_type_lower not in self.price_ids:
-            msg = (
-                f"Invalid appeal type: {appeal_type}. Must be 'standard' or 'certified'"
-            )
-            raise ValueError(msg)
-
-        return self.price_ids[appeal_type_lower]
+        # CERTIFIED-ONLY: Always return certified price
+        return self.price_ids.get("certified")
 
     def validate_checkout_request(
         self, request: CheckoutRequest
@@ -135,9 +131,8 @@ class StripeService:
         if validation.is_past_deadline:
             return False, "Appeal deadline has passed"
 
-        # Validate appeal type
-        if request.appeal_type not in ["standard", "certified"]:
-            return False, "Appeal type must be 'standard' or 'certified'"
+        # CERTIFIED-ONLY: No validation needed - always certified
+        # All appeals use Certified Mail with Electronic Return Receipt
 
         # Validate required user fields
         if not request.user_name.strip():
@@ -183,8 +178,8 @@ class StripeService:
             msg = f"Invalid checkout request: {error_msg}"
             raise ValueError(msg)
 
-        # Get price ID for appeal type
-        price_id = self.get_price_id(request.appeal_type)
+        # CERTIFIED-ONLY: Always use certified price
+        price_id = self.get_price_id()
 
         # Prepare metadata for webhook
         # AUDIT FIX: Database-first - store only IDs in metadata, not full data
@@ -262,9 +257,8 @@ class StripeService:
                 citation_number=session.metadata.get("citation_number")
                 if session.metadata
                 else None,
-                appeal_type=session.metadata.get("appeal_type")
-                if session.metadata
-                else None,
+                # CERTIFIED-ONLY: appeal_type is always "certified"
+                appeal_type="certified",
                 user_email=session.customer_email,
             )
 
@@ -402,7 +396,6 @@ class StripeService:
 # Helper function for quick checkout
 def create_checkout_link(
     citation_number: str,
-    appeal_type: str = "standard",
     user_name: str = "",
     user_address: str = "",
     user_city: str = "",
@@ -417,7 +410,10 @@ def create_checkout_link(
     Quick helper function to create checkout link.
 
     Args:
-        Same as CheckoutRequest fields
+        citation_number: The citation number to appeal
+        user_*: User address and personal info
+        violation_date, vehicle_info, appeal_reason: Appeal details
+        email: User email for receipts
 
     Returns:
         Stripe checkout URL or None on error
@@ -427,7 +423,7 @@ def create_checkout_link(
 
         request = CheckoutRequest(
             citation_number=citation_number,
-            appeal_type=appeal_type,
+            appeal_type="certified",
             user_name=user_name,
             user_address_line1=user_address,
             user_city=user_city,
@@ -457,11 +453,10 @@ if __name__ == "__main__":
         service = StripeService()
         print(f"Stripe service initialized (mode: {service.mode})")
 
-        # Test price IDs
-        standard_price = service.get_price_id("standard")
-        certified_price = service.get_price_id("certified")
+        # CERTIFIED-ONLY: Only test certified price
+        certified_price = service.get_price_id()
         print(
-            f"Price IDs loaded - Standard: {standard_price[:20]}..., Certified: {certified_price[:20]}..."
+            f"Price ID loaded - Certified: {certified_price[:20] if certified_price else 'NOT SET'}..."
         )
 
         print("\nNote: Full testing requires valid Stripe API keys")
