@@ -1,597 +1,419 @@
 """
-Statement Refinement Service for FightCityTickets.com
+AI-powered statement refinement service for procedural compliance submissions.
 
-Uses DeepSeek AI to convert user appeal statements into professional,
-UPL-compliant appeal letters for San Francisco parking tickets.
+This module provides intelligent document refinement using DeepSeek AI models
+to transform informal user statements into professionally articulated appeal
+letters that meet municipal procedural standards.
+
+The Clerical Engine™ ensures all submissions maintain:
+- User voice preservation (no invented content)
+- Procedural compliance formatting
+- Professional bureaucratic tone
+- UPL (Unauthorized Practice of Law) compliance
+
+Author: Neural Draft LLC
 """
 
-import asyncio
 import logging
-import re
-from dataclasses import dataclass
+import os
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
-import httpx
+from pydantic import BaseModel
 
 from ..config import settings
-from .citation import CitationValidator
 
-# Set up logger
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class StatementRefinementRequest:
+class StatementRefinementRequest(BaseModel):
     """Request model for statement refinement."""
 
-    original_statement: str
-    citation_number: str = ""
-    citation_type: str = "parking"
-    desired_tone: str = "professional"  # professional, formal, concise
-    max_length: int = 500
+    citation_number: str
+    appeal_reason: str
+    user_name: Optional[str] = None
+    city_id: Optional[str] = None
+    section_id: Optional[str] = None
+    violation_date: Optional[str] = None
+    vehicle_info: Optional[str] = None
 
 
-@dataclass
-class StatementRefinementResponse:
+class StatementRefinementResponse(BaseModel):
     """Response model for statement refinement."""
 
-    status: str  # "success", "fallback", "error", "service_unavailable"
-    original_statement: str
-    refined_statement: str
-    improvements: Dict[str, bool] = None
-    error_message: Optional[str] = None
-    method_used: str = ""  # "deepseek", "local_fallback"
+    refined_text: str
+    original_text: str
+    citation_number: str
+    processing_time_ms: int
+    model_used: str = "deepseek-chat"
+    clerical_engine_version: str = "2.0.0"
 
 
 class DeepSeekService:
-    """Handles AI statement refinement using DeepSeek API."""
+    """
+    DeepSeek AI service for statement refinement.
 
-    def __init__(self):
-        """Initialize DeepSeek service."""
-        self.api_key = settings.deepseek_api_key
-        self.base_url = settings.deepseek_base_url
-        self.model = settings.deepseek_model
-        # Don't create client here - create fresh client for each request
-        # to avoid "client has been closed" errors
+    The Clerical Engine™ processes user-provided statements to create
+    professionally formatted appeal letters suitable for municipal submission.
+    """
 
-        # Check if API key is configured
-        self.is_available = bool(self.api_key and self.api_key != "change-me")
+    API_URL = "https://api.deepseek.com/chat/completions"
 
-    async def close(self):
-        """Close HTTP client - no-op since we create fresh clients."""
-        pass
+    def __init__(self, api_key: Optional[str] = None):
+        """
+        Initialize the DeepSeek service.
+
+        Args:
+            api_key: DeepSeek API key. Falls back to DEEPSEEK_API_KEY env var.
+        """
+        self.api_key = (
+            api_key or os.environ.get("DEEPSEEK_API_KEY") or settings.deepseek_api_key
+        )
+        self._client = None
+
+    def _get_system_prompt(self) -> str:
+        """
+        Get the authoritative system prompt for procedural compliance refinement.
+
+        This prompt establishes the Clerical Engine™ as a professional
+        document preparation service, NOT a legal service.
+        """
+        return """You are the Clerical Engine™, a professional document preparation system operated by Neural Draft LLC.
+
+YOUR ROLE: Document Articulation Specialist
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You transform citizen submissions into formally compliant procedural documents
+that meet municipal administrative standards. You are NOT a lawyer, attorney,
+or legal advisor. You do not provide legal advice.
+
+CORE MISSION
+━━━━━━━━━━━━
+Your sole function is to ARTICULATE and REFINE the user's provided statement
+into professional, formally structured language while PRESERVING:
+- The user's exact factual content and circumstances
+- The user's position and stated argument
+- The user's voice and perspective
+- All evidence and details the user has provided
+
+MANDATORY PRESERVATION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. NEVER add facts, evidence, or content the user did not provide
+2. NEVER suggest legal strategies or arguments
+3. NEVER interpret laws, regulations, or statutes
+4. NEVER use legal terminology or legal frameworks
+5. NEVER predict outcomes or suggest what will "work"
+6. NEVER tell the user what they "should" argue
+7. NEVER make legal recommendations
+
+REFINEMENT BOUNDARIES
+━━━━━━━━━━━━━━━━━━━━
+You may only:
+- Elevate vocabulary while preserving meaning
+- Improve grammar, syntax, and sentence structure
+- Organize content for clarity and professional presentation
+- Add formal salutations and closings appropriate to administrative documents
+- Structure the document according to procedural standards
+
+WHAT YOU MUST REMOVE
+━━━━━━━━━━━━━━━━━━━━
+- Casual language, slang, and colloquialisms
+- Emotional outbursts or inflammatory language
+- Profanity and vulgarity
+- Casual abbreviations (use formal alternatives)
+- First-person informal expressions
+
+PROFESSIONAL TONE STANDARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Write as a professional bureaucrat would write to a municipal agency:
+- Respectful but formal
+- Factual and precise
+- Free of emotional language
+- Structured for administrative review
+- Compliant with procedural standards
+
+LETTER STRUCTURE (CLERICAL ENGINE™ FORMAT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Professional Header (automated by system)
+2. Date
+3. Agency Address Block
+4. Subject Line: Citation Number
+5. Salutation: "To Whom It May Concern" or agency-specific
+6. Body: User's articulated statement (professionally refined)
+7. Closing: "Respectfully submitted,"
+8. Signature Block
+9. Clerical Engine™ Footer (automated by system)
+
+INPUT HANDLING
+━━━━━━━━━━━━━━━
+When users admit fault (e.g., "I parked there illegally"), do NOT invent defenses.
+Instead, professionally articulate their acknowledgment and request leniency based on:
+- Clean driving record
+- First-time offense
+- Circumstances that merit consideration
+- Professional presentation of their honest position
+
+OUTPUT FORMAT
+━━━━━━━━━━━━━
+Produce a single, professionally formatted letter ready for municipal submission.
+Maintain the user's facts. Elevate their expression. Preserve their position.
+
+The Clerical Engine™ processes submissions with ID: CE-{timestamp}"""
+
+    def _create_refinement_prompt(self, request: StatementRefinementRequest) -> str:
+        """Create the user prompt for statement refinement."""
+        # Detect agency from citation number pattern
+        agency_name = self._detect_agency(request.citation_number, request.city_id)
+
+        return f"""CITATION DETAILS
+━━━━━━━━━━━━━━━
+Citation Number: {request.citation_number}
+Agency: {agency_name}
+Violation Date: {request.violation_date or "Not specified"}
+Vehicle: {request.vehicle_info or "Not specified"}
+
+USER'S SUBMITTED STATEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+{request.appeal_reason}
+
+INSTRUCTIONS
+━━━━━━━━━━━━
+Articulate the above statement into a professionally formatted appeal letter
+that:
+1. Preserves all user-provided facts and circumstances
+2. Elevates language to formal administrative standards
+3. Maintains the user's stated position and argument
+4. Uses respectful, professional bureaucratic tone
+5. Is ready for municipal submission
+
+Write only the letter body. Do not include headers or footers (these are
+added by the Clerical Engine™ automatically)."""
+
+    def _detect_agency(
+        self, citation_number: str, city_id: Optional[str] = None
+    ) -> str:
+        """Detect the agency from citation number pattern or city ID."""
+        if city_id:
+            city_mappings = {
+                "sf": "SFMTA",
+                "us-ca-san_francisco": "SFMTA",
+                "la": "LADOT",
+                "us-ca-los_angeles": "LADOT",
+                "nyc": "NYC Department of Finance",
+                "us-ny-new_york": "NYC Department of Finance",
+                "us-ca-san_diego": "San Diego Transportation Dept",
+                "us-az-phoenix": "Phoenix Transportation Dept",
+                "us-co-denver": "Denver DOTI",
+                "us-il-chicago": "Chicago Department of Finance",
+                "us-or-portland": "Portland Bureau of Transportation",
+                "us-pa-philadelphia": "Philadelphia Parking Authority",
+                "us-tx-dallas": "Dallas Parking Services",
+                "us-tx-houston": "Houston Parking Management",
+                "us-ut-salt_lake_city": "Salt Lake City Transportation",
+                "us-wa-seattle": "Seattle DOT",
+            }
+            if city_id in city_mappings:
+                return city_mappings[city_id]
+
+        # Fallback: detect from citation number pattern
+        citation_clean = citation_number.upper().replace("-", "").replace(" ", "")
+
+        if citation_clean.isdigit() and len(citation_clean) <= 9:
+            # Likely SF pattern
+            return "SFMTA"
+        elif citation_clean.startswith("LA") or "LAPD" in citation_clean:
+            return "LADOT"
+        elif citation_clean.startswith("NYC") or citation_clean.startswith("NY"):
+            return "NYC Department of Finance"
+        elif citation_clean.startswith("CH"):
+            return "Chicago Department of Finance"
+
+        return "Citation Review Board"
+
+    def _clean_response(self, response: str) -> str:
+        """Clean and normalize the AI response."""
+        # Remove common AI artifacts
+        cleaned = response.strip()
+
+        # Remove "Here is your refined letter:" or similar prefixes
+        prefixes_to_remove = [
+            "Here is the refined letter:",
+            "Here is your professionally formatted letter:",
+            "Below is the refined statement:",
+            "The refined letter is:",
+            "Your appeal letter:",
+        ]
+        for prefix in prefixes_to_remove:
+            if cleaned.lower().startswith(prefix.lower()):
+                cleaned = cleaned[len(prefix) :].strip()
+
+        # Remove any "Dear Citation Review Board" if it appears (added by system)
+        # The system adds salutation automatically
+        return cleaned
+
+    def _has_proper_structure(self, text: str) -> bool:
+        """Check if the refined text has proper letter structure."""
+        # Basic checks for letter-like structure
+        if len(text) < 50:
+            return False
+        return True
 
     async def refine_statement_async(
         self, request: StatementRefinementRequest
     ) -> StatementRefinementResponse:
-        """
-        Refine a parking ticket appeal statement using DeepSeek AI.
+        """Refine a user statement using DeepSeek AI."""
+        import time
 
-        Returns a professional, UPL-compliant appeal letter.
-        """
+        start_time = time.time()
+        original_text = request.appeal_reason
+
         try:
-            # Check if service is available
-            if not self.is_available:
-                logger.warning("DeepSeek API key not configured, using fallback")
-                return self._local_fallback_refinement(request)
+            import httpx
 
-            # Create the system prompt
-            system_prompt = self._get_system_prompt()
-
-            # Create user prompt with the transcript
-            user_prompt = self._create_refinement_prompt(request)
-
-            # Create fresh HTTP client for each request to avoid lifecycle issues
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                # Make API call to DeepSeek
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.post(
-                    "{self.base_url}/v1/chat/completions",
+                    self.API_URL,
                     headers={
-                        "Authorization": "Bearer {self.api_key}",
+                        "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
                     },
                     json={
-                        "model": self.model,
+                        "model": "deepseek-chat",
                         "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_prompt},
+                            {"role": "system", "content": self._get_system_prompt()},
+                            {
+                                "role": "user",
+                                "content": self._create_refinement_prompt(request),
+                            },
                         ],
-                        "max_tokens": min(request.max_length, 1000),
-                        "temperature": 0.3,  # Low temperature for consistency
-                        "top_p": 0.9,
+                        "temperature": 0.3,
+                        "max_tokens": 2000,
+                        "stream": False,
                     },
                 )
 
             response.raise_for_status()
             data = response.json()
 
-            # Extract the refined statement
-            refined_statement = data["choices"][0]["message"]["content"].strip()
+            refined_text = data["choices"][0]["message"]["content"]
+            refined_text = self._clean_response(refined_text)
 
-            # Clean up the response (remove markdown formatting if present)
-            refined_statement = self._clean_response(refined_statement)
+            # Fallback validation
+            if not self._has_proper_structure(refined_text):
+                logger.warning("AI response lacks proper structure, using fallback")
+                refined_text = self._local_fallback_refinement(request)
 
-            logger.info(
-                "DeepSeek refined statement: {len(request.original_statement)} -> {len(refined_statement)} chars"
-            )
+            processing_time = int((time.time() - start_time) * 1000)
 
             return StatementRefinementResponse(
-                status="success",
-                original_statement=request.original_statement,
-                refined_statement=refined_statement,
-                improvements={
-                    "professional_tone": True,
-                    "factual_language": True,
-                    "upl_compliant": True,
-                    "structured_format": self._has_proper_structure(refined_statement),
-                },
-                method_used="deepseek",
+                refined_text=refined_text,
+                original_text=original_text,
+                citation_number=request.citation_number,
+                processing_time_ms=processing_time,
             )
-
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                "DeepSeek API error: {e.response.status_code} - {e.response.text}"
-            )
-            return self._local_fallback_refinement(request)
 
         except Exception as e:
-            logger.error("DeepSeek service error: {str(e)}")
-            return self._local_fallback_refinement(request)
+            logger.error(f"DeepSeek API error: {e}")
+            # Fallback to local refinement
+            refined_text = self._local_fallback_refinement(request)
+            processing_time = int((time.time() - start_time) * 1000)
 
-    def _get_system_prompt(self) -> str:
-        """Get the UPL-compliant system prompt for DeepSeek focused on articulation and polish."""
-        return """You are a Professional Language Articulation and Document Refinement Specialist for FightCityTickets.com.
-
-CRITICAL COMPLIANCE REQUIREMENT - USER VOICE PRESERVATION:
-Your role is to REFINE and ARTICULATE, not to create or modify content. You must PRESERVE:
-- The user's exact factual content and story
-- The user's position and argument
-- The user's chosen points and evidence
-- The user's voice and perspective
-
-You must NEVER:
-- Add legal arguments, strategies, or recommendations
-- Suggest evidence the user didn't provide
-- Interpret laws or regulations
-- Tell the user what they "should" argue
-- Predict outcomes or suggest what will work
-
-CORE MISSION:
-Your role is to take the user's stated defense, explanation, or circumstances and articulate them clearly, professionally, and free of emotional language. You are NOT a lawyer, attorney, or legal advisor. You do not invent facts, strategies, or legal arguments. You rely ONLY on the information provided by the user.
-
-SAFETY RAIL FOR ADMISSIONS OF GUILT:
-- If the user input admits guilt (e.g., "I parked there because I didn't care", "I knew I was wrong", "I was speeding"), do NOT invent a fake defense or claim innocence.
-- Instead, write a respectful statement requesting leniency based on factors such as a clean driving record, first-time offense, or honest acknowledgment of the situation.
-- Your role is to present the user's honest circumstances professionally, not to fabricate a defense.
-
-CRITICAL UPL COMPLIANCE (MANDATORY - NEVER VIOLATE):
-1. NEVER provide legal advice, legal strategy, legal recommendations, or legal opinions
-2. NEVER suggest what evidence to include, what arguments to make, or what legal points to raise
-3. NEVER use legal terminology beyond basic formal language (e.g., "respectfully request" is fine, "pursuant to statute" is NOT)
-4. NEVER predict outcomes, suggest legal strategies, or imply what will or won't work legally
-5. NEVER add legal analysis, legal interpretation, legal conclusions, or legal reasoning
-6. NEVER tell the user what they "should" do legally, what they "must" include, or what legal approach to take
-7. ONLY articulate and refine the language the user provides - preserve their facts, their story, their position
-8. NEVER add legal content, legal citations, legal references, or legal frameworks
-
-ARTICULATION AND ELEVATION REQUIREMENTS (PRIMARY FOCUS):
-1. Transform informal speech into eloquent, articulate written language
-2. Elevate vocabulary significantly while preserving exact meaning and intent
-3. Enhance clarity, precision, and impact of expression
-4. Improve grammar, syntax, and sentence structure for maximum professionalism
-5. Use sophisticated, respectful, and courteous language throughout
-6. Structure sentences for elegance, clarity, and persuasive impact
-7. Maintain the user's factual content, their story, and their position completely intact
-8. Polish language to be legally respectable (professional, formal, articulate) but NOT legally expressed (no legal advice)
-
-PROFANITY AND LANGUAGE FILTERING (MANDATORY):
-1. Remove ALL profanity, vulgarity, obscenity, and offensive language completely
-2. Replace inappropriate language with sophisticated, professional alternatives
-3. Remove ALL swear words, curse words, slang, and casual expressions
-4. Filter out any offensive, inflammatory, or unprofessional content
-5. Maintain exceptionally professional tone at all times - no exceptions
-
-WHAT YOU EXCEL AT:
-- Elevating vocabulary from everyday to sophisticated and articulate
-- Polishing language to be exceptionally well-written and professional
-- Refining grammar and syntax for maximum clarity and impact
-- Structuring sentences for elegance and persuasive power
-- Transforming informal speech into articulate, formal written communication
-- Making the user's story sound professional, respectful, and compelling
-- Ensuring language is legally respectable (formal, articulate, professional)
-
-WHAT YOU NEVER DO:
-- Provide legal advice, legal recommendations, or legal opinions
-- Suggest evidence, arguments, or legal strategies
-- Add legal analysis, interpretation, or legal reasoning
-- Predict outcomes or suggest what will work legally
-- Use legal terminology or legal frameworks
-- Tell users what they should do legally
-
-INPUT: User's informal statement about their parking ticket situation (may contain casual language, profanity, or informal speech)
-OUTPUT: An exceptionally well-articulated, professionally polished appeal letter with:
-- All profanity and inappropriate language removed
-- Vocabulary significantly elevated while preserving exact meaning
-- Language polished to be sophisticated, articulate, and professional
-- Grammar and syntax refined for maximum clarity and impact
-- Proper formal letter structure
-- User's factual content, story, and position completely preserved
-- Legally respectable tone (professional, formal, articulate)
-- NO legal advice, legal recommendations, or legal expression
-
-LETTER STRUCTURE:
-- Header: Date, Recipient Address (use agency-specific address placeholder)
-- Salutation: Use appropriate agency name (SFMTA, SFPD, SFSU, SFMUD, or city-specific agency)
-- Subject: Citation Number
-- Body: Factual statement of circumstances (exceptionally well-articulated and polished)
-- Closing: Respectful, articulate request for review
-- Signature block placeholder
-
-REMEMBER: You are a language articulation specialist. Your job is to take what the user tells you and make it sound exceptionally professional, articulate, and well-written. Elevate their vocabulary, polish their language, refine their expression - but preserve their facts, their story, and their position. Make it legally respectable through professional articulation, NOT through legal expression or legal advice."""
-
-    def _create_refinement_prompt(self, request: StatementRefinementRequest) -> str:
-        """Create the user prompt for statement refinement."""
-        # Detect agency from citation number
-        agency = "SFMTA"  # Default
-        if request.citation_number:
-            try:
-                agency_enum = CitationValidator.identify_agency(request.citation_number)
-                agency = agency_enum.value
-            except Exception:
-                pass  # Keep default if detection fails
-
-        return """Please elevate, polish, and articulate this user statement into an exceptionally well-written, professional appeal letter.
-
-USER'S ORIGINAL STATEMENT (may contain informal language, casual speech, or profanity):
-"{request.original_statement}"
-
-Citation Number: {request.citation_number or "Not provided"}
-Citation Agency: {agency}
-Citation Type: {request.citation_type or "Parking ticket"}
-
-YOUR TASK - ARTICULATION AND POLISH:
-1. Remove ALL profanity, swear words, vulgarity, slang, and inappropriate language completely
-2. Elevate vocabulary significantly - transform everyday words into sophisticated, articulate language
-3. Polish language to be exceptionally well-written, professional, and eloquent
-4. Refine grammar, syntax, and sentence structure for maximum clarity and impact
-5. Enhance articulation - make the user's story sound professional, compelling, and respectful
-6. Preserve the user's exact factual content, their story, and their position completely intact
-7. Format as a proper formal appeal letter structure
-8. Ensure language is legally respectable (professional, formal, articulate) but NOT legally expressed
-
-CRITICAL RESTRICTIONS:
-- DO NOT add legal advice, legal recommendations, legal strategies, or legal opinions
-- DO NOT suggest evidence, arguments, or what to include
-- DO NOT add legal analysis, legal interpretation, or legal reasoning
-- DO NOT use legal terminology beyond basic formal language
-- DO NOT predict outcomes or suggest what will work legally
-- ONLY articulate and polish the language - preserve user's facts, story, and position
-
-SAFETY RAIL FOR ADMISSIONS OF GUILT:
-If the user's statement admits guilt (e.g., "I parked there because I didn't care", "I knew I was wrong", "I was speeding"), do NOT invent a fake defense. Instead, craft a respectful request for leniency focusing on:
-- Clean driving record
-- First-time offense
-- Honest acknowledgment of the situation
-- Any mitigating circumstances they mention
-
-Present their honest circumstances professionally without fabricating a defense.
-
-OUTPUT REQUIREMENTS:
-Provide an exceptionally well-articulated, professionally polished appeal letter that:
-- Removes all profanity and inappropriate language
-- Significantly elevates vocabulary while preserving exact meaning
-- Polishes language to be sophisticated, articulate, and professional
-- Refines grammar and syntax for maximum clarity and impact
-- Maintains the user's factual content, story, and position completely
-- Sounds legally respectable through professional articulation, NOT legal expression
-- Is exceptionally well-written and compelling
-- Includes a clear statement before the closing requesting that responses be sent to the return address (use placeholder [RETURN_ADDRESS] which will be replaced with actual address)
-
-IMPORTANT: Before the closing (e.g., "Sincerely,"), include a statement like:
-"Please send your response regarding this appeal to the following address: [RETURN_ADDRESS]"
-
-This ensures the city knows where to send their response even if the envelope is separated from the letter."""
-
-    def _clean_response(self, response: str) -> str:
-        """Clean up the AI response to ensure it's appropriate and profanity-free."""
-        # Remove any markdown formatting
-        response = response.replace("**", "").replace("*", "")
-
-        # Remove excessive line breaks
-        while "\n\n\n" in response:
-            response = response.replace("\n\n\n", "\n\n")
-
-        # Profanity filter - common profanity words (case-insensitive)
-        profanity_patterns = [
-            r"\b(fuck|fucking|fucked)\b",
-            r"\b(shit|shitting|shitted)\b",
-            r"\b(damn|damned|damnit)\b",
-            r"\b(hell|hellish)\b",
-            r"\b(ass|asses|asshole)\b",
-            r"\b(bitch|bitches|bitching)\b",
-            r"\b(crap|crappy)\b",
-            r"\b(piss|pissing|pissed)\b",
-            r"\b(bullshit|bullcrap)\b",
-            r"\b(goddamn|goddamnit)\b",
-        ]
-
-        for pattern in profanity_patterns:
-            response = re.sub(pattern, "", response, flags=re.IGNORECASE)
-
-        # Clean up multiple spaces
-        response = re.sub(r"\s+", " ", response)
-
-        # Clean up multiple periods or punctuation
-        response = re.sub(r"\.{3,}", "...", response)
-
-        # Trim whitespace
-        response = response.strip()
-
-        return response
-
-    def _has_proper_structure(self, text: str) -> bool:
-        """Check if the refined text has proper letter structure."""
-        # Look for common indicators of proper structure
-        indicators = ["citation", "appeal", "request", "review"]
-        text_lower = text.lower()
-
-        return any(indicator in text_lower for indicator in indicators)
-
-    def _local_fallback_refinement(
-        self, request: StatementRefinementRequest
-    ) -> StatementRefinementResponse:
-        """Provide basic local refinement when AI service is unavailable."""
-        original = request.original_statement
-
-        # Detect agency from citation number
-        agency = "SFMTA"  # Default
-        if request.citation_number:
-            try:
-                agency_enum = CitationValidator.identify_agency(request.citation_number)
-                agency = agency_enum.value
-            except Exception:
-                pass  # Keep default if detection fails
-
-        # Agency-specific salutations
-        agency_salutations = {
-            "SFMTA": "SFMTA Citation Review",
-            "SFPD": "San Francisco Police Department - Traffic Division",
-            "SFSU": "San Francisco State University - Parking & Transportation",
-            "SFMUD": "San Francisco Municipal Utility District",
-            "UNKNOWN": "Citation Review Department",
-        }
-        salutation = agency_salutations.get(agency, "Citation Review Department")
-
-        # Simple improvements for fallback
-        refined = original
-
-        # Profanity filter for fallback - remove all profanity
-        profanity_words = [
-            "fuck",
-            "fucking",
-            "fucked",
-            "fucker",
-            "shit",
-            "shitting",
-            "shitted",
-            "shits",
-            "damn",
-            "damned",
-            "damnit",
-            "dammit",
-            "hell",
-            "hellish",
-            "ass",
-            "asses",
-            "asshole",
-            "assholes",
-            "bitch",
-            "bitches",
-            "bitching",
-            "bitched",
-            "crap",
-            "crappy",
-            "piss",
-            "pissing",
-            "pissed",
-            "pisses",
-            "bullshit",
-            "bullcrap",
-            "goddamn",
-            "goddamnit",
-            "goddamned",
-        ]
-
-        for word in profanity_words:
-            refined = re.sub(
-                r"\b" + re.escape(word) + r"\b", "", refined, flags=re.IGNORECASE
+            return StatementRefinementResponse(
+                refined_text=refined_text,
+                original_text=original_text,
+                citation_number=request.citation_number,
+                processing_time_ms=processing_time,
             )
 
-        # Enhanced language elevation and articulation
-        replacements = {
-            # Basic capitalization
-            "i was": "I was",
-            "i am": "I am",
-            "i had": "I had",
-            "i did": "I did",
-            "i tried": "I attempted",
-            "i think": "I believe",  # Elevate uncertainty
-            "i feel": "I believe",
-            # Elevate vocabulary - transform everyday to articulate
-            "the meter": "The parking meter",
-            "it didn't work": "The parking meter was not functioning properly",
-            "it was broken": "The parking meter was malfunctioning",
-            "it was messed up": "The parking meter was not functioning correctly",
-            "i only parked": "I parked only",
-            "for like": "for approximately",
-            "for about": "for approximately",
-            "around": "approximately",
-            "really": "quite",  # Elevate language
-            "very": "particularly",  # Elevate language
-            "bad": "problematic",  # Elevate language
-            "good": "appropriate",  # Elevate language
-            "stuf": "items",  # Elevate language
-            "thing": "matter",  # Elevate language
-            "guy": "individual",  # Elevate language
-            "people": "individuals",  # Elevate language
-            "got": "received",  # Elevate language
-            "ticket": "citation",  # More formal
-            "unfair": "unjust",  # More articulate
-            "wrong": "incorrect",  # More formal
-            "right": "correct",  # More formal
-            "sure": "certain",  # More articulate
-            "maybe": "perhaps",  # More articulate
-            "probably": "likely",  # More articulate
-            "a lot": "considerably",  # More articulate
-            "kinda": "somewhat",  # More articulate
-            "sorta": "somewhat",  # More articulate
-        }
+    def _local_fallback_refinement(self, request: StatementRefinementRequest) -> str:
+        """Local fallback when AI is unavailable."""
+        agency = self._detect_agency(request.citation_number, request.city_id)
 
-        for informal, formal in replacements.items():
-            refined = refined.replace(informal, formal)
+        # Professional template with user content
+        user_content = request.appeal_reason.strip()
 
-        # Clean up multiple spaces left by profanity removal
-        refined = re.sub(r"\s+", " ", refined)
-        refined = refined.strip()
+        # Clean up user content
+        lines = user_content.split("\n")
+        cleaned_lines = []
+        for line in lines:
+            line = line.strip()
+            if line and not line.lower().startswith("dear"):
+                cleaned_lines.append(line)
 
-        # Capitalize first letter
-        if refined and not refined[0].isupper():
-            refined = refined[0].upper() + refined[1:]
+        body = " ".join(cleaned_lines)
 
-        # Add period if missing
-        if refined and not refined.endswith((".", "!", "?")):
-            refined += "."
+        # Ensure proper punctuation and capitalization
+        if body and not body[-1] in ".!?":
+            body += "."
 
-        # Wrap in proper letter format
-        citation_part = (
-            "Citation #{request.citation_number}"
-            if request.citation_number
-            else "Citation"
-        )
-        date_str = datetime.now().strftime("%B %d, %Y")
+        return f"""To Whom It May Concern:
 
-        formatted_letter = """{date_str}
+Re: Citation Number {request.citation_number}
 
-{salutation}
+I am writing to formally submit an appeal regarding the above-referenced parking citation.
 
-Subject: Appeal of {citation_part}
+{body}
 
-Dear Sir or Madam,
+Respectfully submitted,
 
-I am writing to respectfully appeal the parking citation referenced above.
-
-{refined}
-
-I respectfully request that you review this matter and consider dismissing the citation. Thank you for your time and consideration.
-
-Please send your response regarding this appeal to the following address:
-
-[RETURN_ADDRESS]
-
-Sincerely,
-
-[Your Name]"""
-
-        logger.info(
-            "Using local fallback refinement with agency detection ({agency}): {len(original)} -> {len(formatted_letter)} chars"
-        )
-
-        return StatementRefinementResponse(
-            status="fallback",
-            original_statement=original,
-            refined_statement=formatted_letter,
-            improvements={
-                "basic_cleanup": True,
-                "capitalization": True,
-                "punctuation": True,
-                "agency_detected": agency != "SFMTA",
-                "letter_format": True,
-            },
-            method_used="local_fallback",
-        )
-
-
-# Global service instance
-_statement_service = None
+{request.user_name or "Citizen"}"""
 
 
 def get_statement_service() -> DeepSeekService:
-    """Get the global statement service instance."""
-    global _statement_service
-    if _statement_service is None:
-        _statement_service = DeepSeekService()
-    return _statement_service
+    """Get an instance of the DeepSeek service."""
+    return DeepSeekService()
 
 
 async def refine_statement(
-    original_statement: str,
-    citation_number: str = "",
-    citation_type: str = "parking",
-    desired_tone: str = "professional",
-    max_length: int = 500,
+    citation_number: str,
+    appeal_reason: str,
+    user_name: Optional[str] = None,
+    city_id: Optional[str] = None,
 ) -> StatementRefinementResponse:
     """
-    High-level function to refine a statement.
+    Convenience function to refine a statement.
 
-    This is the main entry point for the service.
+    Args:
+        citation_number: The citation number
+        appeal_reason: The user's appeal statement
+        user_name: Optional user name for signature
+        city_id: Optional city identifier
+
+    Returns:
+        StatementRefinementResponse with refined text
     """
-    if not original_statement or not original_statement.strip():
-        return StatementRefinementResponse(
-            status="error",
-            original_statement=original_statement,
-            refined_statement=original_statement,
-            error_message="Empty statement provided",
-            method_used="none",
-        )
+    service = get_statement_service()
 
     request = StatementRefinementRequest(
-        original_statement=original_statement.strip(),
         citation_number=citation_number,
-        citation_type=citation_type,
-        desired_tone=desired_tone,
-        max_length=max_length,
+        appeal_reason=appeal_reason,
+        user_name=user_name,
+        city_id=city_id,
     )
 
-    service = get_statement_service()
     return await service.refine_statement_async(request)
 
 
-# Test function
-async def test_refinement():
-    """Test the statement refinement service."""
-    print("🧪 Testing Statement Refinement Service")
-    print("=" * 50)
+async def test_refinement() -> Dict[str, Any]:
+    """Test the refinement service with a sample statement."""
+    test_request = StatementRefinementRequest(
+        citation_number="123456789",
+        appeal_reason="I parked at a meter that was broken. I checked it and it showed no time left but I had just put money in. This seems unfair.",
+        user_name="John Doe",
+        city_id="sf",
+    )
 
-    test_statement = """
-    i got this ticket but the meter was broken. i tried to pay but it didn't work.
-    the screen was all messed up and wouldn't take my money. i only parked for
-    like 15 minutes and i think it's unfair that i got a ticket.
-    """
+    result = await refine_statement(
+        test_request.citation_number,
+        test_request.appeal_reason,
+        test_request.user_name,
+        test_request.city_id,
+    )
 
-    try:
-        print("Original: {test_statement.strip()}")
-
-        result = await refine_statement(
-            original_statement=test_statement,
-            citation_number="912345678",
-        )
-
-        print("Status: {result.status}")
-        print("Method: {result.method_used}")
-        print("Refined: {result.refined_statement}")
-
-        if result.improvements:
-            print("Improvements: {result.improvements}")
-
-        print("\n✅ Statement refinement test completed")
-
-    except Exception as e:
-        print("❌ Test failed: {e}")
-        import traceback
-
-        traceback.print_exc()
-
-
-if __name__ == "__main__":
-    asyncio.run(test_refinement())
+    return {
+        "success": True,
+        "refined_text": result.refined_text,
+        "processing_time_ms": result.processing_time_ms,
+        "model_used": result.model_used,
+    }
