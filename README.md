@@ -1,70 +1,90 @@
-# FightCityTickets - Parking Ticket Appeal SaaS Platform
+# 🎫 Fight SF Tickets - Parking Ticket Appeal SaaS Platform
+
+<div align="center">
 
 **Production-Ready Multi-City Parking Ticket Appeal System**
 
----
+[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-blue.svg)](https://reactjs.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109-green.svg)](https://fastapi.tiangolo.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)](https://www.docker.com)
 
-## Quick Start for AI Assistants
+*Database-first parking ticket appeal system with AI-powered statement generation, Stripe payments, and physical mail delivery via Lob API.*
 
-### Connect to Production Server
+[Features](#-features) • [Architecture](#-architecture) • [Deployment](#-deployment) • [API](#-api-documentation)
 
-```bash
-ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
-```
-
-### Deploy Updates
-
-```bash
-# On server
-cd /var/www/fightcitytickets
-git pull
-docker compose down
-docker compose up -d --build
-curl http://localhost/api/health
-```
+</div>
 
 ---
 
-## Server Access
+## 📖 Overview
 
-| Property | Value |
-|----------|-------|
-| **Droplet IP** | 143.198.131.213 |
-| **SSH User** | root |
-| **SSH Key** | `/c/Users/Amirp/.ssh/do_deploy_key` |
-| **Region** | sfo3 (San Francisco) |
-| **Specs** | 2 vCPU, 4GB RAM, 80GB Disk |
+**Fight SF Tickets** is a production-ready SaaS platform that helps users appeal parking tickets across multiple cities. The system combines AI-powered statement generation, secure payment processing, and automated physical mail delivery to create a seamless appeal experience.
 
-**DO Token**: Configure via `doctl auth init`
+### Key Highlights
 
----
-
-## Architecture
-
-```
-+--------------------------------------------------------------+
-|                     Production Server                         |
-|                    143.198.131.213                           |
-+--------------------------------------------------------------+
-|  +---------+   +---------+   +---------+   +-------------+   |
-|  |  Nginx  |   |   Web   |   |   API   |   |     DB      |   |
-|  |  :80,443|   | :3000   |   | :8000   |   |   :5432     |   |
-|  +---------+   +---------+   +---------+   +-------------+   |
-|       |              |              |             |          |
-|       +--------------+--------------+-------------+          |
-|                     Docker Network                            |
-+--------------------------------------------------------------+
-         |                    |                    |
-         v                    v                    v
-    +---------+         +---------+         +---------+
-    | Stripe  |         |   Lob   |         | OpenAI  |
-    |Payments |         |  Mail   |         |   AI    |
-    +---------+         +---------+         +---------+
-```
+- 🎯 **Multi-City Support**: Handles parking ticket appeals for 15+ major cities
+- 🤖 **AI-Powered**: OpenAI transcription and DeepSeek reasoning for statement refinement
+- 💳 **Stripe Integration**: Secure payment processing with webhook handling
+- 📮 **Physical Mail**: Automated letter delivery via Lob API
+- 🐳 **Docker Deployment**: Production-ready containerized architecture
+- 🔒 **Legal Compliance**: UPL-compliant architecture (not a law firm)
 
 ---
 
-## Tech Stack
+## ✨ Features
+
+### Core Functionality
+
+- **Multi-Step Appeal Flow**: Guided process from ticket upload to letter delivery
+  - Camera/Photo upload for ticket documentation
+  - Voice recording for appeal statement
+  - AI-powered statement refinement
+  - Signature capture
+  - Payment processing
+  - Automated letter generation and mailing
+
+- **Citation Validation**: Database-first validation for 15+ cities including:
+  - San Francisco
+  - Los Angeles
+  - New York
+  - Chicago
+  - Austin
+  - Seattle
+  - And more...
+
+- **AI Statement Generation**: 
+  - Voice transcription via OpenAI Whisper
+  - Statement refinement using DeepSeek
+  - Legal compliance checks
+  - Personalized appeal letters
+
+- **Payment Processing**:
+  - Stripe integration for secure payments
+  - Webhook handling for payment events
+  - Multiple payment methods support
+
+- **Physical Mail Delivery**:
+  - Automated letter generation
+  - Lob API integration for mail delivery
+  - Delivery tracking and confirmation
+
+### Technical Features
+
+- **Database-First Architecture**: PostgreSQL with SQLAlchemy ORM
+- **Modern Frontend**: Next.js 15 with React 19 and TypeScript
+- **RESTful API**: FastAPI backend with comprehensive error handling
+- **Docker Deployment**: Complete containerization with Docker Compose
+- **Nginx Reverse Proxy**: Production-ready load balancing and SSL termination
+- **Rate Limiting**: API protection against abuse
+- **CORS Configuration**: Secure cross-origin resource sharing
+
+---
+
+## 🏗️ Architecture
+
+### Technology Stack
 
 | Layer | Technology |
 |-------|------------|
@@ -77,17 +97,36 @@ curl http://localhost/api/health
 | **Physical Mail** | Lob API |
 | **AI Services** | OpenAI (transcription), DeepSeek (reasoning) |
 
----
-
-## Project Structure
+### System Architecture
 
 ```
-provethat.io/
-├── README.md                    # This file - START HERE
-├── .env.example                 # Environment template (copy to .env)
-├── .gitignore
+┌─────────────────────────────────────────────────────────────┐
+│                    Production Server                         │
+│                    143.198.131.213                          │
+┌─────────────────────────────────────────────────────────────┐
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────────┐  │
+│  │  Nginx  │  │   Web   │  │   API   │  │     DB      │  │
+│  │ :80,443 │  │ :3000   │  │ :8000   │  │   :5432     │  │
+│  └─────────┘  └─────────┘  └─────────┘  └─────────────┘  │
+│       │              │              │             │          │
+│       └──────────────┴──────────────┴─────────────┘          │
+│                     Docker Network                            │
+└─────────────────────────────────────────────────────────────┘
+         │                    │                    │
+         v                    v                    v
+    ┌─────────┐         ┌─────────┐         ┌─────────┐
+    │ Stripe  │         │   Lob   │         │ OpenAI  │
+    │Payments │         │  Mail   │         │   AI    │
+    └─────────┘         └─────────┘         └─────────┘
+```
+
+### Project Structure
+
+```
+FightSFTickets/
+├── README.md                    # This file
+├── .env.example                 # Environment template
 ├── docker-compose.yml           # Production Docker orchestration
-├── .git/                        # Git repository
 │
 ├── frontend/                    # Next.js 15 frontend
 │   ├── app/                     # App router pages
@@ -131,9 +170,35 @@ provethat.io/
 
 ---
 
-## Environment Configuration
+## 🚀 Deployment
 
-### Required API Keys
+### Production Server Access
+
+| Property | Value |
+|----------|-------|
+| **Droplet IP** | 143.198.131.213 |
+| **SSH User** | root |
+| **SSH Key** | `/c/Users/Amirp/.ssh/do_deploy_key` |
+| **Region** | sfo3 (San Francisco) |
+| **Specs** | 2 vCPU, 4GB RAM, 80GB Disk |
+
+### Quick Deploy
+
+```bash
+# Connect to production server
+ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
+
+# On server:
+cd /var/www/fightcitytickets
+git pull
+docker compose down
+docker compose up -d --build
+curl http://localhost/api/health
+```
+
+### Environment Configuration
+
+Required API Keys:
 
 ```bash
 # Stripe (Payments)
@@ -156,14 +221,14 @@ Copy `.env.example` to `.env` and fill in your values.
 
 ---
 
-## Development
+## 🛠️ Development
 
 ### Local Setup
 
 ```bash
 # Clone and enter
-git clone <repo>
-cd provethat.io
+git clone https://github.com/Ghostmonday/FightSFTickets.git
+cd FightSFTickets
 
 # Configure environment
 cp .env.example .env
@@ -196,51 +261,9 @@ npm run dev
 
 ---
 
-## Production Deployment
+## 📡 API Documentation
 
-### Deploy to Existing Server
-
-```bash
-# From project root on local machine
-ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
-
-# On server:
-cd /var/www/fightcitytickets
-git pull
-docker compose down
-docker compose up -d --build
-docker compose ps
-
-# Verify
-curl http://localhost/api/health
-```
-
-### Fresh Server Setup
-
-```bash
-# 1. SSH to server
-ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
-
-# 2. Install Docker
-apt-get update
-apt-get install -y docker.io docker-compose git
-systemctl enable docker
-systemctl start docker
-
-# 3. Clone and deploy
-git clone <repo> /var/www/fightcitytickets
-cd /var/www/fightcitytickets
-cp .env.example .env
-# Edit .env with production API keys
-docker compose up -d --build
-
-# 4. Verify
-curl http://localhost/api/health
-```
-
----
-
-## Service Endpoints
+### Service Endpoints
 
 | Service | Port | Endpoint | Health Check |
 |---------|------|----------|--------------|
@@ -249,54 +272,42 @@ curl http://localhost/api/health
 | API | 8000 | http://143.198.131.213/api/ | /health |
 | Database | 5432 | db:5432 (internal) | - |
 
+### Key API Routes
+
+- `POST /api/tickets/validate` - Validate parking ticket citation
+- `POST /api/transcribe` - Transcribe voice recording
+- `POST /api/statement/refine` - AI-powered statement refinement
+- `POST /api/checkout` - Create Stripe payment session
+- `POST /api/webhooks/stripe` - Handle Stripe webhooks
+- `POST /api/mail/send` - Send appeal letter via Lob
+
 ---
 
-## Common Commands
+## 🗄️ Database
+
+### Schema Overview
+
+- **Citations**: Parking ticket information and validation
+- **Appeals**: Appeal requests and status tracking
+- **Payments**: Stripe payment records
+- **Statements**: AI-generated appeal statements
+- **Users**: User accounts and preferences
+
+### Migrations
 
 ```bash
-# View logs
-docker compose logs -f
-docker compose logs -f api    # Backend only
-docker compose logs -f web    # Frontend only
-
-# Restart service
-docker compose restart api
-docker compose restart web
-
-# Rebuild after code change
-docker compose up -d --build
-
-# Database migration
+# Run migrations
 docker compose exec api alembic upgrade head
 
-# Check disk usage
-docker system df
-
-# SSH into container
-docker compose exec api /bin/bash
-docker compose exec web /bin/sh
+# Create new migration
+docker compose exec api alembic revision --autogenerate -m "Description"
 ```
 
 ---
 
-## Supported Cities
+## 🔒 Legal Compliance
 
-Currently supports parking ticket appeals for 15+ cities including:
-- San Francisco
-- Los Angeles
-- New York
-- Chicago
-- Austin
-- Seattle
-- And more...
-
-See `backend/src/services/citation.py` for validation patterns.
-
----
-
-## Legal Compliance
-
-**FightCityTickets is NOT a law firm.**
+**Fight SF Tickets is NOT a law firm.**
 
 - Document preparation service only
 - No legal advice provided
@@ -307,81 +318,142 @@ See `CIVIL_SHIELD_COMPLIANCE_AUDIT.md` for details.
 
 ---
 
-## Troubleshooting
+## 🧪 Testing
+
+### Running Tests
+
+```bash
+# Backend tests
+docker compose exec api pytest
+
+# Frontend tests
+cd frontend
+npm test
+
+# Integration tests
+docker compose exec api pytest tests/integration/
+```
+
+---
+
+## 📊 Monitoring & Logs
+
+### View Logs
+
+```bash
+# All services
+docker compose logs -f
+
+# Backend only
+docker compose logs -f api
+
+# Frontend only
+docker compose logs -f web
+
+# Database
+docker compose logs -f db
+```
+
+### Health Checks
+
+```bash
+# API health
+curl http://localhost/api/health
+
+# Database connection
+docker compose exec db pg_isready -U postgres
+```
+
+---
+
+## 🔧 Common Commands
+
+```bash
+# Restart service
+docker compose restart api
+docker compose restart web
+
+# Rebuild after code change
+docker compose up -d --build
+
+# Database backup
+docker compose exec db pg_dump -U postgres fightsf > backup_$(date +%Y%m%d).sql
+
+# Database restore
+docker compose exec -T db psql -U postgres fightsf < backup_20240101.sql
+
+# SSH into container
+docker compose exec api /bin/bash
+docker compose exec web /bin/sh
+```
+
+---
+
+## 🐛 Troubleshooting
 
 ### Container won't start
-
 ```bash
 docker compose logs api
 docker compose logs web
 ```
 
 ### Database connection failed
-
 ```bash
 docker compose restart db
 docker compose exec db pg_isready -U postgres
 ```
 
 ### Frontend 502 Bad Gateway
-
 ```bash
 docker compose logs nginx
 docker compose restart web
 ```
 
 ### API returns 500
-
 ```bash
 docker compose exec api cat /app/logs/app.log
 ```
 
 ---
 
-## Backup & Recovery
+## 📊 Technical Achievements
 
-```bash
-# Backup database
-docker compose exec db pg_dump -U postgres fightsf > backup_$(date +%Y%m%d).sql
-
-# Restore database
-docker compose exec -T db psql -U postgres fightsf < backup_20240101.sql
-```
-
----
-
-## Security Notes
-
-- **NEVER** commit `.env` or API keys to git
-- SSH key stored at `/c/Users/Amirp/.ssh/do_deploy_key` (keep safe!)
-- Rate limiting enabled on all API endpoints
-- CORS configured for production domain only
-- Database not exposed externally (Docker network only)
+- ✅ **Production Deployment**: Live system handling real appeals
+- ✅ **Multi-Service Architecture**: Docker Compose orchestration
+- ✅ **AI Integration**: OpenAI + DeepSeek for statement generation
+- ✅ **Payment Processing**: Stripe integration with webhooks
+- ✅ **Physical Mail**: Automated letter delivery via Lob API
+- ✅ **Database-First Design**: PostgreSQL with proper migrations
+- ✅ **Legal Compliance**: UPL-compliant architecture
 
 ---
 
-## For Future AI Sessions
+## 🤝 Contributing
 
-**START HERE.** Read this file first.
-
-**To deploy updates:**
-
-```bash
-ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
-cd /var/www/fightcitytickets
-git pull
-docker compose down
-docker compose up -d --build
-curl http://localhost/api/health
-```
-
-**Required context:**
-- Server IP: 143.198.131.213
-- SSH key: `/c/Users/Amirp/.ssh/do_deploy_key`
-- DO Token: Configured via `doctl auth init`
-- All configs in `docker-compose.yml` and `.env`
+This is a production system. For development inquiries, please contact the repository owner.
 
 ---
 
-**Last Updated**: January 10, 2026
-**Status**: Production Ready
+## 📄 License
+
+Proprietary. See `LICENSE` file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Built for users fighting unfair parking tickets
+- Designed with legal compliance in mind
+- Production-ready architecture for scale
+
+---
+
+<div align="center">
+
+**Last Updated**: January 2026  
+**Status**: Production Ready  
+**Version**: 1.0.0
+
+[⬆ Back to Top](#-fight-sf-tickets---parking-ticket-appeal-saas-platform)
+
+</div>
