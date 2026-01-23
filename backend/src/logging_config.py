@@ -1,5 +1,5 @@
 """
-Structured JSON Logging Configuration for FIGHTCITYTICKETS
+Structured JSON Logging Configuration for Fight City Tickets
 
 Provides JSON-formatted logs for better parsing and integration with log aggregation services.
 """

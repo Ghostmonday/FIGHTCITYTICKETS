@@ -35,7 +35,7 @@ class CircuitBreakerConfig:
     failure_threshold: int = 5  # Failures before opening
     success_threshold: int = 3  # Successes in half-open to close
     timeout_seconds: int = 300  # 5 minutes cooldown
-    expected_exception: type = Exception  # type: ignore
+    expected_exception: type[Exception] = Exception
 
 
 @dataclass

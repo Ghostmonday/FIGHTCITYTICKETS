@@ -1,5 +1,5 @@
 """
-Database Migration Script for FIGHTCITYTICKETS.com
+Database Migration Script for Fight City Tickets.com
 
 This script sets up the database schema and performs any necessary migrations.
 Run this script before starting the application for the first time.
@@ -289,7 +289,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Database migration script for FIGHTCITYTICKETS"
+        description="Database migration script for Fight City Tickets"
     )
     parser.add_argument(
         "--drop",

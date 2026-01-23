@@ -14,7 +14,7 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -32,17 +32,16 @@ class AppealMailStatus(str, Enum):
 
 
 # Import SchemaAdapter for transforming non-Schema 4.3.0 files
-try:
-    from .schema_adapter import SchemaAdapter
-
-    SCHEMA_ADAPTER_AVAILABLE = True
-except ImportError:
-    SCHEMA_ADAPTER_AVAILABLE = False
-    # Stub for type checking when import fails
-    class SchemaAdapter:  # type: ignore[no-redef]
-        """Stub when schema_adapter is not available."""
-        pass
-    logger.warning("SchemaAdapter not available - will only load Schema 4.3.0 files")
+if TYPE_CHECKING:
+    from .schema_adapter import SchemaAdapter as SchemaAdapterType
+    SchemaAdapter = SchemaAdapterType  # type: ignore[misc]
+else:
+    try:
+        from .schema_adapter import SchemaAdapter
+        SCHEMA_ADAPTER_AVAILABLE = True
+    except ImportError:
+        SCHEMA_ADAPTER_AVAILABLE = False
+        logger.warning("SchemaAdapter not available - will only load Schema 4.3.0 files")
 
 
 class RoutingRule(str, Enum):
@@ -242,15 +241,15 @@ class CitySection:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
-        result = {
+        result: Dict[str, Any] = {
             "section_id": self.section_id,
             "name": self.name,
             "routing_rule": self.routing_rule.value,
         }
         if self.appeal_mail_address:
-            result["appeal_mail_address"] = self.appeal_mail_address.to_dict()
+            result["appeal_mail_address"] = self.appeal_mail_address.to_dict()  # type: ignore[assignment]
         if self.phone_confirmation_policy:
-            result["phone_confirmation_policy"] = (
+            result["phone_confirmation_policy"] = (  # type: ignore[assignment]
                 self.phone_confirmation_policy.to_dict()
             )
         return result

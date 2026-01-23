@@ -1,5 +1,5 @@
 """
-Rate Limiting Middleware for FIGHTCITYTICKETS.com
+Rate Limiting Middleware for Fight City Tickets.com
 
 Provides rate limiting protection against:
 - Brute force attacks

@@ -1,5 +1,5 @@
 """
-Sentry Error Tracking Configuration for FIGHTCITYTICKETS
+Sentry Error Tracking Configuration for Fight City Tickets
 
 Provides error tracking and performance monitoring via Sentry.
 """

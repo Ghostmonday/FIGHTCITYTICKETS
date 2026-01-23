@@ -1,5 +1,5 @@
 """
-Address Validation Service for FIGHTCITYTICKETS.com
+Address Validation Service for Fight City Tickets.com
 
 Validates mailing addresses by scraping city websites in real-time using DeepSeek.
 Compares scraped addresses with stored addresses and updates database if they differ.

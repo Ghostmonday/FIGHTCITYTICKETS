@@ -1,5 +1,5 @@
 """
-Hetzner Cloud Service for FIGHTCITYTICKETS.com
+Hetzner Cloud Service for Fight City Tickets.com
 
 Handles Hetzner Cloud droplet management, including suspension on failure.
 Used for infrastructure management and failure recovery.

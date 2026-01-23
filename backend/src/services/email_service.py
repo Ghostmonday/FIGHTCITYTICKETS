@@ -1,5 +1,5 @@
 """
-Email Service for FIGHTCITYTICKETS.com
+Email Service for Fight City Tickets.com
 
 Handles email notifications for payment confirmations and appeal status updates.
 Integrates with SendGrid for production email delivery.
@@ -31,7 +31,7 @@ Your appeal letter is being prepared and will be mailed to the appropriate agenc
 
 Questions? Reply to this email or contact {support_email}
 
-- The FIGHTCITYTICKETS.com Team
+- The Fight City Tickets.com Team
 
 ---
 Note: We are not lawyers. This is a document preparation service only.
@@ -54,7 +54,7 @@ What happens next?
 
 Questions? Reply to this email or contact {support_email}
 
-- The FIGHTCITYTICKETS.com Team
+- The Fight City Tickets.com Team
 
 ---
 Note: We are not lawyers. This is a document preparation service only.
@@ -79,7 +79,7 @@ Note: We cannot provide legal advice. This message is for informational purposes
 
 Questions? Reply to this email or contact {support_email}
 
-- The FIGHTCITYTICKETS.com Team
+- The Fight City Tickets.com Team
 
 ---
 Note: We are not lawyers. This is a document preparation service only.
@@ -96,7 +96,7 @@ class EmailService:
         self.api_key = getattr(settings, "sendgrid_api_key", None)
         self.from_email = settings.service_email
         self.support_email = settings.support_email
-        self.from_name = "FIGHTCITYTICKETS.com"
+        self.from_name = "Fight City Tickets.com"
         self.is_available = bool(self.api_key and self.api_key != "change-me")
 
         if self.is_available:
@@ -149,7 +149,7 @@ class EmailService:
     async def _render_template(self, template_name: str, **kwargs) -> tuple:
         """Render email template with provided values."""
         template = EMAIL_TEMPLATES.get(template_name, {})
-        subject = template.get("subject", "Update from FIGHTCITYTICKETS.com")
+        subject = template.get("subject", "Update from Fight City Tickets.com")
         body = template.get("body", "")
 
         # Add support_email to kwargs if not present

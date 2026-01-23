@@ -1,5 +1,5 @@
 """
-Middleware package for FIGHTCITYTICKETS.com
+Middleware package for Fight City Tickets.com
 
 Provides cross-cutting concerns for the API:
 - Request ID tracking

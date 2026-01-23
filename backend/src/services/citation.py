@@ -1,5 +1,5 @@
 """
-Citation Validation Service for FIGHTCITYTICKETS.com
+Citation Validation Service for Fight City Tickets.com
 
 Validates parking citation numbers and calculates appeal deadlines across multiple cities.
 Implements multi-city support via CityRegistry (Schema 4.3.0) with backward compatibility for SF-only implementation.

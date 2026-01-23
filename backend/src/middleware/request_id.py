@@ -1,5 +1,5 @@
 """
-Request ID Middleware for FIGHTCITYTICKETS.com
+Request ID Middleware for Fight City Tickets.com
 
 Generates and tracks unique request IDs for better observability and debugging.
 Adds X-Request-ID header to all requests and responses.

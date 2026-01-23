@@ -1,5 +1,5 @@
 """
-Stripe Webhook Handler for FIGHTCITYTICKETS.com
+Stripe Webhook Handler for Fight City Tickets.com
 
 Handles Stripe webhook events for payment confirmation and appeal fulfillment.
 Uses database for persistent storage and implements idempotent processing.

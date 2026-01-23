@@ -1,5 +1,5 @@
 """
-Main FastAPI Application for FIGHTCITYTICKETS.com (Database-First Approach)
+Main FastAPI Application for Fight City Tickets.com (Database-First Approach)
 
 This is the updated main application file that uses the database-first approach.
 All data is persisted in PostgreSQL before creating Stripe checkout sessions.
@@ -67,7 +67,7 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info("=" * 60)
-    logger.info("Starting FIGHTCITYTICKETS API (Database-First Approach)")
+    logger.info("Starting Fight City Tickets API (Database-First Approach)")
     logger.info(f"Environment: {settings.app_env}")
     logger.info(f"API URL: {settings.api_url}")
     logger.info(f"App URL: {settings.app_url}")
@@ -95,7 +95,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown - graceful cleanup
-    logger.info("Shutting down FIGHTCITYTICKETS API")
+    logger.info("Shutting down Fight City Tickets API")
     try:
         # Close database connections gracefully
         db_service = get_db_service()
@@ -109,7 +109,7 @@ async def lifespan(app: FastAPI):
 
 # Create FastAPI app with lifespan
 app = FastAPI(
-    title="FIGHTCITYTICKETS API",
+    title="Fight City Tickets API",
     description="""
     ## Database-First Parking Ticket Appeal System
 
@@ -131,7 +131,7 @@ app = FastAPI(
     """,
     version="1.0.0",
     contact={
-        "name": "FIGHTCITYTICKETS Support",
+        "name": "Fight City Tickets Support",
         "url": settings.app_url,
         "email": settings.support_email,
     },
@@ -218,7 +218,7 @@ async def root():
     Returns basic API information and links to documentation.
     """
     return {
-        "name": "FIGHTCITYTICKETS API",
+        "name": "Fight City Tickets API",
         "version": "1.0.0",
         "description": "Database-first parking ticket appeal system for San Francisco",
         "environment": settings.app_env,
