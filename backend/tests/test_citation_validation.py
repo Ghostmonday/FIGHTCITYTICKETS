@@ -1,5 +1,5 @@
 """
-Citation Validation Tests for FightSFTickets.com
+Citation Validation Tests for FIGHTCITYTICKETS.com
 
 Tests multi-city citation validation with CityRegistry integration.
 """

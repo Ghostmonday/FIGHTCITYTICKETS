@@ -283,7 +283,7 @@ export default function CityPage() {
                 href="/"
                 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-purple-700 transition-all truncate"
               >
-                FightCityTickets
+                FIGHTCITYTICKETS
               </Link>
               <div className="ml-2 sm:ml-6 flex items-center space-x-2 sm:space-x-3 min-w-0">
                 <span className="text-gray-400 text-xs sm:text-sm hidden sm:inline">
@@ -875,7 +875,7 @@ export default function CityPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-gray-500 text-sm mb-6">
             <p className="font-medium text-gray-700">
-              © {new Date().getFullYear()} FightCityTickets.com
+              © {new Date().getFullYear()} FIGHTCITYTICKETS.com
             </p>
             <p className="mt-2 text-gray-500">
               Document preparation service for parking ticket appeals

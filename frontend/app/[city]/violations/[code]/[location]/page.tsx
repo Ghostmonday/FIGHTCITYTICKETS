@@ -60,7 +60,7 @@ export async function generateMetadata({
   const description = `Learn how to appeal parking ticket ${phrase.violation_code} at ${phrase.hot_location} in ${cityName}. Our automated system makes it easy to contest your citation.`;
 
   return {
-    title: `${title} | FightCityTickets.com`,
+    title: `${title} | FIGHTCITYTICKETS.com`,
     description,
     openGraph: {
       title,
@@ -115,7 +115,7 @@ export default async function ViolationLocationPage({
             href="/"
             className="text-blue-600 hover:text-blue-700 font-bold text-xl"
           >
-            ← FightCityTickets.com
+            ← FIGHTCITYTICKETS.com
           </Link>
         </div>
       </header>
@@ -185,7 +185,7 @@ export default async function ViolationLocationPage({
             How Our Service Helps
           </h3>
           <p className="text-gray-700 mb-4 leading-relaxed">
-            FightCityTickets.com makes the appeals process simple and
+            FIGHTCITYTICKETS.com makes the appeals process simple and
             stress-free. Our automated system helps you:
           </p>
           <ul className="list-disc list-inside text-gray-700 mb-6 space-y-2">

@@ -1,4 +1,4 @@
-// City routing utilities for FightCityTickets.com
+// City routing utilities for FIGHTCITYTICKETS.com
 // Maps URL slugs (SF, SD, NYC) to internal city identifiers
 
 export interface CityMapping {

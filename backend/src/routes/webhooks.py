@@ -1,5 +1,5 @@
 """
-Stripe Webhook Handler for FightCityTickets.com
+Stripe Webhook Handler for FIGHTCITYTICKETS.com
 
 Handles Stripe webhook events for payment confirmation and appeal fulfillment.
 Uses database for persistent storage and implements idempotent processing.
@@ -7,6 +7,7 @@ Uses database for persistent storage and implements idempotent processing.
 
 import logging
 import os
+import secrets
 from datetime import datetime, timezone
 from typing import Any
 
@@ -19,6 +20,7 @@ from ..models import AppealType, PaymentStatus
 from ..services.database import get_db_service
 from ..services.email_service import get_email_service
 from ..services.mail import AppealLetterRequest, get_mail_service
+from ..services.stripe_service import StripeService
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -46,7 +48,7 @@ def verify_admin_secret(
             detail="Admin authentication not configured.",
         )
 
-    if x_admin_secret != admin_secret:
+    if not secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
         client_ip = get_remote_address(request)
         logger.warning("Failed admin access attempt from IP: %s", client_ip)
         raise HTTPException(

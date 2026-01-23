@@ -1,5 +1,5 @@
 """
-Stripe Payment Service for FightCityTickets.com
+Stripe Payment Service for FIGHTCITYTICKETS.com
 
 Handles Stripe checkout session creation, webhook verification, and payment status.
 Integrates with citation validation and mail fulfillment.
@@ -24,12 +24,15 @@ STATE_CODE_LENGTH = 2
 class CheckoutRequest:
     """Complete checkout request data."""
 
+    # Required fields (no defaults) must come first
     citation_number: str
+    user_name: str
+    user_address_line1: str
+    
+    # Optional fields with defaults
     # CERTIFIED-ONLY MODEL: All appeals use Certified Mail with tracking
     # No subscription, no standard option - single $14.50 transaction
     appeal_type: str = "certified"
-    user_name: str
-    user_address_line1: str
     user_address_line2: str | None = None
     user_city: str = ""
     user_state: str = ""
@@ -47,6 +50,7 @@ class CheckoutRequest:
     draft_id: int | None = None
     # CYCLE 3: Chargeback prevention - user acknowledgment of service terms
     user_attestation: bool = False
+
 
 
 @dataclass
@@ -74,11 +78,21 @@ class SessionStatus:
 
 
 class StripeService:
-    """Handles all Stripe payment operations."""
+    """Handles all Stripe payment operations with timeout and retry handling."""
+
+    # Timeout configuration (in seconds)
+    DEFAULT_TIMEOUT = 30
+    RETRY_COUNT = 3
+    RETRY_DELAY = 1  # seconds
 
     def __init__(self) -> None:
         """Initialize Stripe with API key from settings."""
         stripe.api_key = settings.stripe_secret_key
+
+        # Set default timeout for all Stripe requests
+        stripe.default_http_client = stripe.http_client.HTTPClient(
+            timeout=self.DEFAULT_TIMEOUT
+        )
 
         # Determine if we're in test or live mode
         self.is_live_mode: bool = settings.stripe_secret_key.startswith("sk_live_")
@@ -92,6 +106,52 @@ class StripeService:
 
         # Base URLs for redirects
         self.base_url: str = settings.app_url.rstrip("/")
+
+    def _with_retry(self, func, *args, **kwargs):
+        """
+        Execute a function with retry logic for transient failures.
+
+        Args:
+            func: Function to execute
+            *args: Positional arguments
+            **kwargs: Keyword arguments
+
+        Returns:
+            Result of the function
+
+        Raises:
+            Exception: After all retries are exhausted
+        """
+        import time
+
+        last_exception = None
+        for attempt in range(self.RETRY_COUNT):
+            try:
+                return func(*args, **kwargs)
+            except stripe.error.RateLimitError as e:
+                # Retry on rate limits
+                last_exception = e
+                if attempt < self.RETRY_COUNT - 1:
+                    delay = self.RETRY_DELAY * (2 ** attempt)  # Exponential backoff
+                    time.sleep(delay)
+            except stripe.error.APIConnectionError as e:
+                # Retry on network issues
+                last_exception = e
+                if attempt < self.RETRY_COUNT - 1:
+                    delay = self.RETRY_DELAY * (2 ** attempt)
+                    time.sleep(delay)
+            except stripe.error.APIError as e:
+                # Retry on Stripe API errors (500-503)
+                last_exception = e
+                if attempt < self.RETRY_COUNT - 1:
+                    delay = self.RETRY_DELAY * (2 ** attempt)
+                    time.sleep(delay)
+            except Exception as e:
+                # Don't retry other errors
+                raise e
+
+        # All retries exhausted
+        raise last_exception
 
     def get_price_id(self, appeal_type: str = "certified") -> str:
         """
@@ -202,25 +262,28 @@ class StripeService:
         }
 
         try:
-            # Create Stripe checkout session
-            session = stripe.checkout.Session.create(
-                mode="payment",
-                payment_method_types=["card"],
-                line_items=[
-                    {
-                        "price": price_id,
-                        "quantity": 1,
-                    }
-                ],
-                metadata=metadata,
-                success_url=f"{self.base_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{self.base_url}/appeal",
-                customer_email=request.email or None,
-                billing_address_collection="required",
-                shipping_address_collection={
-                    "allowed_countries": ["US"],
-                },
-            )
+            # Create Stripe checkout session with retry logic
+            def create_session():
+                return stripe.checkout.Session.create(
+                    mode="payment",
+                    payment_method_types=["card"],
+                    line_items=[
+                        {
+                            "price": price_id,
+                            "quantity": 1,
+                        }
+                    ],
+                    metadata=metadata,
+                    success_url=f"{self.base_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
+                    cancel_url=f"{self.base_url}/appeal",
+                    customer_email=request.email or None,
+                    billing_address_collection="required",
+                    shipping_address_collection={
+                        "allowed_countries": ["US"],
+                    },
+                )
+
+            session = self._with_retry(create_session)
 
             return CheckoutResponse(
                 checkout_url=session.url or "",
@@ -247,7 +310,11 @@ class StripeService:
             SessionStatus object
         """
         try:
-            session = stripe.checkout.Session.retrieve(session_id)
+            # Retrieve session with retry logic
+            def retrieve_session():
+                return stripe.checkout.Session.retrieve(session_id)
+
+            session = self._with_retry(retrieve_session)
 
             return SessionStatus(
                 session_id=session.id,

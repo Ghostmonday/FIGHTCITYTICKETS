@@ -233,6 +233,11 @@ class LobMailService:
         },
     }
 
+    # Timeout configuration (in seconds)
+    DEFAULT_TIMEOUT = 30
+    RETRY_COUNT = 3
+    RETRY_DELAY = 1  # seconds
+
     def __init__(self, api_key: Optional[str] = None):
         """
         Initialize the Lob mail service.
@@ -248,14 +253,30 @@ class LobMailService:
         if api_key:
             try:
                 import lob
+                from urllib3.util.retry import Retry
+                from requests.adapters import HTTPAdapter
 
-                self._lob_client = lob.ApiClient(
-                    configuration=lob.Configuration(
-                        api_key=api_key, api_version="2023-08-01"
-                    )
+                # Configure Lob with timeout and retry
+                lob_config = lob.Configuration(
+                    api_key=api_key,
+                    api_version="2023-08-01"
                 )
+
+                # Create custom HTTP adapter with retry logic
+                retry_strategy = Retry(
+                    total=self.RETRY_COUNT,
+                    backoff_factor=1,
+                    status_forcelist=[429, 500, 502, 503, 504],
+                )
+                adapter = HTTPAdapter(max_retries=retry_strategy)
+
+                # Set up the client with custom adapter
+                self._lob_client = lob.ApiClient(
+                    configuration=lob_config
+                )
+                self._lob_client.session.mount("https://", adapter)
                 self._use_lob = True
-                logger.info("LobMailService initialized with Lob API")
+                logger.info("LobMailService initialized with Lob API (with retry)")
             except ImportError:
                 logger.warning("Lob library not installed, using fallback")
                 self._use_lob = False

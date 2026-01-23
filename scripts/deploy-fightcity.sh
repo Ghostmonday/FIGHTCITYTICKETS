@@ -1,5 +1,5 @@
 #!/bin/bash
-# FightCityTickets Production Deployment Script
+# FIGHTCITYTICKETS Production Deployment Script
 # Deploys to DigitalOcean droplet
 
 set -e
@@ -12,7 +12,7 @@ PROJECT_DIR="/var/www/fightcitytickets"
 DOMAIN="fightcitytickets.com"
 EMAIL="amir@example.com"
 
-echo "🚀 Deploying FightCityTickets to production..."
+echo "🚀 Deploying FIGHTCITYTICKETS to production..."
 echo "Droplet: $DROPLET_IP"
 
 # Wait for droplet to be ready

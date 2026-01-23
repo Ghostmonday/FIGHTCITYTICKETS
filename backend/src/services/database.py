@@ -1,5 +1,5 @@
 """
-Database Service for FightCityTickets.com
+Database Service for FIGHTCITYTICKETS.com
 
 Handles database connections, session management, and common operations.
 Uses SQLAlchemy with PostgreSQL for production-ready data persistence.
@@ -35,13 +35,14 @@ class DatabaseService:
         if not self.database_url:
             raise ValueError("Database URL not configured. Set DATABASE_URL in .env")
 
-        # Create engine with connection pooling
+        # Create engine with connection pooling (conservative for safety)
         self.engine = create_engine(
             self.database_url,
-            pool_size=5,
-            max_overflow=10,
-            pool_pre_ping=True,  # Verify connections before using
-            pool_recycle=3600,  # Recycle connections after 1 hour
+            pool_size=5,          # Base connections - safe for most setups
+            max_overflow=10,      # Extra connections during spikes
+            pool_pre_ping=True,   # Verify connections before using
+            pool_recycle=3600,    # Recycle connections after 1 hour
+            pool_timeout=30,      # Wait up to 30s for connection
             echo=settings.debug,  # Log SQL queries in debug mode
         )
 
@@ -53,7 +54,7 @@ class DatabaseService:
             expire_on_commit=False,
         )
 
-        logger.info("Database service initialized for {self._masked_url()}")
+        logger.info(f"Database service initialized for {self._masked_url()}")
 
     def _masked_url(self) -> str:
         """Return database URL with password masked for logging."""
@@ -62,7 +63,7 @@ class DatabaseService:
             if ":" in parts[0]:
                 user_pass = parts[0].split(":")
                 if len(user_pass) > 1:
-                    masked = "{user_pass[0]}:****@{parts[1]}"
+                    masked = f"{user_pass[0]}:****@{parts[1]}"
                     return masked
         return self.database_url
 
@@ -92,7 +93,7 @@ class DatabaseService:
             Base.metadata.create_all(bind=self.engine)
             logger.info("Database tables created successfully")
         except SQLAlchemyError as e:
-            logger.error("Failed to create tables: {e}")
+            logger.error(f"Failed to create tables: {e}")
             raise
 
     def drop_tables(self):
@@ -101,7 +102,7 @@ class DatabaseService:
             Base.metadata.drop_all(bind=self.engine)
             logger.info("Database tables dropped successfully")
         except SQLAlchemyError as e:
-            logger.error("Failed to drop tables: {e}")
+            logger.error(f"Failed to drop tables: {e}")
             raise
 
     def health_check(self) -> bool:
@@ -111,7 +112,7 @@ class DatabaseService:
                 session.execute(text("SELECT 1"))
             return True
         except SQLAlchemyError as e:
-            logger.error("Database health check failed: {e}")
+            logger.error(f"Database health check failed: {e}")
             return False
 
     def create_intake(self, **kwargs) -> Intake:
@@ -130,7 +131,7 @@ class DatabaseService:
             session.flush()  # Get the ID without committing
 
             logger.info(
-                "Created intake {intake.id} for citation {intake.citation_number}"
+                f"Created intake {intake.id} for citation {intake.citation_number}"
             )
             return intake
 
@@ -221,7 +222,7 @@ class DatabaseService:
             session.flush()
 
             logger.info(
-                "Created draft {draft.id} for intake {intake_id} (type: {appeal_type})"
+                f"Created draft {draft.id} for intake {intake_id} (type: {appeal_type})"
             )
             return draft
 
@@ -281,7 +282,7 @@ class DatabaseService:
             # Verify intake exists
             intake = session.query(Intake).filter(Intake.id == intake_id).first()
             if not intake:
-                raise ValueError("Intake {intake_id} not found")
+                raise ValueError(f"Intake {intake_id} not found")
 
             payment = Payment(
                 intake_id=intake_id,
@@ -294,7 +295,7 @@ class DatabaseService:
             session.flush()
 
             logger.info(
-                "Created payment {payment.id} for intake {intake_id} (session: {stripe_session_id})"
+                f"Created payment {payment.id} for intake {intake_id} (session: {stripe_session_id})"
             )
             return payment
 
@@ -342,7 +343,7 @@ class DatabaseService:
                     if hasattr(payment, key):
                         setattr(payment, key, value)
 
-                logger.info("Updated payment {payment.id} status to {status}")
+                logger.info(f"Updated payment {payment.id} status to {status}")
                 return payment
 
             return None
@@ -377,7 +378,7 @@ class DatabaseService:
                 payment.lob_mail_type = lob_mail_type
 
                 logger.info(
-                    "Marked payment {payment.id} as fulfilled (Lob: {lob_tracking_id})"
+                    f"Marked payment {payment.id} as fulfilled (Lob: {lob_tracking_id})"
                 )
                 return payment
 
@@ -464,7 +465,7 @@ def test_database():
             db.create_tables()
             print("✅ Database tables created/verified")
         except Exception as e:
-            print("⚠️  Tables may already exist: {e}")
+            print(f"⚠️  Tables may already exist: {e}")
 
         # Test creating an intake
         test_intake = db.create_intake(
@@ -479,7 +480,7 @@ def test_database():
             status="draft",
         )
         print(
-            "✅ Created intake {test_intake.id} for citation {test_intake.citation_number}"
+            f"✅ Created intake {test_intake.id} for citation {test_intake.citation_number}"
         )
 
         # Test creating a draft
@@ -489,7 +490,7 @@ def test_database():
             appeal_type=AppealType.STANDARD,
             is_final=True,
         )
-        print("✅ Created draft {test_draft.id} for intake {test_intake.id}")
+        print(f"✅ Created draft {test_draft.id} for intake {test_intake.id}")
 
         # Test creating a payment
         test_payment = db.create_payment(
@@ -499,12 +500,12 @@ def test_database():
             appeal_type=AppealType.STANDARD,
             status=PaymentStatus.PENDING,
         )
-        print("✅ Created payment {test_payment.id} for intake {test_intake.id}")
+        print(f"✅ Created payment {test_payment.id} for intake {test_intake.id}")
 
         # Test retrieval
         retrieved_intake = db.get_intake(test_intake.id)
         if retrieved_intake:
-            print("✅ Retrieved intake {retrieved_intake.id}")
+            print(f"✅ Retrieved intake {retrieved_intake.id}")
 
         retrieved_payment = db.get_payment_by_session("cs_test_123456789")
         if retrieved_payment:
@@ -514,7 +515,7 @@ def test_database():
         print("✅ Database Service Test Complete")
 
     except Exception as e:
-        print("❌ Database test failed: {e}")
+        print(f"❌ Database test failed: {e}")
         import traceback
 
         traceback.print_exc()

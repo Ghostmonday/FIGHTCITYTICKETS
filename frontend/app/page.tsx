@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppeal } from "./lib/appeal-context";
 import LegalDisclaimer from "../components/LegalDisclaimer";
+import { apiClient } from "./lib/api-client";
 
 // Force dynamic rendering - this page uses client-side context
 export const dynamic = "force-dynamic";
@@ -87,25 +88,34 @@ export default function Home() {
     setValidationResult(null);
     setIsValidating(true);
 
-    const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-
     try {
-      const response = await fetch(`${apiBase}/api/citations/validate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          citation_number: citationNumber,
-          license_plate: licensePlate || undefined,
-          violation_date: violationDate || undefined,
-          city_id: selectedCity,
-        }),
+      const data = await apiClient.post<{
+        is_valid: boolean;
+        citation_number: string;
+        agency: string;
+        deadline_date?: string;
+        days_remaining?: number;
+        is_past_deadline: boolean;
+        is_urgent: boolean;
+        error_message?: string;
+        formatted_citation?: string;
+        city_id?: string;
+        section_id?: string;
+        appeal_deadline_days: number;
+        phone_confirmation_required: boolean;
+        phone_confirmation_policy?: any;
+        city_mismatch: boolean;
+        selected_city_mismatch_message?: string;
+      }>("/tickets/validate", {
+        citation_number: citationNumber,
+        license_plate: licensePlate || undefined,
+        violation_date: violationDate || undefined,
+        city_id: selectedCity,
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.valid) {
+      if (!data.is_valid) {
         setError(
-          data.error ||
+          data.error_message ||
             "We could not validate this citation. Please check the number and try again."
         );
         setIsValidating(false);
@@ -129,12 +139,12 @@ export default function Home() {
 
       setValidationResult({
         valid: true,
-        citationId: data.citation_id,
-        detectedCity: data.detected_city || selectedCity,
+        citationId: data.citation_number,
+        detectedCity: data.city_id || selectedCity,
         selectedCityName,
-        cityId: selectedCity,
-        sectionId: detectedCity?.sectionId || "",
-        appealDeadlineDays: detectedCity?.appealDeadlineDays || 21,
+        cityId: data.city_id || selectedCity,
+        sectionId: data.section_id || "",
+        appealDeadlineDays: data.appeal_deadline_days || 21,
       });
     } catch (err) {
       setError(
@@ -612,7 +622,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-stone-200 py-8 px-4">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-stone-500">
-          <p>© 2025 FightCityTickets.com</p>
+          <p>© 2025 FIGHTCITYTICKETS.com</p>
           <div className="flex gap-6">
             <Link href="/terms" className="hover:text-stone-800 transition">
               Terms

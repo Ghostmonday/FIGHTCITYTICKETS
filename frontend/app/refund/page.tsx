@@ -2,7 +2,7 @@ import Link from "next/link";
 import LegalDisclaimer from "../../components/LegalDisclaimer";
 
 /**
- * Refund Policy Page for FightCityTickets.com
+ * Refund Policy Page for FIGHTCITYTICKETS.com
  *
  * Required for payment processor compliance.
  * Clearly defines refund terms to prevent chargebacks and disputes.
@@ -11,9 +11,9 @@ import LegalDisclaimer from "../../components/LegalDisclaimer";
  */
 
 export const metadata = {
-  title: "Refund Policy | FightCityTickets.com",
+  title: "Refund Policy | FIGHTCITYTICKETS.com",
   description:
-    "Refund policy for FightCityTickets.com - Procedural compliance service for parking ticket appeals",
+    "Refund policy for FIGHTCITYTICKETS.com - Procedural compliance service for parking ticket appeals",
 };
 
 export default function RefundPage() {
@@ -45,7 +45,7 @@ export default function RefundPage() {
 
             <h2>1. Overview</h2>
             <p>
-              At FightCityTickets.com, we understand that circumstances can
+              At FIGHTCITYTICKETS.com, we understand that circumstances can
               change. This refund policy is designed to be fair and transparent
               while protecting both you and our business.
             </p>

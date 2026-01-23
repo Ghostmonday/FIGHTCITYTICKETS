@@ -27,7 +27,7 @@ export default function LegalDisclaimer({
           for appealing.
         </p>
         <p>
-          FightCityTickets.com is a{" "}
+          FIGHTCITYTICKETS.com is a{" "}
           <strong>procedural compliance service</strong>. We do not provide
           legal advice, legal representation, or legal recommendations. We do
           not interpret laws or guarantee outcomes. We ensure your appeal meets
@@ -67,7 +67,7 @@ export default function LegalDisclaimer({
           refine your own reasons for appealing a parking ticket.
         </p>
         <p className="text-xs text-gray-500 border-t border-gray-200 pt-3">
-          FightCityTickets.com is a{" "}
+          FIGHTCITYTICKETS.com is a{" "}
           <strong>procedural compliance service</strong>. We do not provide
           legal advice. For legal guidance, consult a licensed attorney.
         </p>

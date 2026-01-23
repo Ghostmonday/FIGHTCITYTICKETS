@@ -1,5 +1,5 @@
 
-# FightCityTickets.com - Technical Handoff Document
+# FIGHTCITYTICKETS.com - Technical Handoff Document
 
 **Version:** 1.0  
 **Date:** January 10, 2025  
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-FightCityTickets.com is a procedural compliance service that helps users prepare and mail parking ticket appeals to municipalities across the United States. The system is built on a modern full-stack architecture with FastAPI (Python) backend, Next.js (React/TypeScript) frontend, PostgreSQL database, and integration with Stripe (payments), Lob (certified mail), and DeepSeek (AI letter refinement).
+FIGHTCITYTICKETS.com is a procedural compliance service that helps users prepare and mail parking ticket appeals to municipalities across the United States. The system is built on a modern full-stack architecture with FastAPI (Python) backend, Next.js (React/TypeScript) frontend, PostgreSQL database, and integration with Stripe (payments), Lob (certified mail), and DeepSeek (AI letter refinement).
 
 **Critical Business Model Notes:**
 - NOT a law firm - we provide document preparation services only
@@ -587,7 +587,7 @@ NYPD_PATTERN = re.compile(r"^[A-Z0-9]{8,12}$")  # NYC
 
 **Document Generated:** 2025-01-10  
 **Last Updated:** 2025-01-10  
-**Maintained By:** FightCityTickets Engineering Team
+**Maintained By:** FIGHTCITYTICKETS Engineering Team
 
 ---
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# UFW Firewall Setup for FightCityTickets
+# UFW Firewall Setup for FIGHTCITYTICKETS
 # Configures firewall for web server, API, and SSH access
 
 set -e

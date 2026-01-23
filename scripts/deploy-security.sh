@@ -1,5 +1,5 @@
 #!/bin/bash
-# FightCityTickets - Security Hardening Deployment Script
+# FIGHTCITYTICKETS - Security Hardening Deployment Script
 # Run this on your local machine to deploy security configurations
 #
 # Usage: ./scripts/deploy-security.sh
@@ -7,7 +7,7 @@
 
 set -e
 
-echo "🛡️  Deploying Security Hardening to FightCityTickets"
+echo "🛡️  Deploying Security Hardening to FIGHTCITYTICKETS"
 echo "======================================================"
 echo ""
 

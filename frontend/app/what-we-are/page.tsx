@@ -2,7 +2,7 @@ import Link from "next/link";
 import LegalDisclaimer from "../../components/LegalDisclaimer";
 
 /**
- * What We Are / What We Are Not Page for FightCityTickets.com
+ * What We Are / What We Are Not Page for FIGHTCITYTICKETS.com
  *
  * Critical compliance page that clearly distinguishes procedural compliance
  * from legal services. Required for UPL compliance and user expectations.
@@ -210,7 +210,7 @@ export default function WhatWeArePage() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-stone-500">
-          <p>© 2025 FightCityTickets.com | Neural Draft LLC</p>
+          <p>© 2025 FIGHTCITYTICKETS.com | Neural Draft LLC</p>
           <p className="mt-1">
             Procedural Compliance. Document Preparation. Clerical Engine™.
           </p>

@@ -1,5 +1,5 @@
 """
-End-to-End Integration Tests for FightSFTickets.com
+End-to-End Integration Tests for FIGHTCITYTICKETS.com
 
 Tests the complete integration flow:
 1. Stripe webhook handling (real Stripe webhooks)

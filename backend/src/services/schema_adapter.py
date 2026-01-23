@@ -1,5 +1,5 @@
 """
-Schema Adapter Service for FightCityTickets.com
+Schema Adapter Service for FIGHTCITYTICKETS.com
 
 Transforms rich/flexible JSON city configurations into strict Schema 4.3.0 format.
 Handles normalization, default values, validation, and transformation of legacy formats

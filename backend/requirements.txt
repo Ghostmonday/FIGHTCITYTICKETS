@@ -1,5 +1,6 @@
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
+uvloop==0.21.0  # High-performance event loop for asyncio
 pydantic==2.9.2
 pydantic-settings==2.5.2
 python-dotenv==1.0.1

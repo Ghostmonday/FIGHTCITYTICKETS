@@ -3,11 +3,11 @@ import Link from "next/link";
 import { loadBlogPosts } from "../lib/seo-data";
 
 export const metadata: Metadata = {
-  title: "Parking Ticket Appeal Blog | FightCityTickets.com",
+  title: "Parking Ticket Appeal Blog | FIGHTCITYTICKETS.com",
   description:
     "Learn how to appeal parking tickets, understand violation codes, and navigate the appeals process in cities across the US.",
   openGraph: {
-    title: "Parking Ticket Appeal Blog | FightCityTickets.com",
+    title: "Parking Ticket Appeal Blog | FIGHTCITYTICKETS.com",
     description:
       "Expert guides on appealing parking tickets in major US cities",
     type: "website",
@@ -39,7 +39,7 @@ export default function BlogIndexPage() {
             href="/"
             className="text-blue-600 hover:text-blue-700 font-bold text-xl"
           >
-            ← FightCityTickets.com
+            ← FIGHTCITYTICKETS.com
           </Link>
         </div>
       </header>
@@ -133,12 +133,12 @@ export default function BlogIndexPage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Blog",
-            name: "FightCityTickets.com Blog",
+            name: "FIGHTCITYTICKETS.com Blog",
             description: "Expert guides on appealing parking tickets",
             url: "https://fightcitytickets.com/blog",
             publisher: {
               "@type": "Organization",
-              name: "FightCityTickets.com",
+              name: "FIGHTCITYTICKETS.com",
             },
             blogPost: posts.slice(0, 10).map((post) => ({
               "@type": "BlogPosting",

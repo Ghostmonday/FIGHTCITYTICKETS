@@ -1,4 +1,4 @@
-# FightCityTickets.com E2E Compliance Audit Report
+# FIGHTCITYTICKETS.com E2E Compliance Audit Report
 ## Operation Civil Shield Alignment Audit
 
 **Date:** 2025-01-09  
@@ -10,7 +10,7 @@
 
 ## EXECUTIVE SUMMARY
 
-After comprehensive end-to-end audit of the FightCityTickets.com production codebase, the following issues were identified regarding Operation Civil Shield brand positioning and regulatory compliance:
+After comprehensive end-to-end audit of the FIGHTCITYTICKETS.com production codebase, the following issues were identified regarding Operation Civil Shield brand positioning and regulatory compliance:
 
 | Category | Files Affected | Priority | Status |
 |----------|----------------|----------|--------|
@@ -136,7 +136,7 @@ const disclaimerText = {
         what <strong className="text-gray-800">you</strong> tell us is your reason for appealing.
       </p>
       <p>
-        FightCityTickets.com is a <strong>procedural compliance service</strong>. We do not provide 
+        FIGHTCITYTICKETS.com is a <strong>procedural compliance service</strong>. We do not provide 
         legal advice, legal representation, or legal recommendations. We do not interpret laws 
         or guarantee outcomes. We ensure your appeal meets the exacting clerical standards 
         that municipalities use to reject citizen submissions.
@@ -164,7 +164,7 @@ const disclaimerText = {
     <div className="space-y-2 text-sm text-gray-600 leading-relaxed">
       <p>
         <strong className="text-gray-800">We aren't lawyers. We're paperwork experts.</strong>{" "}
-        FightCityTickets.com is a procedural compliance service that helps you articulate 
+        FIGHTCITYTICKETS.com is a procedural compliance service that helps you articulate 
         your own reasons for appealing a parking ticket. We refine and format the information 
         you provide to create a perfectly compliant appeal letter.
       </p>
@@ -196,7 +196,7 @@ const disclaimerText = {
   <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
     <p>
       <strong className="text-gray-900">We aren't lawyers. We're paperwork experts.</strong>{" "}
-      FightCityTickets.com is a procedural compliance service. We help you articulate 
+      FIGHTCITYTICKETS.com is a procedural compliance service. We help you articulate 
       and refine your own reasons for appealing a parking ticket. We act as a scribe, 
       helping you express what <strong className="text-gray-900">you</strong> tell us 
       is your reason for appealing. We make the appeal process frictionless so you are 
@@ -237,7 +237,7 @@ const disclaimerText = {
 
 <p className="text-xs text-gray-500 text-center leading-relaxed max-w-4xl mx-auto mb-4">
   <strong className="text-gray-700">We aren't lawyers. We're paperwork experts.</strong>{" "}
-  FightCityTickets.com is a procedural compliance service that helps you articulate 
+  FIGHTCITYTICKETS.com is a procedural compliance service that helps you articulate 
   your own reasons for appealing a parking ticket. We refine and format the information 
   you provide to create a professional appeal letter. We do not provide legal advice. 
   The decision to appeal and the arguments presented are entirely yours.
@@ -368,7 +368,7 @@ const disclaimerText = {
 
 def _get_system_prompt(self) -> str:
     """Get the UPL-compliant system prompt for DeepSeek."""
-    return """You are a Professional Language Articulation and Document Refinement Specialist for FightCityTickets.com.
+    return """You are a Professional Language Articulation and Document Refinement Specialist for FIGHTCITYTICKETS.com.
 
 CRITICAL COMPLIANCE REQUIREMENT - USER VOICE PRESERVATION:
 Your role is to REFINE and ARTICULATE, not to create or modify content. You must PRESERVE:
@@ -443,7 +443,7 @@ OUTPUT: An exceptionally well-articulated, professionally polished appeal letter
 # Location: Lines 1-20
 
 """
-Statement Refinement Routes for FightCityTickets.com
+Statement Refinement Routes for FIGHTCITYTICKETS.com
 
 Handles AI-powered appeal statement refinement using DeepSeek.
 
@@ -484,7 +484,7 @@ async def send_payment_confirmation(
     try:
         amount = "${:.2f}".format(amount_paid / 100)
         
-        subject = "Your appeal submission is being processed | FightCityTickets.com"
+        subject = "Your appeal submission is being processed | FIGHTCITYTICKETS.com"
         
         body = """FIGHTCITYTICKETS.COM
 
@@ -503,7 +503,7 @@ We help you submit your own appeal. The outcome depends on the city.
 Thank you for choosing procedural perfection.
 
 --
-FightCityTickets.com
+FIGHTCITYTICKETS.com
 We aren't lawyers. We're paperwork experts.
 """
         
@@ -525,7 +525,7 @@ async def send_appeal_mailed(
 ) -> bool:
     """Send appeal mailed confirmation email."""
     try:
-        subject = "Your appeal is on its way | FightCityTickets.com"
+        subject = "Your appeal is on its way | FIGHTCITYTICKETS.com"
         
         body = """FIGHTCITYTICKETS.COM
 
@@ -545,7 +545,7 @@ Remember: We help you submit your appeal. We do not provide legal advice
 or represent you in any legal matter.
 
 --
-FightCityTickets.com
+FIGHTCITYTICKETS.com
 We aren't lawyers. We're paperwork experts.
 """
         
@@ -574,9 +574,9 @@ We aren't lawyers. We're paperwork experts.
 // Location: Lines 8-50
 
 export const metadata: Metadata = {
-  title: "FightCityTickets.com - Due Process as a Service",
+  title: "FIGHTCITYTICKETS.com - Due Process as a Service",
   description:
-    "We aren't lawyers. We're paperwork experts. FightCityTickets helps you submit a procedurally perfect parking ticket appeal. Document preparation and mailing service—not legal advice.",
+    "We aren't lawyers. We're paperwork experts. FIGHTCITYTICKETS helps you submit a procedurally perfect parking ticket appeal. Document preparation and mailing service—not legal advice.",
   keywords:
     "parking ticket appeal, contest parking ticket, fight parking citation, appeal parking violation, document preparation service, procedural compliance, paperwork experts",
   // ... rest of metadata
@@ -589,7 +589,7 @@ export const metadata: Metadata = {
     __html: JSON.stringify({
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "FightCityTickets.com",
+      name: "FIGHTCITYTICKETS.com",
       url: "https://fightcitytickets.com",
       logo: "https://fightcitytickets.com/logo.png",
       description: "Procedural compliance service for parking ticket appeals. Document preparation—not legal advice.",
@@ -672,7 +672,7 @@ import Link from "next/link";
 import LegalDisclaimer from "../../components/LegalDisclaimer";
 
 export const metadata = {
-  title: "What We Are / What We Are Not | FightCityTickets.com",
+  title: "What We Are / What We Are Not | FIGHTCITYTICKETS.com",
   description: "We aren't lawyers. We're paperwork experts. Learn about our procedural compliance service for parking ticket appeals.",
 };
 

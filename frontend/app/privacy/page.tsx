@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 /**
- * Privacy Policy Page for FightCityTickets.com
+ * Privacy Policy Page for FIGHTCITYTICKETS.com
  *
  * Critical operational compliance page required for:
  * - Payment processor requirements (Stripe)
@@ -13,9 +13,9 @@ import Link from "next/link";
  */
 
 export const metadata = {
-  title: "Privacy Policy | FightCityTickets.com",
+  title: "Privacy Policy | FIGHTCITYTICKETS.com",
   description:
-    "Privacy policy for FightCityTickets.com - Procedural compliance service for parking ticket appeals",
+    "Privacy policy for FIGHTCITYTICKETS.com - Procedural compliance service for parking ticket appeals",
 };
 
 export default function PrivacyPage() {

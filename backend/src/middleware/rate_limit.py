@@ -1,5 +1,5 @@
 """
-Rate Limiting Middleware for FightSFTickets.com
+Rate Limiting Middleware for FIGHTCITYTICKETS.com
 
 Provides rate limiting protection against:
 - Brute force attacks

@@ -47,7 +47,7 @@ TEST_MAIL_CONFIG = {
     "to_city": "San Francisco",
     "to_state": "CA",
     "to_zip": "94102",
-    "return_name": "FightCityTickets.com",
+    "return_name": "FIGHTCITYTICKETS.com",
     "return_address_line1": "123 Main St",
     "return_address_line2": "Apt 4B",
     "return_city": "San Francisco",
@@ -199,7 +199,7 @@ Generated: {datetime.now().isoformat()}
 
 Dear San Francisco Parking Appeals,
 
-This is an automated test letter to verify that the FightCityTickets.com
+This is an automated test letter to verify that the FIGHTCITYTICKETS.com
 mail delivery system is working correctly.
 
 TEST CONFIGURATION:
@@ -215,7 +215,7 @@ This letter tests:
 If you received this letter, the mail delivery system is WORKING!
 
 Best regards,
-FightCityTickets.com E2E Test System
+FIGHTCITYTICKETS.com E2E Test System
 """
 
             request = AppealLetterRequest(
@@ -305,7 +305,7 @@ FightCityTickets.com E2E Test System
                 user_zip="94103",
                 letter_text="Return address test",
                 city_id="us-san-francisco",
-                return_name="FightCityTickets.com",
+                return_name="FIGHTCITYTICKETS.com",
                 return_address_line1=TEST_MAIL_CONFIG["return_address_line1"],
                 return_address_line2=TEST_MAIL_CONFIG["return_address_line2"],
                 return_city=TEST_MAIL_CONFIG["return_city"],
@@ -313,7 +313,7 @@ FightCityTickets.com E2E Test System
                 return_zip=TEST_MAIL_CONFIG["return_zip"],
             )
 
-            assert request.return_name == "FightCityTickets.com", "Return name not set"
+            assert request.return_name == "FIGHTCITYTICKETS.com", "Return name not set"
             assert (
                 request.return_address_line1 == TEST_MAIL_CONFIG["return_address_line1"]
             ), "Return address not set"
@@ -801,7 +801,7 @@ async def run_all_tests(verbose: bool = False) -> list[TestResult]:
 
     print("\n" + "=" * 70)
     print("  CRITICAL PATHS E2E TEST SUITE")
-    print("  FightCityTickets.com - Production Readiness Tests")
+    print("  FIGHTCITYTICKETS.com - Production Readiness Tests")
     print("=" * 70)
 
     results.append(await tester.test_return_address_formatting())
@@ -876,7 +876,7 @@ Examples:
 
     print("\n" + "=" * 70)
     print("  CRITICAL PATHS E2E TEST SUITE")
-    print("  FightCityTickets.com")
+    print("  FIGHTCITYTICKETS.com")
     print("  Test Addresses: 123 Main St, San Francisco, CA 94102")
     print("=" * 70)
 

@@ -1,5 +1,5 @@
 """
-Statement Refinement Routes for FightCityTickets.com
+Statement Refinement Routes for FIGHTCITYTICKETS.com
 
 Handles AI-powered appeal statement refinement using DeepSeek.
 """

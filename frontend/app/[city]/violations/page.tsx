@@ -22,7 +22,7 @@ export async function generateMetadata({
   const cityName = cityData?.name || resolvedParams.city;
 
   return {
-    title: `${cityName} Parking Violation Codes & Locations | FightCityTickets.com`,
+    title: `${cityName} Parking Violation Codes & Locations | FIGHTCITYTICKETS.com`,
     description: `Find information about parking violation codes and common citation locations in ${cityName}. Learn how to appeal your parking ticket.`,
     openGraph: {
       title: `${cityName} Parking Violations`,

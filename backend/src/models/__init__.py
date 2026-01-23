@@ -1,5 +1,5 @@
 """
-Database Models for FightSFTickets.com
+Database Models for FIGHTCITYTICKETS.com
 
 Defines SQLAlchemy models for storing appeal data, drafts, and payments.
 """

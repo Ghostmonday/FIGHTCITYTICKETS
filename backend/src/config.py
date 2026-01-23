@@ -69,7 +69,7 @@ class Settings(BaseSettings):
     # Includes Certified Mail with Electronic Return Receipt (ERR)
     # No subscriptions - single transactional payment
     fightcity_service_fee: int = 1450  # $14.50 certified only
-    fightcity_standard_fee: int = None  # DEPRECATED - Certified-only model
+    fightcity_standard_fee: int = 0  # DEPRECATED - Certified-only model
 
     @property
     def debug(self) -> bool:
@@ -110,11 +110,11 @@ class Settings(BaseSettings):
 
             if app_env == "prod":
                 raise ValueError(
-                    "{field_name} must be changed from default value in production environment"
+                    f"{field_name} must be changed from default value in production environment"
                 )
             elif app_env in ["staging", "test"]:
                 warnings.warn(
-                    "Warning: {field_name} is using default value in {app_env} environment. "
+                    f"Warning: {field_name} is using default value in {app_env} environment. "
                     "This should be changed before production deployment.",
                     UserWarning,
                     stacklevel=2,
@@ -122,7 +122,7 @@ class Settings(BaseSettings):
             else:
                 # dev environment - just log warning
                 print(
-                    "⚠️  Warning: {field_name} is using default value. Change this before production."
+                    f"⚠️  Warning: {field_name} is using default value. Change this before production."
                 )
 
         return v
@@ -137,7 +137,7 @@ class Settings(BaseSettings):
         if not v.startswith(("sk_test_", "sk_live_")):
             warnings.warn(
                 "Stripe secret key doesn't match expected format. "
-                "Expected 'sk_test_...' or 'sk_live_...', got '{v[:10]}...'",
+                f"Expected 'sk_test_...' or 'sk_live_...', got '{v[:10]}...'",
                 UserWarning,
                 stacklevel=2,
             )
@@ -153,7 +153,7 @@ class Settings(BaseSettings):
         if not v.startswith(("pk_test_", "pk_live_")):
             warnings.warn(
                 "Stripe publishable key doesn't match expected format. "
-                "Expected 'pk_test_...' or 'pk_live_...', got '{v[:10]}...'",
+                f"Expected 'pk_test_...' or 'pk_live_...', got '{v[:10]}...'",
                 UserWarning,
                 stacklevel=2,
             )
@@ -169,7 +169,7 @@ class Settings(BaseSettings):
         if not v.startswith("whsec_"):
             warnings.warn(
                 "Stripe webhook secret doesn't match expected format. "
-                "Expected 'whsec_...', got '{v[:10]}...'",
+                f"Expected 'whsec_...', got '{v[:10]}...'",
                 UserWarning,
                 stacklevel=2,
             )
@@ -185,7 +185,7 @@ class Settings(BaseSettings):
         if not v.startswith(("test_", "live_")):
             warnings.warn(
                 "Lob API key doesn't match expected format. "
-                "Expected 'test_...' or 'live_...', got '{v[:10]}...'",
+                f"Expected 'test_...' or 'live_...', got '{v[:10]}...'",
                 UserWarning,
                 stacklevel=2,
             )
@@ -212,7 +212,7 @@ class Settings(BaseSettings):
         for field_name, default_value in default_checks:
             current_value = getattr(self, field_name)
             if current_value == default_value:
-                errors.append("{field_name} is using default value '{default_value}'")
+                errors.append(f"{field_name} is using default value '{default_value}'")
 
         # Check Stripe mode
         if self.stripe_secret_key.startswith("sk_test_"):
@@ -230,13 +230,13 @@ class Settings(BaseSettings):
 
         if errors:
             error_msg = "Production configuration errors:\n" + "\n".join(
-                "  • {e}" for e in errors
+                f"  • {e}" for e in errors
             )
             raise ValueError(error_msg)
 
         if warnings_list:
             warning_msg = "Production configuration warnings:\n" + "\n".join(
-                "  ⚠️  {w}" for w in warnings_list
+                f"  ⚠️  {w}" for w in warnings_list
             )
             print(warning_msg)
 

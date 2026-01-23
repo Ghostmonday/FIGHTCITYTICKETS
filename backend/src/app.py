@@ -1,5 +1,5 @@
 """
-Main FastAPI Application for FightCityTickets.com (Database-First Approach)
+Main FastAPI Application for FIGHTCITYTICKETS.com (Database-First Approach)
 
 This is the updated main application file that uses the database-first approach.
 All data is persisted in PostgreSQL before creating Stripe checkout sessions.
@@ -28,6 +28,7 @@ from .routes.checkout import router as checkout_router
 from .routes.health import router as health_router
 from .routes.statement import router as statement_router
 from .routes.status import router as status_router
+from .routes.telemetry import router as telemetry_router
 from .routes.tickets import router as tickets_router
 from .routes.webhooks import router as webhooks_router
 from .services.database import get_db_service
@@ -65,10 +66,10 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info("=" * 60)
-    logger.info("Starting FightCityTickets API (Database-First Approach)")
-    logger.info("Environment: {settings.app_env}")
-    logger.info("API URL: {settings.api_url}")
-    logger.info("App URL: {settings.app_url}")
+    logger.info("Starting FIGHTCITYTICKETS API (Database-First Approach)")
+    logger.info(f"Environment: {settings.app_env}")
+    logger.info(f"API URL: {settings.api_url}")
+    logger.info(f"App URL: {settings.app_url}")
     logger.info("=" * 60)
 
     try:
@@ -87,19 +88,27 @@ async def lifespan(app: FastAPI):
             logger.warning("API will start but database operations will fail")
 
     except Exception as e:
-        logger.error("❌ Startup error: {e}")
+        logger.error(f"❌ Startup error: {e}")
         # Continue startup - some features may work without database
 
     yield
 
-    # Shutdown
-    logger.info("Shutting down FightCityTickets API")
-    # Database connections are cleaned up automatically by SQLAlchemy
+    # Shutdown - graceful cleanup
+    logger.info("Shutting down FIGHTCITYTICKETS API")
+    try:
+        # Close database connections gracefully
+        db_service = get_db_service()
+        if hasattr(db_service, 'engine'):
+            db_service.engine.dispose()
+            logger.info("Database connections closed")
+    except Exception as e:
+        logger.warning(f"Error during shutdown cleanup: {e}")
+    logger.info("Shutdown complete")
 
 
 # Create FastAPI app with lifespan
 app = FastAPI(
-    title="FightCityTickets API",
+    title="FIGHTCITYTICKETS API",
     description="""
     ## Database-First Parking Ticket Appeal System
 
@@ -121,7 +130,7 @@ app = FastAPI(
     """,
     version="1.0.0",
     contact={
-        "name": "FightCityTickets Support",
+        "name": "FIGHTCITYTICKETS Support",
         "url": "https://fightcitytickets.com",
         "email": "support@fightcitytickets.com",
     },
@@ -191,6 +200,8 @@ app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
 app.include_router(webhooks_router, prefix="/webhook", tags=["webhooks"])
 app.include_router(status_router, prefix="/status", tags=["status"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
+# OCR telemetry endpoint (opt-in) - nginx strips /api/ prefix
+app.include_router(telemetry_router, prefix="/telemetry", tags=["telemetry"])
 
 # Share limiter instance with route modules
 # BACKLOG PRIORITY 1: Rate limiting integration
@@ -205,7 +216,7 @@ async def root():
     Returns basic API information and links to documentation.
     """
     return {
-        "name": "FightCityTickets API",
+        "name": "FIGHTCITYTICKETS API",
         "version": "1.0.0",
         "description": "Database-first parking ticket appeal system for San Francisco",
         "environment": settings.app_env,
@@ -288,7 +299,7 @@ async def status(request: Request):
         }
 
     except Exception as e:
-        logger.error("Status endpoint error: {e}")
+        logger.error(f"Status endpoint error: {e}")
         return {
             "status": "degraded",
             "error": str(e),
@@ -317,7 +328,7 @@ async def not_found_handler(request: Request, exc):
     from fastapi.responses import JSONResponse
 
     request_id = get_request_id(request)
-    logger.warning("404 Not Found [request_id={request_id}]: {request.url.path}")
+    logger.warning(f"404 Not Found [request_id={request_id}]: {request.url.path}")
 
     return JSONResponse(
         status_code=404,
@@ -346,7 +357,7 @@ async def internal_error_handler(request: Request, exc):
     request_id = get_request_id(request)
 
     # Log the full error with request ID
-    logger.error("Internal server error [request_id={request_id}]: {exc}")
+    logger.error(f"Internal server error [request_id={request_id}]: {exc}")
     logger.error(traceback.format_exc())
 
     return JSONResponse(

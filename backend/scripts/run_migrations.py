@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Migration script for FightSFTickets backend.
+Migration script for FIGHTCITYTICKETS backend.
 
 This script handles database migrations in different environments:
 1. Test environment (SQLite) - for local development without Docker

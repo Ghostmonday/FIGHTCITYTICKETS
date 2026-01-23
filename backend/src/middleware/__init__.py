@@ -1,5 +1,5 @@
 """
-Middleware package for FightSFTickets.com
+Middleware package for FIGHTCITYTICKETS.com
 
 Provides cross-cutting concerns for the API:
 - Request ID tracking

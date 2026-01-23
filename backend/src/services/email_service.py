@@ -1,6 +1,6 @@
 
 """
-Email Service for FightCityTickets.com
+Email Service for FIGHTCITYTICKETS.com
 
 Handles email notifications for payment confirmations and appeal status updates.
 Currently logs emails; integrate with SendGrid, AWS SES, or similar for production.

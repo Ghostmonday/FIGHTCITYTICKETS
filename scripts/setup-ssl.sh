@@ -1,5 +1,5 @@
 #!/bin/bash
-# SSL Setup Script for FightCityTickets
+# SSL Setup Script for FIGHTCITYTICKETS
 # Run this script to obtain and renew Let's Encrypt SSL certificates
 
 set -e
@@ -140,7 +140,7 @@ echo "    crazymax/fail2ban"
 # Security Audit Script
 # Run this to check your server's security posture
 
-echo "🔍 Security Audit for FightCityTickets"
+echo "🔍 Security Audit for FIGHTCITYTICKETS"
 echo "======================================"
 echo ""
 

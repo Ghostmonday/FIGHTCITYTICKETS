@@ -31,7 +31,7 @@ export default function TermsPage() {
                   And in a bureaucracy, paperwork is power.
                 </p>
                 <p>
-                  FightCityTickets.com is a{" "}
+                  FIGHTCITYTICKETS.com is a{" "}
                   <strong>procedural compliance service</strong>. We help you
                   articulate and refine your own reasons for appealing a parking
                   ticket. We act as a scribe, helping you express what{" "}
@@ -60,14 +60,14 @@ export default function TermsPage() {
 
             <h2>1. Acceptance of Terms</h2>
             <p>
-              By accessing or using FightCityTickets, you agree to be bound by
+              By accessing or using FIGHTCITYTICKETS, you agree to be bound by
               these Terms of Service. If you do not agree to these terms, please
               do not use our Service.
             </p>
 
             <h2>2. Service Description</h2>
             <p>
-              FightCityTickets provides automated tools to help users generate
+              FIGHTCITYTICKETS provides automated tools to help users generate
               and mail parking ticket appeal letters. Our services include:
             </p>
             <ul>
@@ -133,7 +133,7 @@ export default function TermsPage() {
 
             <h2>5. Limitation of Liability</h2>
             <p>
-              To the fullest extent permitted by law, FightCityTickets and its
+              To the fullest extent permitted by law, FIGHTCITYTICKETS and its
               affiliates shall not be liable for any indirect, incidental,
               special, consequential, or punitive damages, including but not
               limited to lost profits, data loss, or the cost of substitute

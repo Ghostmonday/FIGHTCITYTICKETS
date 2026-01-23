@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Run E2E Integration Tests for FightSFTickets.com
+Run E2E Integration Tests for FIGHTCITYTICKETS.com
 
 This script runs comprehensive end-to-end integration tests that verify:
 1. Stripe webhook integration works

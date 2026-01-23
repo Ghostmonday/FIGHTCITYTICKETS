@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 /**
- * Contact / Support Page for FightCityTickets.com
+ * Contact / Support Page for FIGHTCITYTICKETS.com
  *
  * Required for platform legitimacy and user trust.
  * Provides visible accountability for the business.
@@ -10,8 +10,8 @@ import Link from "next/link";
  */
 
 export const metadata = {
-  title: "Contact Us | FightCityTickets.com",
-  description: "Contact FightCityTickets.com - We're here to help with your parking ticket appeal",
+  title: "Contact Us | FIGHTCITYTICKETS.com",
+  description: "Contact FIGHTCITYTICKETS.com - We're here to help with your parking ticket appeal",
 };
 
 export default function ContactPage() {

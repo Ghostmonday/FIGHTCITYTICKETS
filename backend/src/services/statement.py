@@ -61,6 +61,11 @@ class DeepSeekService:
 
     API_URL = "https://api.deepseek.com/chat/completions"
 
+    # Timeout and retry configuration
+    DEFAULT_TIMEOUT = 60.0  # seconds
+    RETRY_COUNT = 3
+    RETRY_DELAY = 2  # seconds
+
     def __init__(self, api_key: Optional[str] = None):
         """
         Initialize the DeepSeek service.
@@ -262,69 +267,98 @@ added by the Clerical Engine™ automatically)."""
     async def refine_statement_async(
         self, request: StatementRefinementRequest
     ) -> StatementRefinementResponse:
-        """Refine a user statement using DeepSeek AI."""
+        """Refine a user statement using DeepSeek AI with retries."""
         import time
+        import httpx
 
         start_time = time.time()
         original_text = request.appeal_reason
 
-        try:
-            import httpx
+        # Retry logic for transient failures
+        last_error = None
+        for attempt in range(self.RETRY_COUNT):
+            try:
+                async with httpx.AsyncClient(timeout=self.DEFAULT_TIMEOUT) as client:
+                    response = await client.post(
+                        self.API_URL,
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": "deepseek-chat",
+                            "messages": [
+                                {"role": "system", "content": self._get_system_prompt()},
+                                {
+                                    "role": "user",
+                                    "content": self._create_refinement_prompt(request),
+                                },
+                            ],
+                            "temperature": 0.3,
+                            "max_tokens": 2000,
+                            "stream": False,
+                        },
+                    )
 
-            async with httpx.AsyncClient(timeout=60.0) as client:
-                response = await client.post(
-                    self.API_URL,
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "model": "deepseek-chat",
-                        "messages": [
-                            {"role": "system", "content": self._get_system_prompt()},
-                            {
-                                "role": "user",
-                                "content": self._create_refinement_prompt(request),
-                            },
-                        ],
-                        "temperature": 0.3,
-                        "max_tokens": 2000,
-                        "stream": False,
-                    },
+                response.raise_for_status()
+                data = response.json()
+
+                refined_text = data["choices"][0]["message"]["content"]
+                refined_text = self._clean_response(refined_text)
+
+                # Fallback validation
+                if not self._has_proper_structure(refined_text):
+                    logger.warning("AI response lacks proper structure, using fallback")
+                    refined_text = self._local_fallback_refinement(request)
+
+                processing_time = int((time.time() - start_time) * 1000)
+
+                return StatementRefinementResponse(
+                    refined_text=refined_text,
+                    original_text=original_text,
+                    citation_number=request.citation_number,
+                    processing_time_ms=processing_time,
                 )
 
-            response.raise_for_status()
-            data = response.json()
+            except httpx.TimeoutException as e:
+                last_error = e
+                logger.warning(f"DeepSeek timeout (attempt {attempt + 1}/{self.RETRY_COUNT})")
+                if attempt < self.RETRY_COUNT - 1:
+                    await time.sleep(self.RETRY_DELAY * (2 ** attempt))  # Exponential backoff
 
-            refined_text = data["choices"][0]["message"]["content"]
-            refined_text = self._clean_response(refined_text)
+            except httpx.NetworkError as e:
+                last_error = e
+                logger.warning(f"DeepSeek network error (attempt {attempt + 1}/{self.RETRY_COUNT})")
+                if attempt < self.RETRY_COUNT - 1:
+                    await time.sleep(self.RETRY_DELAY * (2 ** attempt))
 
-            # Fallback validation
-            if not self._has_proper_structure(refined_text):
-                logger.warning("AI response lacks proper structure, using fallback")
-                refined_text = self._local_fallback_refinement(request)
+            except httpx.HTTPStatusError as e:
+                # Retry on 5xx errors, but not on 4xx
+                if e.response.status_code >= 500:
+                    last_error = e
+                    logger.warning(f"DeepSeek server error {e.response.status_code} (attempt {attempt + 1}/{self.RETRY_COUNT})")
+                    if attempt < self.RETRY_COUNT - 1:
+                        await time.sleep(self.RETRY_DELAY * (2 ** attempt))
+                else:
+                    # Non-retryable client error
+                    logger.error(f"DeepSeek client error: {e}")
+                    break
 
-            processing_time = int((time.time() - start_time) * 1000)
+            except Exception as e:
+                logger.error(f"DeepSeek API error: {e}")
+                break
 
-            return StatementRefinementResponse(
-                refined_text=refined_text,
-                original_text=original_text,
-                citation_number=request.citation_number,
-                processing_time_ms=processing_time,
-            )
+        # All retries exhausted or non-retryable error - fallback to local refinement
+        logger.error(f"DeepSeek failed after {self.RETRY_COUNT} attempts: {last_error}")
+        refined_text = self._local_fallback_refinement(request)
+        processing_time = int((time.time() - start_time) * 1000)
 
-        except Exception as e:
-            logger.error(f"DeepSeek API error: {e}")
-            # Fallback to local refinement
-            refined_text = self._local_fallback_refinement(request)
-            processing_time = int((time.time() - start_time) * 1000)
-
-            return StatementRefinementResponse(
-                refined_text=refined_text,
-                original_text=original_text,
-                citation_number=request.citation_number,
-                processing_time_ms=processing_time,
-            )
+        return StatementRefinementResponse(
+            refined_text=refined_text,
+            original_text=original_text,
+            citation_number=request.citation_number,
+            processing_time_ms=processing_time,
+        )
 
     def _local_fallback_refinement(self, request: StatementRefinementRequest) -> str:
         """Local fallback when AI is unavailable."""

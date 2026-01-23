@@ -1,5 +1,5 @@
 """
-Checkout Routes for FightCityTickets.com (Database-First Approach)
+Checkout Routes for FIGHTCITYTICKETS.com (Database-First Approach)
 
 Handles payment session creation and status checking for appeal processing.
 Uses database for persistent storage before creating Stripe checkout sessions.

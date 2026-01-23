@@ -39,14 +39,14 @@ export async function generateMetadata({
     post.content.substring(0, 160).replace(/\n/g, " ").trim() + "...";
 
   return {
-    title: `${post.title} | FightCityTickets.com`,
+    title: `${post.title} | FIGHTCITYTICKETS.com`,
     description,
     openGraph: {
       title: post.title,
       description,
       type: "article",
       url: `https://fightcitytickets.com/blog/${post.slug}`,
-      siteName: "FightCityTickets.com",
+      siteName: "FIGHTCITYTICKETS.com",
     },
     twitter: {
       card: "summary_large_image",
@@ -93,7 +93,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             href="/"
             className="text-blue-600 hover:text-blue-700 font-bold text-xl"
           >
-            ← FightCityTickets.com
+            ← FIGHTCITYTICKETS.com
           </Link>
         </div>
       </header>
@@ -224,11 +224,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             description: post.content.substring(0, 160),
             author: {
               "@type": "Organization",
-              name: "FightCityTickets.com",
+              name: "FIGHTCITYTICKETS.com",
             },
             publisher: {
               "@type": "Organization",
-              name: "FightCityTickets.com",
+              name: "FIGHTCITYTICKETS.com",
               logo: {
                 "@type": "ImageObject",
                 url: "https://fightcitytickets.com/logo.png",
