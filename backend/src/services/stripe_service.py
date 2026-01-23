@@ -7,6 +7,7 @@ Integrates with citation validation and mail fulfillment.
 
 from dataclasses import dataclass
 from typing import Any
+import time
 
 import stripe
 
@@ -122,8 +123,6 @@ class StripeService:
         Raises:
             Exception: After all retries are exhausted
         """
-        import time
-
         last_exception = None
         for attempt in range(self.RETRY_COUNT):
             try:
