@@ -1,0 +1,40 @@
+# Cursor/Roo Code settings for FightSFTickets
+# This file configures the AI-assisted coding experience
+
+# General behavior
+enableAutoAccept: true
+maxTokens: 8192
+temperature: 0.2
+
+# Context settings
+contextTokens: 15000
+enableIndexedDB: true
+
+# MCP Servers (Model Context Protocol)
+mcpServers:
+  filesystem:
+    enabled: true
+    alwaysAllow:
+      - read
+      - list
+  execute_command:
+    enabled: true
+    allowedCommands:
+      - python
+      - npm
+      - docker
+      - docker-compose
+      - git
+
+# Feature flags
+inlineSuggest: true
+syntaxHighlighting: true
+autoComplete: true
+
+# Terminal integration
+terminalIntegration: true
+shellIntegration: true
+
+# Security
+dangerouslyAllowHttp: false
+confirmApiCalls: false

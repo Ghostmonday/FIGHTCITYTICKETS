@@ -17,12 +17,14 @@ Author: Neural Draft LLC
 import asyncio
 import logging
 import os
+import time
 from datetime import datetime
 from typing import Any, Dict, Optional
 
 from pydantic import BaseModel
 
 from ..config import settings
+from ..middleware.resilience import CircuitBreaker, create_deepseek_circuit
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -50,6 +52,8 @@ class StatementRefinementResponse(BaseModel):
     processing_time_ms: int
     model_used: str = "deepseek-chat"
     clerical_engine_version: str = "2.0.0"
+    status: str = "completed"  # "completed", "fallback", "failed"
+    fallback_used: bool = False
 
 
 class DeepSeekService:
@@ -67,6 +71,69 @@ class DeepSeekService:
     RETRY_COUNT = 3
     RETRY_DELAY = 2  # seconds
 
+    # Rate limiting configuration
+    MAX_REFINEMENTS_PER_MINUTE = 5
+    MAX_TOKENS_PER_DAY = 1000
+
+    def _ai_fallback(self) -> StatementRefinementResponse:
+        """Fallback when circuit breaker is open."""
+        return StatementRefinementResponse(
+            refined_text=self._local_fallback_refinement(StatementRefinementRequest(
+                citation_number="",
+                appeal_reason="AI service temporarily unavailable. Please try again later.",
+            )),
+            original_text="",
+            citation_number="",
+            processing_time_ms=0,
+            model_used="fallback",
+            status="failed",
+            fallback_used=True,
+        )
+
+    def _check_rate_limit(self, client_ip: str) -> tuple[bool, int]:
+        """
+        Check if client is within rate limits.
+        
+        Returns:
+            (is_allowed, retry_after_seconds)
+        """
+        now = time.time()
+        
+        # Check per-minute limit
+        if client_ip not in self._refinement_count:
+            self._refinement_count[client_ip] = []
+        
+        # Remove old timestamps (older than 1 minute)
+        self._refinement_count[client_ip] = [
+            ts for ts in self._refinement_count[client_ip]
+            if now - ts < 60
+        ]
+        
+        if len(self._refinement_count[client_ip]) >= self.MAX_REFINEMENTS_PER_MINUTE:
+            oldest = self._refinement_count[client_ip][0]
+            retry_after = int(60 - (now - oldest))
+            return False, retry_after
+        
+        # Check daily token limit
+        today = datetime.now().date().isoformat()
+        token_key = f"{client_ip}:{today}"
+        if self._token_count.get(token_key, 0) >= self.MAX_TOKENS_PER_DAY:
+            return False, 86400  # Retry tomorrow
+        
+        return True, 0
+
+    def _record_request(self, client_ip: str, estimated_tokens: int) -> None:
+        """Record a request for rate limiting."""
+        now = time.time()
+        
+        if client_ip not in self._refinement_count:
+            self._refinement_count[client_ip] = []
+        self._refinement_count[client_ip].append(now)
+        
+        today = datetime.now().date().isoformat()
+        token_key = f"{client_ip}:{today}"
+        self._token_count[token_key] = self._token_count.get(token_key, 0) + estimated_tokens
+
     def __init__(self, api_key: Optional[str] = None):
         """
         Initialize the DeepSeek service.
@@ -78,6 +145,11 @@ class DeepSeekService:
             api_key or os.environ.get("DEEPSEEK_API_KEY") or settings.deepseek_api_key
         )
         self._client = None
+        # Circuit breaker for AI API resilience
+        self._circuit_breaker = create_deepseek_circuit(fallback=self._ai_fallback)
+        # Rate limiting tracking
+        self._refinement_count: Dict[str, list] = {}  # IP -> timestamps
+        self._token_count: Dict[str, int] = {}  # IP -> token count
 
     def _get_system_prompt(self) -> str:
         """

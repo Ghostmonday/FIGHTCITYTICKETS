@@ -1,24 +1,32 @@
 """
-Stripe Payment Service for FIGHTCITYTICKETS.com
+Stripe Payment Service for Fight City Tickets
 
 Handles Stripe checkout session creation, webhook verification, and payment status.
 Integrates with citation validation and mail fulfillment.
 """
 
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Optional
 import time
+import logging
 
 import stripe
 
 from ..config import settings
+from ..middleware.resilience import CircuitBreaker, create_stripe_circuit
 from .appeal_storage import get_appeal_storage
 from .citation import CitationValidator
 from .mail import AppealLetterRequest, send_appeal_letter
 
+logger = logging.getLogger(__name__)
+
 # Constants for magic numbers
 ZIP_CODE_LENGTH = 5
 STATE_CODE_LENGTH = 2
+
+# Circuit breaker configuration
+STRIPE_CIRCUIT_FAILURE_THRESHOLD = 5
+STRIPE_CIRCUIT_TIMEOUT = 300  # 5 minutes
 
 
 @dataclass
