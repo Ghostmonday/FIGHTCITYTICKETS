@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     lob_api_key: str = "test_dummy"
     lob_mode: str = "test"  # "test" or "live"
 
+    # SendGrid Email Configuration
+    sendgrid_api_key: str = "change-me"  # Override with SENDGRID_API_KEY env var
+    service_email: str = "noreply@fightcitytickets.com"
+
     # Hetzner Cloud Configuration
     hetzner_api_token: str = "change-me"  # Override with HETZNER_API_TOKEN env var
     hetzner_droplet_name: Optional[str] = (

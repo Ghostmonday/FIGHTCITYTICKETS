@@ -24,6 +24,7 @@ from .middleware.rate_limit import (
     RateLimitExceeded,
 )
 from .routes.admin import router as admin_router
+from .routes.appeals import router as appeals_router
 from .routes.checkout import router as checkout_router
 from .routes.health import router as health_router
 from .routes.statement import router as statement_router
@@ -190,12 +191,13 @@ app.add_middleware(
 # NOTE: Nginx strips /api/ prefix, so routes mounted at /api/* should be registered without /api/
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(tickets_router, prefix="/tickets", tags=["tickets"])
-# Statement router: nginx strips /api/, so mount at /statement (not /api/statement)
 app.include_router(statement_router, prefix="/statement", tags=["statement"])
 
 
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
+# Appeal storage router for frontend persistence
+app.include_router(appeals_router, prefix="/api", tags=["appeals"])
 # Webhook router: nginx strips /api/, so mount at /webhook (not /api/webhook)
 app.include_router(webhooks_router, prefix="/webhook", tags=["webhooks"])
 app.include_router(status_router, prefix="/status", tags=["status"])

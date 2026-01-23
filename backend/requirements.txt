@@ -16,6 +16,7 @@ requests==2.32.3
 stripe==10.12.0
 pydub==0.25.1
 reportlab==3.6.13
+lob==2023-08-01  # Physical mail delivery via Lob.com API
 
 # tests
 pytest==8.3.3

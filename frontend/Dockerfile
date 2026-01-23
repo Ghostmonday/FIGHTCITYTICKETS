@@ -11,10 +11,9 @@ COPY frontend/. .
 
 RUN mkdir -p data/seo
 
-# Skip build for local development/testing
-# RUN npm run build
+RUN npm run build --no-eslint
 
 EXPOSE 3000
 
 ENV PORT=3000
-CMD ["npx", "next", "dev", "-p", "3000"]
+CMD ["npm", "run", "start", "--", "-p", "3000"]

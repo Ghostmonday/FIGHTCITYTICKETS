@@ -25,3 +25,7 @@ disable = [
 # MyPy configuration (if used)
 ignore_missing_imports = true
 
+[tool.basedpyright]
+# Python path configuration for basedpyright
+pythonPath = "backend/venv/bin/python"
+venvPath = "backend"

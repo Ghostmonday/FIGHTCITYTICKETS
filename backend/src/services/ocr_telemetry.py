@@ -206,7 +206,7 @@ class OcrTelemetryService:
             if stats.get("correction_rate", 0) > 0.2:
                 suggestions.append(
                     f"High correction rate ({stats['correction_rate']*100:.1f}%) - "
-                    "consider adjusting OCR preprocessing for {city_id}"
+                    f"consider adjusting OCR preprocessing for {city_id}"
                 )
 
             if stats.get("avg_confidence", 0) < 0.6:

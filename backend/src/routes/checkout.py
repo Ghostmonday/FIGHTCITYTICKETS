@@ -224,32 +224,31 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
     try:
         with db_service.get_session() as session:
             # Upsert intake record with Clerical ID
+            # Use the intakes table from the new database schema
             result = session.execute(
                 """
-                INSERT INTO appeals (
-                    citation_number, city_id, section_id, status,
-                    payment_status, mailing_status, amount_paid,
-                    clerical_id, compliance_version, created_at, updated_at
+                INSERT INTO intakes (
+                    citation_number, city, status,
+                    user_name, user_email,
+                    clerical_id, created_at, updated_at
                 )
                 VALUES (
-                    :citation_number, :city_id, :section_id, 'draft',
-                    'pending', 'pending', 0,
-                    :clerical_id, :compliance_version, NOW(), NOW()
+                    :citation_number, :city_id, 'draft',
+                    :user_name, :user_email,
+                    :clerical_id, NOW(), NOW()
                 )
                 ON CONFLICT (citation_number) DO UPDATE SET
-                    city_id = EXCLUDED.city_id,
-                    section_id = EXCLUDED.section_id,
+                    city = EXCLUDED.city,
                     clerical_id = EXCLUDED.clerical_id,
-                    compliance_version = EXCLUDED.compliance_version,
                     updated_at = NOW()
                 RETURNING id
                 """,
                 {
                     "citation_number": data.citation_number.upper(),
                     "city_id": city_id,
-                    "section_id": data.section_id,
+                    "user_name": "Pending",  # Will be updated when user completes form
+                    "user_email": data.user_email or "pending@example.com",
                     "clerical_id": clerical_id,
-                    "compliance_version": COMPLIANCE_VERSION,
                 },
             )
             intake_row = result.fetchone()
@@ -258,7 +257,7 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
             if not intake_id:
                 # Try to fetch existing
                 existing = session.execute(
-                    "SELECT id, clerical_id FROM appeals WHERE citation_number = :citation",
+                    "SELECT id, clerical_id FROM intakes WHERE citation_number = :citation",
                     {"citation": data.citation_number.upper()},
                 )
                 existing_row = existing.fetchone()
@@ -267,10 +266,9 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
                     # Update clerical_id if not set
                     if existing_row[1] is None:
                         session.execute(
-                            "UPDATE appeals SET clerical_id = :clerical_id, compliance_version = :compliance_version WHERE id = :id",
+                            "UPDATE intakes SET clerical_id = :clerical_id WHERE id = :id",
                             {
                                 "clerical_id": clerical_id,
-                                "compliance_version": COMPLIANCE_VERSION,
                                 "id": intake_id,
                             },
                         )
@@ -327,16 +325,10 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
             payment_description=f"Procedural Compliance Submission - {display_city} Ticket #{data.citation_number.upper()} | Clerical ID: {clerical_id}",
         )
 
-        # Update database with Stripe session ID and Clerical ID
+        # Update database with Stripe session ID in payments table
+        # This will be done when payment is created via webhook
         if intake_id:
-            try:
-                with db_service.get_session() as session:
-                    session.execute(
-                        "UPDATE appeals SET stripe_session_id = :session_id, updated_at = NOW() WHERE id = :id",
-                        {"session_id": checkout_session["id"], "id": intake_id},
-                    )
-            except Exception as e:
-                logger.warning(f"Failed to update session ID: {e}")
+            logger.info(f"Checkout session {checkout_session['id']} created for intake {intake_id}")
 
         logger.info(
             f"Checkout session created: {checkout_session['id']} with Clerical ID: {clerical_id}"
@@ -389,19 +381,18 @@ async def get_session_status(request: Request, session_id: str):
         if session["payment_status"] == "paid":
             payment_status = "paid"
 
-            # Check if we've already processed mailing
+            # Check payment status from payments table
             db_service = get_db_service()
             with db_service.get_session() as db:
                 result = db.execute(
-                    "SELECT mailing_status, tracking_number, clerical_id FROM appeals WHERE stripe_session_id = :session_id",
+                    "SELECT status, lob_tracking_id FROM payments WHERE stripe_session_id = :session_id",
                     {"session_id": session_id},
                 )
                 row = result.fetchone()
 
                 if row:
-                    mailing_status = row[0] or "pending"
+                    mailing_status = "fulfilled" if row[0] == "paid" else "pending"
                     tracking_number = row[1]
-                    clerical_id = row[2]
 
         return SessionStatusResponse(
             status=session["status"],

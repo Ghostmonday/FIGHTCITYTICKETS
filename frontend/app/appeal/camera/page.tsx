@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useAppeal } from "../../lib/appeal-context";
+import type { AppealState } from "../../lib/appeal-context";
 import Link from "next/link";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
 import { extractTextFromImage } from "../../lib/ocr-helper";
@@ -22,63 +23,114 @@ export default function CameraPage() {
   const [photos, setPhotos] = useState<string[]>(state.photos || []);
   const [isProcessing, setIsProcessing] = useState(false);
   const [ocrResults, setOcrResults] = useState<OcrResult[]>([]);
-  const [manualCitation, setManualCitation] = useState("");
+  const [manualCitation, setManualCitation] = useState(state.citationNumber || "");
   const [showManualInput, setShowManualInput] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Start camera for live capture
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setCameraActive(true);
+    } catch (error) {
+      console.error("Failed to access camera:", error);
+      alert("Unable to access camera. Please use file upload instead.");
+    }
+  };
+
+  // Stop camera
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
+  // Capture photo from camera
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = videoRef.current.videoWidth;
+    canvas.height = videoRef.current.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.drawImage(videoRef.current, 0, 0);
+    const base64 = canvas.toDataURL("image/jpeg", 0.8);
+
+    handlePhotoCapture(base64);
+  };
+
+  // Process a captured or uploaded photo
+  const handlePhotoCapture = async (base64: string) => {
+    setIsProcessing(true);
+    const newPhotos = [...photos, base64];
+
+    // Run OCR on the image
+    let ocrResult: OcrResult = { confidence: 0, rawText: "" };
+    try {
+      ocrResult = await extractTextFromImage(base64);
+    } catch (error) {
+      console.warn("OCR failed for image:", error);
+    }
+
+    const newOcrResults = [...ocrResults, ocrResult];
+
+    setPhotos(newPhotos);
+    setOcrResults(newOcrResults);
+    updateState((prev: AppealState) => ({ ...prev, photos: newPhotos }));
+    setIsProcessing(false);
+  };
+
+  // Handle file upload
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
     setIsProcessing(true);
-    const newPhotos: string[] = [];
-    const newOcrResults: OcrResult[] = [];
 
     for (const file of Array.from(files)) {
       const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve) => {
-        reader.onload = (e) => {
-          resolve(e.target?.result as string);
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = (event) => {
+          resolve(event.target?.result as string);
         };
+        reader.onerror = () => reject(new Error("Failed to read file"));
         reader.readAsDataURL(file);
       });
-      newPhotos.push(base64);
-
-      // Run OCR on the image
-      try {
-        const ocrResult = await extractTextFromImage(base64);
-        newOcrResults.push(ocrResult);
-      } catch (error) {
-        console.warn("OCR failed for image:", error);
-        newOcrResults.push({
-          confidence: 0,
-          rawText: "",
-        });
-      }
+      await handlePhotoCapture(base64);
     }
 
-    setPhotos((prev) => [...prev, ...newPhotos]);
-    setOcrResults((prev) => [...prev, ...newOcrResults]);
-    updateState({ photos: [...photos, ...newPhotos] });
     setIsProcessing(false);
   };
 
-  const removePhoto = (index: number) => {
-    const newPhotos = photos.filter((_, i) => i !== index);
-    const newOcrResults = ocrResults.filter((_, i) => i !== index);
+  const removePhoto = (index: number): void => {
+    const newPhotos = photos.filter((_: string, i: number) => i !== index);
+    const newOcrResults = ocrResults.filter((_: OcrResult, i: number) => i !== index);
     setPhotos(newPhotos);
     setOcrResults(newOcrResults);
     updateState({ photos: newPhotos });
   };
 
-  const handleManualCitationSubmit = () => {
+  const handleManualCitationSubmit = (): void => {
     if (manualCitation.trim()) {
       updateState({ citationNumber: manualCitation.trim().toUpperCase() });
       setShowManualInput(false);
     }
   };
 
-  const useOcrCitation = (index: number) => {
-    const result = ocrResults[index];
+  const useOcrCitation = (index: number): void => {
+    const result: OcrResult = ocrResults[index];
     if (result.citationNumber) {
       updateState({ citationNumber: result.citationNumber.toUpperCase() });
       setManualCitation(result.citationNumber);
@@ -94,7 +146,7 @@ export default function CameraPage() {
           </h1>
           <p className="text-gray-600 mb-6">
             Upload photos of parking signs, meters, or circumstances that
-            support your procedural appeal. The Clerical Engine™ will attach
+            support your procedural appeal. The Clerical Engine will attach
             these to your submission.
           </p>
 
@@ -106,7 +158,7 @@ export default function CameraPage() {
                 id="telemetry-optin"
                 className="mt-1"
                 defaultChecked={state.telemetryEnabled}
-                onChange={(e) => updateState({ telemetryEnabled: e.target.checked })}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => updateState({ telemetryEnabled: e.target.checked })}
               />
               <label htmlFor="telemetry-optin" className="text-sm text-stone-700">
                 <strong>Help improve OCR accuracy</strong>
@@ -121,9 +173,58 @@ export default function CameraPage() {
 
           <LegalDisclaimer variant="inline" className="mb-6" />
 
+          {/* Camera Section */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <label className="block font-medium text-stone-700">
+                Take Photo
+              </label>
+              {!cameraActive ? (
+                <button
+                  onClick={startCamera}
+                  className="bg-stone-800 text-white px-4 py-2 rounded-lg hover:bg-stone-900 text-sm"
+                >
+                  Open Camera
+                </button>
+              ) : (
+                <button
+                  onClick={stopCamera}
+                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm"
+                >
+                  Close Camera
+                </button>
+              )}
+            </div>
+
+            {cameraActive && (
+              <div className="relative mb-4">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full rounded-lg bg-stone-900"
+                />
+                <button
+                  onClick={capturePhoto}
+                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white text-stone-800 w-16 h-16 rounded-full border-4 border-stone-300 hover:border-stone-500 flex items-center justify-center shadow-lg"
+                >
+                  <div className="w-12 h-12 rounded-full bg-stone-800" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="flex-1 h-px bg-stone-200" />
+            <span className="text-stone-500 text-sm">or</span>
+            <div className="flex-1 h-px bg-stone-200" />
+          </div>
+
+          {/* File Upload Section */}
           <div className="mb-6">
             <label className="block mb-2 font-medium text-stone-700">
-              Select Evidence Photos
+              Upload from Gallery
             </label>
             <input
               type="file"
@@ -141,13 +242,13 @@ export default function CameraPage() {
           </div>
 
           {/* OCR Results */}
-          {ocrResults.some((r) => r.citationNumber) && (
+          {ocrResults.some((r: OcrResult) => r.citationNumber) && (
             <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
               <h3 className="font-medium text-green-800 mb-3">
                 Citation Number Detected
               </h3>
               {ocrResults.map(
-                (result, i) =>
+                (result: OcrResult, i: number) =>
                   result.citationNumber && (
                     <div
                       key={i}
@@ -193,7 +294,7 @@ export default function CameraPage() {
                 <input
                   type="text"
                   value={manualCitation}
-                  onChange={(e) => setManualCitation(e.target.value.toUpperCase())}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setManualCitation(e.target.value.toUpperCase())}
                   placeholder="e.g., A12345678"
                   className="flex-1 px-4 py-2 border border-stone-300 rounded-lg font-mono"
                 />
@@ -210,7 +311,7 @@ export default function CameraPage() {
           {/* Photo preview */}
           {photos.length > 0 && (
             <div className="grid grid-cols-3 gap-4 mb-6">
-              {photos.map((photo, i) => (
+              {photos.map((photo: string, i: number) => (
                 <div key={i} className="relative">
                   <img
                     src={photo}

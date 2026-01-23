@@ -1,0 +1,86 @@
+{
+  "city_id": "us-ca-los_angeles",
+  "name": "Los Angeles",
+  "jurisdiction": "city",
+  "citation_patterns": [
+    {
+      "regex": "^LA\\d{6,8}$",
+      "section_id": "ladot",
+      "description": "Los Angeles Department of Transportation citation",
+      "example_numbers": ["LA12345678", "LA9876543"]
+    },
+    {
+      "regex": "^LAPD\\d{6,8}$",
+      "section_id": "lapd",
+      "description": "Los Angeles Police Department parking citation",
+      "example_numbers": ["LAPD123456", "LAPD9876543"]
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "Parking Violations Bureau",
+    "address1": "P.O. Box 30247",
+    "address2": null,
+    "city": "Los Angeles",
+    "state": "CA",
+    "zip": "90030",
+    "country": "US"
+  },
+  "phone_confirmation_policy": {
+    "required": false,
+    "phone_format_regex": null,
+    "confirmation_message": null,
+    "confirmation_deadline_hours": null,
+    "phone_number_examples": null
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "ladot": {
+      "section_id": "ladot",
+      "name": "Los Angeles Department of Transportation",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Parking Violations Bureau",
+        "address1": "P.O. Box 30247",
+        "address2": null,
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90030",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      }
+    },
+    "lapd": {
+      "section_id": "lapd",
+      "name": "Los Angeles Police Department",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Parking Enforcement Division",
+        "address1": "251 E 6th Street",
+        "address2": "9th Floor",
+        "city": "Los Angeles",
+        "state": "CA",
+        "zip": "90014",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      }
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2025-01-22",
+    "source": "official_ladot_website",
+    "confidence_score": 0.90,
+    "notes": "Los Angeles city configuration",
+    "verified_by": "system"
+  },
+  "timezone": "America/Los_Angeles",
+  "appeal_deadline_days": 21,
+  "online_appeal_available": false,
+  "online_appeal_url": null
+}

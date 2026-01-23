@@ -14,6 +14,7 @@ The Clerical Engine™ ensures all submissions maintain:
 Author: Neural Draft LLC
 """
 
+import asyncio
 import logging
 import os
 from datetime import datetime
@@ -324,7 +325,7 @@ added by the Clerical Engine™ automatically)."""
                 last_error = e
                 logger.warning(f"DeepSeek timeout (attempt {attempt + 1}/{self.RETRY_COUNT})")
                 if attempt < self.RETRY_COUNT - 1:
-                    await time.sleep(self.RETRY_DELAY * (2 ** attempt))  # Exponential backoff
+                    await asyncio.sleep(self.RETRY_DELAY * (2 ** attempt))  # Exponential backoff
 
             except httpx.NetworkError as e:
                 last_error = e
