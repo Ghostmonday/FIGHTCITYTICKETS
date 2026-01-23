@@ -258,7 +258,7 @@ function SuccessContent() {
                 Questions about your procedural submission?
               </p>
               <a
-                href="mailto:support@fightcitytickets.com"
+                href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}`}
                 className="inline-block bg-stone-800 text-white px-6 py-3 rounded-lg font-medium hover:bg-stone-900 transition"
               >
                 Contact Compliance Support

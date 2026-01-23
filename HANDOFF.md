@@ -230,24 +230,28 @@ docker compose up --build
 
 ## Deployment
 
-### Recommended: Hetzner Cloud
+### Deployment on Any Linux Server
 
 ```bash
 # 1. Set environment variables
-export HETZNER_API_TOKEN="your-token"
-export DOMAIN="yourdomain.com"
+export SERVER_IP="your-server-ip"
+export SSH_USER="root"
+export SSH_KEY="~/.ssh/your_key"
+export DOMAIN="yourdomain.com"  # Optional
+export EMAIL="your@email.com"   # For SSL certificates
 
 # 2. Run deployment script
-chmod +x scripts/deploy_hetzner.sh
-./scripts/deploy_hetzner.sh
+chmod +x scripts/deploy-fightcity.sh
+./scripts/deploy-fightcity.sh
 ```
 
 The script will:
-- Create Hetzner Cloud server (CX21: 2 vCPU, 4GB RAM)
+- Connect to your server via SSH
 - Install Docker and all dependencies
 - Configure firewall and security
 - Deploy frontend, backend, database, nginx
 - Run database migrations
+- Set up SSL certificates (if domain provided)
 
 ### Required API Keys
 
@@ -353,7 +357,7 @@ For security incidents, service outages, or regulatory inquiries:
 **Critical Contacts:**
 - Operations: ops@fightcitytickets.com
 - Legal: External counsel on file
-- Hosting: Hetzner Support
+- Hosting: Contact your hosting provider support
 - Payments: Stripe Support
 
 ### Chargeback Response

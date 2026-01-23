@@ -5,7 +5,7 @@
 set -e
 
 DOMAIN="fightcitytickets.com"
-EMAIL="amir@example.com"  # CHANGE THIS
+EMAIL="${EMAIL:-admin@example.com}"  # Set EMAIL environment variable or edit this line
 DATA_PATH="/var/www/certbot"
 NGINX_CONTAINER="nginx"
 

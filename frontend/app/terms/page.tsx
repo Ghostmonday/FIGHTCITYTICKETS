@@ -165,7 +165,7 @@ export default function TermsPage() {
             <h2>8. Contact Us</h2>
             <p>
               If you have any questions about these Terms, please contact us at
-              support@fightcitytickets.com.
+              {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}.
             </p>
 
             <p className="text-sm text-gray-500 mt-8">

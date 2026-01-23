@@ -132,12 +132,12 @@ app = FastAPI(
     version="1.0.0",
     contact={
         "name": "FIGHTCITYTICKETS Support",
-        "url": "https://fightcitytickets.com",
-        "email": "support@fightcitytickets.com",
+        "url": settings.app_url,
+        "email": settings.support_email,
     },
     license_info={
         "name": "Proprietary",
-        "url": "https://fightcitytickets.com/terms",
+        "url": f"{settings.app_url}/terms",
     },
     lifespan=lifespan,
 )
@@ -368,7 +368,7 @@ async def internal_error_handler(request: Request, exc):
             "error": "Internal Server Error",
             "message": "An unexpected error occurred",
             "request_id": request_id,
-            "support": "contact support@fightcitytickets.com",
+            "support": f"contact {settings.support_email}",
         },
     )
 

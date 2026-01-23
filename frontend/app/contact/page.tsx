@@ -48,8 +48,8 @@ export default function ContactPage() {
               <p className="text-gray-600 mb-4">
                 Best for: General questions, appeal status, technical issues
               </p>
-              <a href="mailto:support@fightcitytickets.com" className="text-blue-600 hover:text-blue-700 font-medium">
-                support@fightcitytickets.com
+              <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}`} className="text-blue-600 hover:text-blue-700 font-medium">
+                {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}
               </a>
               <p className="text-sm text-gray-500 mt-2">Response within 24-48 hours</p>
             </div>

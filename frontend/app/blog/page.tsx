@@ -135,7 +135,7 @@ export default function BlogIndexPage() {
             "@type": "Blog",
             name: "FIGHTCITYTICKETS.com Blog",
             description: "Expert guides on appealing parking tickets",
-            url: "https://fightcitytickets.com/blog",
+            url: `${config.baseUrl}/blog`,
             publisher: {
               "@type": "Organization",
               name: "FIGHTCITYTICKETS.com",
@@ -143,7 +143,7 @@ export default function BlogIndexPage() {
             blogPost: posts.slice(0, 10).map((post) => ({
               "@type": "BlogPosting",
               headline: post.title,
-              url: `https://fightcitytickets.com/blog/${post.slug}`,
+              url: `${config.baseUrl}/blog/${post.slug}`,
             })),
           }),
         }}

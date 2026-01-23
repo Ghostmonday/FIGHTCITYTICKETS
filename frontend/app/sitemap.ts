@@ -6,9 +6,10 @@ import {
   locationToSlug,
 } from "./lib/seo-data";
 import { CITY_SLUG_MAP } from "./lib/city-routing";
+import { config } from "./lib/config";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://fightcitytickets.com";
+  const baseUrl = config.baseUrl;
   const currentDate = new Date().toISOString();
 
   const routes: MetadataRoute.Sitemap = [

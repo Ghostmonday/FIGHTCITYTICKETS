@@ -41,12 +41,14 @@ class Settings(BaseSettings):
 
     # SendGrid Email Configuration
     sendgrid_api_key: str = "change-me"  # Override with SENDGRID_API_KEY env var
-    service_email: str = "noreply@fightcitytickets.com"
+    service_email: str = "noreply@example.com"  # Override with SERVICE_EMAIL env var
+    support_email: str = "support@example.com"  # Override with SUPPORT_EMAIL env var
 
-    # Hetzner Cloud Configuration
-    hetzner_api_token: str = "change-me"  # Override with HETZNER_API_TOKEN env var
+    # Optional: Infrastructure Management (Hetzner Cloud)
+    # Only needed if using Hetzner Cloud auto-suspend feature
+    hetzner_api_token: str = ""  # Override with HETZNER_API_TOKEN env var (optional)
     hetzner_droplet_name: Optional[str] = (
-        None  # Override with HETZNER_DROPLET_NAME env var
+        None  # Override with HETZNER_DROPLET_NAME env var (optional)
     )
 
     # AI Services - DeepSeek
@@ -57,9 +59,9 @@ class Settings(BaseSettings):
     # AI Services - OpenAI
     openai_api_key: str = "sk_dummy"
 
-    # Application URLs
-    app_url: str = "http://localhost:3000"  # Override with APP_URL env var
-    api_url: str = "http://localhost:8000"  # Override with API_URL env var
+    # Application URLs - Configure these for your deployment
+    app_url: str = "http://localhost:3000"  # Override with APP_URL env var (e.g., https://yourdomain.com)
+    api_url: str = "http://localhost:8000"  # Override with API_URL env var (e.g., https://yourdomain.com/api)
 
     # Security
     secret_key: str = "dev_secret_change_in_production"
@@ -103,7 +105,7 @@ class Settings(BaseSettings):
             "lob_api_key": "change-me",
             "deepseek_api_key": "change-me",
             "openai_api_key": "change-me",
-            "hetzner_api_token": "change-me",
+            "hetzner_api_token": "",
         }
 
         if field_name in default_values and v == default_values[field_name]:

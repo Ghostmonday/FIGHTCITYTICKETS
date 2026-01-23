@@ -93,7 +93,7 @@ docker compose up --build
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Production Server                         │
-│                    143.198.131.213                          │
+│                  (Your Server IP/Domain)                     │
 │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────────┐   │
 │  │  Nginx  │→ │   Web   │  │   API   │→ │     DB      │   │
 │  │ :80,443 │  │ :3000   │  │ :8000   │  │   :5432     │   │
@@ -111,26 +111,35 @@ docker compose up --build
 
 ## 🚀 Deployment
 
-### Production Server
+### First-Time Deployment
 
-| Property | Value |
-|----------|-------|
-| **IP** | 143.198.131.213 |
-| **Region** | sfo3 (San Francisco) |
-| **Specs** | 2 vCPU, 4GB RAM, 80GB Disk |
+The application is designed to be deployed on any Linux server with Docker support.
+
+**Minimum Requirements:**
+- 2 vCPU, 4GB RAM, 20GB Disk
+- Docker and Docker Compose installed
+- Domain name (optional, for SSL)
 
 ### Deploy Commands
 
 ```bash
-# Connect to server
-ssh -i /c/Users/Amirp/.ssh/do_deploy_key root@143.198.131.213
+# Set deployment variables
+export SERVER_IP="your-server-ip"
+export SSH_USER="root"
+export SSH_KEY="~/.ssh/your_key"
+export DOMAIN="yourdomain.com"  # Optional
+export EMAIL="your@email.com"   # For SSL certificates
 
-# On server
+# Run deployment script
+./scripts/deploy-fightcity.sh
+
+# Or deploy manually
+ssh user@your-server-ip
 cd /var/www/fightcitytickets
-git pull
-docker compose down
+git clone https://github.com/Ghostmonday/FightSFTickets.git .
+cp .env.example .env
+# Edit .env with your API keys
 docker compose up -d --build
-curl http://localhost/api/health
 ```
 
 ### Environment Variables

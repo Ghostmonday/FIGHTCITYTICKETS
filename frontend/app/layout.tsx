@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import FooterDisclaimer from "../components/FooterDisclaimer";
 import { Providers } from "./providers";
+import { config } from "./lib/config";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,7 +18,7 @@ export const metadata: Metadata = {
     title: "FIGHTCITYTICKETS.com - Procedural Parking Ticket Assistance",
     description: "Document preparation service for parking ticket appeals",
     type: "website",
-    url: "https://fightcitytickets.com",
+    url: config.baseUrl,
     siteName: "FIGHTCITYTICKETS.com",
   },
   twitter: {
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://fightcitytickets.com",
+    canonical: config.baseUrl,
   },
 };
 
@@ -57,8 +58,8 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "Organization",
               name: "FIGHTCITYTICKETS.com",
-              url: "https://fightcitytickets.com",
-              logo: "https://fightcitytickets.com/logo.png",
+              url: config.baseUrl,
+              logo: `${config.baseUrl}/logo.png`,
               description:
                 "Document preparation service for parking ticket appeals",
               sameAs: [],
@@ -73,11 +74,11 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite",
               name: "FIGHTCITYTICKETS.com",
-              url: "https://fightcitytickets.com",
+              url: config.baseUrl,
               potentialAction: {
                 "@type": "SearchAction",
                 target:
-                  "https://fightcitytickets.com/search?q={search_term_string}",
+                  `${config.baseUrl}/search?q={search_term_string}`,
                 "query-input": "required name=search_term_string",
               },
             }),

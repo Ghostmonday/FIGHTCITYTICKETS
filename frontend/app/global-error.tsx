@@ -59,10 +59,10 @@ export default function GlobalError({
             <p className="mt-6 text-sm text-gray-500">
               Need help?{" "}
               <a
-                href="mailto:support@fightcitytickets.com"
+                href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}`}
                 className="text-stone-800 hover:underline"
               >
-                support@fightcitytickets.com
+                {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}
               </a>
             </p>
           </div>

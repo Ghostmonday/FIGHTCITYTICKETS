@@ -7,6 +7,7 @@ import {
   loadBlogPosts,
 } from "../../lib/seo-data";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
+import { config } from "../../lib/config";
 
 interface BlogPostPageProps {
   params: Promise<{
@@ -45,7 +46,7 @@ export async function generateMetadata({
       title: post.title,
       description,
       type: "article",
-      url: `https://fightcitytickets.com/blog/${post.slug}`,
+      url: `${config.baseUrl}/blog/${post.slug}`,
       siteName: "FIGHTCITYTICKETS.com",
     },
     twitter: {
@@ -54,7 +55,7 @@ export async function generateMetadata({
       description,
     },
     alternates: {
-      canonical: `https://fightcitytickets.com/blog/${post.slug}`,
+      canonical: `${config.baseUrl}/blog/${post.slug}`,
     },
   };
 }
@@ -231,14 +232,14 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               name: "FIGHTCITYTICKETS.com",
               logo: {
                 "@type": "ImageObject",
-                url: "https://fightcitytickets.com/logo.png",
+                url: `${config.baseUrl}/logo.png`,
               },
             },
             datePublished: new Date().toISOString(),
             dateModified: new Date().toISOString(),
             mainEntityOfPage: {
               "@type": "WebPage",
-              "@id": `https://fightcitytickets.com/blog/${post.slug}`,
+              "@id": `${config.baseUrl}/blog/${post.slug}`,
             },
           }),
         }}

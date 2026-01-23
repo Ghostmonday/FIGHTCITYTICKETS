@@ -29,7 +29,7 @@ Details:
 
 Your appeal letter is being prepared and will be mailed to the appropriate agency shortly. You will receive a follow-up email with tracking information once your appeal has been mailed.
 
-Questions? Reply to this email or contact support@fightcitytickets.com
+Questions? Reply to this email or contact {support_email}
 
 - The FIGHTCITYTICKETS.com Team
 
@@ -52,7 +52,7 @@ What happens next?
 2. They will process your appeal (timelines vary by city)
 3. You will receive a decision by mail
 
-Questions? Reply to this email or contact support@fightcitytickets.com
+Questions? Reply to this email or contact {support_email}
 
 - The FIGHTCITYTICKETS.com Team
 
@@ -77,7 +77,7 @@ This is not necessarily the end of the process. You may have additional options:
 
 Note: We cannot provide legal advice. This message is for informational purposes only.
 
-Questions? Reply to this email or contact support@fightcitytickets.com
+Questions? Reply to this email or contact {support_email}
 
 - The FIGHTCITYTICKETS.com Team
 
@@ -94,9 +94,8 @@ class EmailService:
     def __init__(self):
         """Initialize email service."""
         self.api_key = getattr(settings, "sendgrid_api_key", None)
-        self.from_email = getattr(
-            settings, "service_email", "noreply@fightcitytickets.com"
-        )
+        self.from_email = settings.service_email
+        self.support_email = settings.support_email
         self.from_name = "FIGHTCITYTICKETS.com"
         self.is_available = bool(self.api_key and self.api_key != "change-me")
 
@@ -152,6 +151,10 @@ class EmailService:
         template = EMAIL_TEMPLATES.get(template_name, {})
         subject = template.get("subject", "Update from FIGHTCITYTICKETS.com")
         body = template.get("body", "")
+
+        # Add support_email to kwargs if not present
+        if "support_email" not in kwargs:
+            kwargs["support_email"] = self.support_email
 
         # Replace placeholders
         for key, value in kwargs.items():

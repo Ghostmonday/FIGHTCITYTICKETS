@@ -315,7 +315,7 @@ export default function AppealStatusPage() {
             Can&apos;t find your appeal? Need help?
           </p>
           <a
-            href="mailto:support@fightcitytickets.com"
+            href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}`}
             className="inline-block bg-gray-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-900 transition"
           >
             Contact Support

@@ -31,8 +31,8 @@ FIGHTCITYTICKETS.com is a procedural compliance service that helps users prepare
 | **Payments** | Stripe | Checkout sessions, webhook handling |
 | **Mail** | Lob API | Certified/standard mail fulfillment |
 | **AI** | DeepSeek | Appeal letter refinement |
-| **Infrastructure** | Docker, DigitalOcean | Container orchestration |
-| **DNS** | Namecheap | Domain management |
+| **Infrastructure** | Docker, Docker Compose | Container orchestration |
+| **DNS** | Any DNS provider | Domain management |
 
 ### System Diagram
 
@@ -295,7 +295,7 @@ APP_ENV=production
 # Via Docker Compose (recommended)
 docker compose up -d --build
 
-# Or deploy to DigitalOcean App Platform
+# Or deploy to any cloud platform (AWS, GCP, Azure, DigitalOcean, etc.)
 # See deploy_temp/scripts/deploy_prod.sh
 ```
 
@@ -334,7 +334,7 @@ docker compose up -d --build
 2. **SSL Certificate Not Yet Installed**
    - Server networking issue prevented certbot from running
    - Impact: HTTPS not working on production
-   - Fix: DigitalOcean support ticket submitted
+   - Fix: Contact your hosting provider support if needed
 
 ### Medium Priority
 
@@ -526,7 +526,7 @@ provethat.io/
 
 ### Server Down
 
-1. Check DigitalOcean console
+1. Check your hosting provider console
 2. Verify Docker containers are running: `docker ps`
 3. Check container logs: `docker logs <container_name>`
 4. Restart if needed: `docker compose restart`
@@ -538,7 +538,7 @@ provethat.io/
 | Role | Contact |
 |------|---------|
 | **Primary Engineer** | See GitHub contributors |
-| **Infrastructure** | DigitalOcean Support |
+| **Infrastructure** | Your hosting provider support |
 | **Payments** | Stripe Support |
 | **Mail Services** | Lob Support |
 | **Domain/DNS** | Namecheap Support |

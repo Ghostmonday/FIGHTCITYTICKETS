@@ -10,6 +10,7 @@ import {
 } from "../../../../lib/seo-data";
 import { getCityBySlug } from "../../../../lib/city-routing";
 import LegalDisclaimer from "../../../../../components/LegalDisclaimer";
+import { config } from "../../../../lib/config";
 
 interface ViolationLocationPageProps {
   params: Promise<{
@@ -66,7 +67,7 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
-      url: `https://fightcitytickets.com/${resolvedParams.city}/violations/${resolvedParams.code}/${resolvedParams.location}`,
+      url: `${config.baseUrl}/${resolvedParams.city}/violations/${resolvedParams.code}/${resolvedParams.location}`,
     },
     twitter: {
       card: "summary_large_image",
@@ -74,7 +75,7 @@ export async function generateMetadata({
       description,
     },
     alternates: {
-      canonical: `https://fightcitytickets.com/${resolvedParams.city}/violations/${resolvedParams.code}/${resolvedParams.location}`,
+      canonical: `${config.baseUrl}/${resolvedParams.city}/violations/${resolvedParams.code}/${resolvedParams.location}`,
     },
   };
 }
@@ -271,7 +272,7 @@ export default async function ViolationLocationPage({
             "@type": "WebPage",
             name: `Appeal ${phrase.violation_code} at ${phrase.hot_location}`,
             description: `Learn how to appeal parking ticket ${phrase.violation_code} at ${phrase.hot_location} in ${cityName}`,
-            url: `https://fightcitytickets.com/${resolvedParams.city}/violations/${resolvedParams.code}/${resolvedParams.location}`,
+            url: `${config.baseUrl}/${resolvedParams.city}/violations/${resolvedParams.code}/${resolvedParams.location}`,
             mainEntity: {
               "@type": "FAQPage",
               mainEntity: [

@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 
+const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com";
+
 export default function FooterDisclaimer() {
   return (
     <div className="bg-white border-t border-gray-200 py-6 px-4">
@@ -26,7 +28,7 @@ export default function FooterDisclaimer() {
           <Link href="/appeal/status" className="text-gray-600 hover:text-gray-900 underline underline-offset-2">
             Check Appeal Status
           </Link>
-          <a href="mailto:support@fightcitytickets.com" className="text-gray-600 hover:text-gray-900 underline underline-offset-2">
+          <a href={`mailto:${supportEmail}`} className="text-gray-600 hover:text-gray-900 underline underline-offset-2">
             Support
           </a>
         </div>
