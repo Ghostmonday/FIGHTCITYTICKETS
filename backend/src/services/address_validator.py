@@ -9,8 +9,9 @@ import json
 import logging
 import re
 from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import httpx
 
@@ -83,6 +84,58 @@ class AddressValidator:
             cities_dir = Path(__file__).parent.parent.parent.parent / "cities"
         self.cities_dir = Path(cities_dir) if isinstance(cities_dir, str) else cities_dir
         self.city_registry = get_city_registry(self.cities_dir)
+
+        # Cache for scraped addresses: {cache_key: (scraped_text, scrape_date)}
+        # Cache key is based on (city_id + current date) to limit scraping to once per day per address
+        self._scrape_cache: Dict[str, Tuple[str, date]] = {}
+
+    def _get_cache_key(self, city_id: str) -> str:
+        """
+        Generate a cache key based on city_id and current date.
+        
+        This ensures scraping only happens once per unique appeal office per day.
+        
+        Args:
+            city_id: City identifier
+            
+        Returns:
+            Cache key string in format: "{city_id}:{YYYY-MM-DD}"
+        """
+        today = date.today()
+        return f"{city_id}:{today.isoformat()}"
+
+    def _get_cached_scrape(self, city_id: str) -> Optional[str]:
+        """
+        Get cached scraped text if it exists for today.
+        
+        Args:
+            city_id: City identifier
+            
+        Returns:
+            Cached scraped text or None if not cached or expired
+        """
+        cache_key = self._get_cache_key(city_id)
+        if cache_key in self._scrape_cache:
+            cached_text, cache_date = self._scrape_cache[cache_key]
+            if cache_date == date.today():
+                logger.debug(f"Cache hit for {city_id} (key: {cache_key})")
+                return cached_text
+            else:
+                # Expired entry - remove it
+                del self._scrape_cache[cache_key]
+        return None
+
+    def _set_cached_scrape(self, city_id: str, scraped_text: str) -> None:
+        """
+        Store scraped text in cache with today's date.
+        
+        Args:
+            city_id: City identifier
+            scraped_text: The scraped text to cache
+        """
+        cache_key = self._get_cache_key(city_id)
+        self._scrape_cache[cache_key] = (scraped_text, date.today())
+        logger.debug(f"Cached scrape result for {city_id} (key: {cache_key})")
 
     def _normalize_address(self, address: str) -> str:
         """
@@ -438,15 +491,22 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                 error_message="No stored address found for city_id: {city_id}"
             )
 
-        # Scrape the URL
-        scraped_text = await self._scrape_url(url)
-        if not scraped_text:
-            return AddressValidationResult(
-                is_valid=False,
-                city_id=city_id,
-                stored_address=stored_address,
-                error_message="Failed to scrape URL: {url}"
-            )
+        # Check cache first - only scrape once per unique appeal office per day
+        scraped_text = self._get_cached_scrape(city_id)
+        
+        if scraped_text is None:
+            # Cache miss - scrape the URL
+            logger.info(f"Cache miss for {city_id} - scraping URL")
+            scraped_text = await self._scrape_url(url)
+            if not scraped_text:
+                return AddressValidationResult(
+                    is_valid=False,
+                    city_id=city_id,
+                    stored_address=stored_address,
+                    error_message="Failed to scrape URL: {url}"
+                )
+            # Store in cache for future requests today
+            self._set_cached_scrape(city_id, scraped_text)
 
         # Extract address from scraped text
         scraped_address = await self._extract_address_from_text(scraped_text, city_id)
