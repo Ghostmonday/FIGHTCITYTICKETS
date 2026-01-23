@@ -3,14 +3,17 @@ Email Service for Fight City Tickets.com
 
 Handles email notifications for payment confirmations and appeal status updates.
 Integrates with SendGrid for production email delivery.
+Includes circuit breaker protection for resilience.
 """
 
 import logging
-from typing import Optional
+import time
+from typing import Any, Optional
 
 import httpx
 
 from ..config import settings
+from ..middleware.resilience import CircuitBreaker, CircuitOpenError, CircuitState, create_email_circuit
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +92,11 @@ Note: We are not lawyers. This is a document preparation service only.
 
 
 class EmailService:
-    """Email notification service with SendGrid integration."""
+    """Email notification service with SendGrid integration and circuit breaker protection."""
+
+    # Circuit breaker configuration
+    CIRCUIT_FAILURE_THRESHOLD = 5
+    CIRCUIT_TIMEOUT = 300  # 5 minutes
 
     def __init__(self):
         """Initialize email service."""
@@ -99,6 +106,13 @@ class EmailService:
         self.from_name = "Fight City Tickets.com"
         self.is_available = bool(self.api_key and self.api_key != "change-me")
 
+        # Circuit breaker for SendGrid API resilience
+        self._circuit_breaker = create_email_circuit(fallback=self._email_fallback)
+
+        # Track daily email count for rate limiting
+        self._daily_count = 0
+        self._last_reset = time.time()
+
         if self.is_available:
             logger.info("Email service initialized with SendGrid")
         else:
@@ -106,42 +120,78 @@ class EmailService:
                 "Email service initialized in logging mode (no SendGrid API key configured)"
             )
 
+    def _email_fallback(self) -> dict[str, Any]:
+        """Fallback response when email circuit is open."""
+        return {
+            "status": "unavailable",
+            "message": "Email service temporarily unavailable. Notifications will be retried.",
+            "retry_after": 30,
+        }
+
+    def is_healthy(self) -> bool:
+        """Check if email service is healthy (respects circuit breaker)."""
+        if self._circuit_breaker.metrics.state == CircuitState.OPEN:
+            return False
+        return self.is_available
+
+    def get_status(self) -> dict[str, Any]:
+        """Get email service status including circuit breaker state."""
+        return {
+            "healthy": self.is_healthy(),
+            "circuit_state": self._circuit_breaker.metrics.state.value,
+            "circuit_failures": self._circuit_breaker.metrics.failure_count,
+            "total_calls": self._circuit_breaker.metrics.total_calls,
+            "daily_count": self._daily_count,
+        }
+
     async def _send_via_sendgrid(
         self, to_email: str, subject: str, body_text: str
     ) -> bool:
-        """Send email via SendGrid API."""
+        """Send email via SendGrid API with circuit breaker protection."""
         if not self.api_key:
             return False
 
-        try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(
-                    "https://api.sendgrid.com/v3/mail/send",
-                    headers={
-                        "Authorization": f"Bearer {self.api_key}",
-                        "Content-Type": "application/json",
-                    },
-                    json={
-                        "personalizations": [
-                            {"to": [{"email": to_email}]}
-                        ],
-                        "from": {
-                            "email": self.from_email,
-                            "name": self.from_name,
-                        },
-                        "subject": subject,
-                        "content": [
-                            {
-                                "type": "text/plain",
-                                "value": body_text,
-                            }
-                        ],
-                    },
-                )
-                response.raise_for_status()
-                logger.info(f"Email sent successfully to {to_email}")
-                return True
+        # Reset daily count if needed
+        now = time.time()
+        if now - self._last_reset > 86400:  # 24 hours
+            self._daily_count = 0
+            self._last_reset = now
 
+        try:
+            async with self._circuit_breaker:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.post(
+                        "https://api.sendgrid.com/v3/mail/send",
+                        headers={
+                            "Authorization": f"Bearer {self.api_key}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "personalizations": [
+                                {"to": [{"email": to_email}]}
+                            ],
+                            "from": {
+                                "email": self.from_email,
+                                "name": self.from_name,
+                            },
+                            "subject": subject,
+                            "content": [
+                                {
+                                    "type": "text/plain",
+                                    "value": body_text,
+                                }
+                            ],
+                        },
+                    )
+                    response.raise_for_status()
+                    self._daily_count += 1
+                    logger.info(f"Email sent successfully to {to_email}")
+                    return True
+            return False  # Fallback was called, circuit is open
+
+        except CircuitOpenError:
+            logger.warning("Email circuit is open, skipping send")
+            return False
         except Exception as e:
             logger.error(f"Failed to send email via SendGrid: {e}")
             return False

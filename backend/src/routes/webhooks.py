@@ -3,13 +3,15 @@ Stripe Webhook Handler for Fight City Tickets.com
 
 Handles Stripe webhook events for payment confirmation and appeal fulfillment.
 Uses database for persistent storage and implements idempotent processing.
+Includes in-memory idempotency cache to prevent duplicate processing.
 """
 
 import logging
 import os
 import secrets
+import time
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from slowapi import Limiter
@@ -32,6 +34,67 @@ limiter = Limiter(key_func=get_remote_address)
 
 # Admin authentication
 ADMIN_SECRET_HEADER = "X-Admin-Secret"
+
+# Webhook idempotency cache
+# Format: {event_id: {processed: bool, timestamp: float, result: dict}}
+_WEBHOOK_CACHE: dict[str, dict] = {}
+_WEBHOOK_CACHE_TTL = 86400  # 24 hours
+_WEBHOOK_CACHE_MAX_SIZE = 10000  # Max events to cache
+
+
+def _generate_event_id(event_type: str, object_id: str) -> str:
+    """Generate a unique event ID for idempotency tracking."""
+    return f"{event_type}:{object_id}"
+
+
+def _is_event_processed(event_id: str) -> tuple[bool, Optional[dict]]:
+    """
+    Check if an event has already been processed.
+    
+    Returns:
+        (is_processed, cached_result)
+    """
+    now = time.time()
+    
+    # Check if event exists and is not expired
+    if event_id in _WEBHOOK_CACHE:
+        cached = _WEBHOOK_CACHE[event_id]
+        if now - cached.get("timestamp", 0) < _WEBHOOK_CACHE_TTL:
+            return True, cached.get("result")
+        else:
+            # Remove expired entry
+            del _WEBHOOK_CACHE[event_id]
+    
+    return False, None
+
+
+def _mark_event_processed(event_id: str, result: dict) -> None:
+    """Mark an event as processed and cache the result."""
+    # Clean up old entries if cache is too large
+    if len(_WEBHOOK_CACHE) >= _WEBHOOK_CACHE_MAX_SIZE:
+        # Remove oldest 20% of entries
+        sorted_items = sorted(_WEBHOOK_CACHE.items(), key=lambda x: x[1].get("timestamp", 0))
+        for old_event_id in list(sorted_items)[:_WEBHOOK_CACHE_MAX_SIZE // 5]:
+            if isinstance(old_event_id, tuple):
+                _WEBHOOK_CACHE.pop(old_event_id[0], None)
+    
+    _WEBHOOK_CACHE[event_id] = {
+        "processed": True,
+        "timestamp": time.time(),
+        "result": result,
+    }
+
+
+def _cleanup_expired_entries() -> int:
+    """Remove expired entries from the cache."""
+    now = time.time()
+    expired_keys = [
+        event_id for event_id, data in _WEBHOOK_CACHE.items()
+        if now - data.get("timestamp", 0) >= _WEBHOOK_CACHE_TTL
+    ]
+    for key in expired_keys:
+        del _WEBHOOK_CACHE[key]
+    return len(expired_keys)
 
 
 def verify_admin_secret(
@@ -64,6 +127,8 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
     """
     Handle checkout.session.completed webhook event.
 
+    Implements idempotent processing using in-memory cache.
+
     Args:
         session: Stripe session object
 
@@ -93,6 +158,14 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
     if not session_id:
         result["message"] = "No session ID provided"
         return result
+
+    # Idempotency check using in-memory cache
+    event_id = _generate_event_id("checkout.session.completed", session_id)
+    is_processed, cached_result = _is_event_processed(event_id)
+    
+    if is_processed and cached_result:
+        logger.info("Returning cached result for event %s", event_id)
+        return cached_result
 
     try:
         db_service = get_db_service()
@@ -280,6 +353,9 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
         )
         result["message"] = f"Error processing payment: {str(e)}"
 
+    # Always cache the result for idempotency
+    _mark_event_processed(event_id, result)
+    
     return result
 
 
@@ -405,8 +481,35 @@ async def retry_fulfillment(
 @router.get("/webhook/health")
 async def webhook_health() -> dict[str, Any]:
     """Health check endpoint for webhook service."""
+    # Clean up expired entries occasionally
+    cleaned = _cleanup_expired_entries()
+    
     return {
         "status": "healthy",
         "service": "stripe-webhooks",
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "cache": {
+            "size": len(_WEBHOOK_CACHE),
+            "max_size": _WEBHOOK_CACHE_MAX_SIZE,
+            "ttl_seconds": _WEBHOOK_CACHE_TTL,
+            "cleaned_expired": cleaned,
+        },
+    }
+
+
+@router.get("/webhook/cache/stats")
+async def webhook_cache_stats() -> dict[str, Any]:
+    """Get webhook idempotency cache statistics."""
+    return {
+        "cache_size": len(_WEBHOOK_CACHE),
+        "max_size": _WEBHOOK_CACHE_MAX_SIZE,
+        "ttl_seconds": _WEBHOOK_CACHE_TTL,
+        "oldest_entry": min(
+            (data["timestamp"] for data in _WEBHOOK_CACHE.values()),
+            default=None
+        ),
+        "newest_entry": max(
+            (data["timestamp"] for data in _WEBHOOK_CACHE.values()),
+            default=None
+        ),
     }
