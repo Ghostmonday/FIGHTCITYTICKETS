@@ -122,10 +122,22 @@ async def update_appeal(intake_id: int, data: AppealUpdateRequest):
             if not updates:
                 return {"message": "No updates provided", "intake_id": intake_id}
 
+            # Whitelist of allowed columns to prevent SQL injection
+            ALLOWED_COLUMNS = {
+                "citation_number", "violation_date", "vehicle_info", "license_plate",
+                "appeal_reason", "selected_evidence", "signature_data", "user_name",
+                "user_address_line1", "user_address_line2", "user_city", "user_state",
+                "user_zip", "user_email", "user_phone", "city", "section_id", "status",
+            }
+            updates = {k: v for k, v in updates.items() if k in ALLOWED_COLUMNS}
+
+            if not updates:
+                return {"message": "No valid updates provided", "intake_id": intake_id}
+
             # Add updated timestamp
             updates["updated_at"] = datetime.utcnow()
 
-            # Build dynamic SQL
+            # Build dynamic SQL with validated column names
             set_clauses = ", ".join([f"{k} = :{k}" for k in updates.keys()])
             updates["id"] = intake_id
 

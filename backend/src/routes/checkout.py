@@ -245,7 +245,7 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
                 """,
                 {
                     "citation_number": data.citation_number.upper(),
-                    "city_id": city_id,
+                    "city": city_id,
                     "user_name": "Pending",  # Will be updated when user completes form
                     "user_email": data.user_email or "pending@example.com",
                     "clerical_id": clerical_id,

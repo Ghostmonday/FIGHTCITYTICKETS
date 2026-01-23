@@ -331,7 +331,7 @@ added by the Clerical Engine™ automatically)."""
                 last_error = e
                 logger.warning(f"DeepSeek network error (attempt {attempt + 1}/{self.RETRY_COUNT})")
                 if attempt < self.RETRY_COUNT - 1:
-                    await time.sleep(self.RETRY_DELAY * (2 ** attempt))
+                    await asyncio.sleep(self.RETRY_DELAY * (2 ** attempt))
 
             except httpx.HTTPStatusError as e:
                 # Retry on 5xx errors, but not on 4xx
@@ -339,7 +339,7 @@ added by the Clerical Engine™ automatically)."""
                     last_error = e
                     logger.warning(f"DeepSeek server error {e.response.status_code} (attempt {attempt + 1}/{self.RETRY_COUNT})")
                     if attempt < self.RETRY_COUNT - 1:
-                        await time.sleep(self.RETRY_DELAY * (2 ** attempt))
+                        await asyncio.sleep(self.RETRY_DELAY * (2 ** attempt))
                 else:
                     # Non-retryable client error
                     logger.error(f"DeepSeek client error: {e}")
