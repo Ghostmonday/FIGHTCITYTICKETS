@@ -11,6 +11,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
+from sqlalchemy import text
 
 from ..config import settings
 from ..services.database import get_db_service
@@ -122,13 +123,14 @@ async def update_appeal(intake_id: int, data: AppealUpdateRequest):
             if not updates:
                 return {"message": "No updates provided", "intake_id": intake_id}
 
-            # Whitelist of allowed columns to prevent SQL injection
+            # Whitelist of allowed column names to prevent SQL injection
             ALLOWED_COLUMNS = {
                 "citation_number", "violation_date", "vehicle_info", "license_plate",
                 "appeal_reason", "selected_evidence", "signature_data", "user_name",
                 "user_address_line1", "user_address_line2", "user_city", "user_state",
                 "user_zip", "user_email", "user_phone", "city", "section_id", "status",
             }
+            # Filter to only allowed columns
             updates = {k: v for k, v in updates.items() if k in ALLOWED_COLUMNS}
 
             if not updates:
@@ -142,11 +144,11 @@ async def update_appeal(intake_id: int, data: AppealUpdateRequest):
             updates["id"] = intake_id
 
             result = session.execute(
-                f"""
+                text(f"""
                 UPDATE intakes SET {set_clauses}
                 WHERE id = :id
                 RETURNING id, citation_number, created_at, updated_at
-                """,
+                """),
                 updates,
             )
 

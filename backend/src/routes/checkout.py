@@ -18,6 +18,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field, validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from sqlalchemy import text
 
 from ..config import settings
 from ..services.database import get_db_service
@@ -226,14 +227,14 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
             # Upsert intake record with Clerical ID
             # Use the intakes table from the new database schema
             result = session.execute(
-                """
+                text("""
                 INSERT INTO intakes (
                     citation_number, city, status,
                     user_name, user_email,
                     clerical_id, created_at, updated_at
                 )
                 VALUES (
-                    :citation_number, :city_id, 'draft',
+                    :citation_number, :city, 'draft',
                     :user_name, :user_email,
                     :clerical_id, NOW(), NOW()
                 )
@@ -242,7 +243,7 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
                     clerical_id = EXCLUDED.clerical_id,
                     updated_at = NOW()
                 RETURNING id
-                """,
+                """),
                 {
                     "citation_number": data.citation_number.upper(),
                     "city": city_id,
@@ -257,7 +258,7 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
             if not intake_id:
                 # Try to fetch existing
                 existing = session.execute(
-                    "SELECT id, clerical_id FROM intakes WHERE citation_number = :citation",
+                    text("SELECT id, clerical_id FROM intakes WHERE citation_number = :citation"),
                     {"citation": data.citation_number.upper()},
                 )
                 existing_row = existing.fetchone()
@@ -266,7 +267,7 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
                     # Update clerical_id if not set
                     if existing_row[1] is None:
                         session.execute(
-                            "UPDATE intakes SET clerical_id = :clerical_id WHERE id = :id",
+                            text("UPDATE intakes SET clerical_id = :clerical_id WHERE id = :id"),
                             {
                                 "clerical_id": clerical_id,
                                 "id": intake_id,
