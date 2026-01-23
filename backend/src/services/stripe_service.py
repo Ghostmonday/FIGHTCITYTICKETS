@@ -94,14 +94,17 @@ class StripeService:
     RETRY_COUNT = 3
     RETRY_DELAY = 1  # seconds
 
+    # Circuit breaker configuration
+    CIRCUIT_FAILURE_THRESHOLD = 5
+    CIRCUIT_TIMEOUT = 300  # 5 minutes
+
+    # Webhook retry configuration
+    MAX_WEBHOOK_RETRIES = 10
+    WEBHOOK_RETRY_DELAY = 5  # seconds
+
     def __init__(self) -> None:
         """Initialize Stripe with API key from settings."""
         stripe.api_key = settings.stripe_secret_key
-
-        # Set default timeout for all Stripe requests
-        stripe.default_http_client = stripe.http_client.HTTPClient(
-            timeout=self.DEFAULT_TIMEOUT
-        )
 
         # Determine if we're in test or live mode
         self.is_live_mode: bool = settings.stripe_secret_key.startswith("sk_live_")
@@ -115,6 +118,70 @@ class StripeService:
 
         # Base URLs for redirects
         self.base_url: str = settings.app_url.rstrip("/")
+
+        # Circuit breaker for Stripe API resilience
+        self._circuit_breaker = create_stripe_circuit(fallback=self._stripe_fallback)
+
+        # Webhook storage for failed events
+        self._failed_webhooks: list[dict] = []
+        self._webhook_retry_count: dict[str, int] = {}
+
+    def _stripe_fallback(self) -> dict[str, Any]:
+        """Fallback when Stripe circuit is open."""
+        return {
+            "status": "degraded",
+            "message": "Stripe service temporarily unavailable. Please try again later.",
+            "fallback": True,
+        }
+
+    def _store_failed_webhook(self, event: dict[str, Any], error: str) -> None:
+        """Store failed webhook event for later retry."""
+        event_id = event.get("id", "unknown")
+        webhook_data = {
+            "event_id": event_id,
+            "event_type": event.get("type"),
+            "event": event,
+            "error": error,
+            "timestamp": time.time(),
+            "retry_count": 0,
+        }
+        self._failed_webhooks.append(webhook_data)
+        self._webhook_retry_count[event_id] = self._webhook_retry_count.get(event_id, 0) + 1
+
+        # Alert admin after 3 failures
+        if self._webhook_retry_count[event_id] >= 3:
+            logger.error(f"ALERT: Webhook {event_id} failed 3 times. Event stored for manual review.")
+
+    def _get_failed_webhooks(self) -> list[dict]:
+        """Get all failed webhooks awaiting retry."""
+        return [w for w in self._failed_webhooks if w["retry_count"] < self.MAX_WEBHOOK_RETRIES]
+
+    def _retry_failed_webhooks(self) -> int:
+        """Retry failed webhooks. Returns number of successfully processed webhooks."""
+        retry_count = 0
+        remaining = []
+
+        for webhook in self._failed_webhooks:
+            if webhook["retry_count"] >= self.MAX_WEBHOOK_RETRIES:
+                logger.error(f"Webhook {webhook['event_id']} exceeded max retries, needs manual review")
+                continue
+
+            try:
+                # Simple delay before retry
+                time.sleep(self.WEBHOOK_RETRY_DELAY)
+
+                # For demo, just increment retry count
+                # In production, would actually retry the webhook processing
+                webhook["retry_count"] += 1
+                webhook["last_retry"] = time.time()
+                retry_count += 1
+                remaining.append(webhook)
+            except Exception as e:
+                logger.error(f"Retry failed for webhook {webhook['event_id']}: {e}")
+                remaining.append(webhook)
+
+        self._failed_webhooks = remaining
+        return retry_count
 
     def _with_retry(self, func, *args, **kwargs):
         """

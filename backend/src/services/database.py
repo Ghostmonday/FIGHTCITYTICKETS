@@ -1,27 +1,37 @@
 """
-Database Service for FIGHTCITYTICKETS.com
+Database Service for Fight City Tickets
 
 Handles database connections, session management, and common operations.
 Uses SQLAlchemy with PostgreSQL for production-ready data persistence.
 """
 
 import logging
+import time
 from contextlib import contextmanager
-from typing import Generator, Optional
+from typing import Any, Generator, Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
 from ..config import settings
+from ..middleware.resilience import CircuitBreaker, CircuitState, create_database_circuit
 from ..models import AppealType, Base, Draft, Intake, Payment, PaymentStatus
 
 # Set up logger
 logger = logging.getLogger(__name__)
 
+# Cache for recent lookups during outage
+_lookups_cache: dict[str, tuple[Any, float]] = {}
+CACHE_TTL = 300  # 5 minutes
+
 
 class DatabaseService:
     """Manages database connections and operations."""
+
+    # Circuit breaker configuration
+    CIRCUIT_FAILURE_THRESHOLD = 5
+    CIRCUIT_TIMEOUT = 300  # 5 minutes
 
     def __init__(self, database_url: Optional[str] = None):
         """
@@ -54,7 +64,46 @@ class DatabaseService:
             expire_on_commit=False,
         )
 
+        # Circuit breaker for database resilience
+        self._circuit_breaker = create_database_circuit(fallback=self._db_fallback)
+
         logger.info(f"Database service initialized for {self._masked_url()}")
+
+    def _db_fallback(self) -> dict[str, Any]:
+        """Fallback when database circuit is open."""
+        return {
+            "status": "unavailable",
+            "message": "Database temporarily unavailable. Please try again later.",
+            "retry_after": 30,
+        }
+
+    def is_healthy(self) -> bool:
+        """Check if database connection is healthy (respects circuit breaker)."""
+        if self._circuit_breaker.metrics.state == CircuitState.OPEN:
+            return False
+        return self.health_check()
+
+    def get_status(self) -> dict[str, Any]:
+        """Get database status including circuit breaker state."""
+        return {
+            "healthy": self.is_healthy(),
+            "circuit_state": self._circuit_breaker.metrics.state.value,
+            "circuit_failures": self._circuit_breaker.metrics.failure_count,
+            "total_calls": self._circuit_breaker.metrics.total_calls,
+        }
+
+    def _get_cached(self, key: str) -> Optional[Any]:
+        """Get cached lookup result."""
+        if key in _lookups_cache:
+            value, timestamp = _lookups_cache[key]
+            if time.time() - timestamp < CACHE_TTL:
+                return value
+            del _lookups_cache[key]
+        return None
+
+    def _set_cached(self, key: str, value: Any) -> None:
+        """Cache lookup result."""
+        _lookups_cache[key] = (value, time.time())
 
     def _masked_url(self) -> str:
         """Return database URL with password masked for logging."""

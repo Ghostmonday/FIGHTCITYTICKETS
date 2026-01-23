@@ -1,5 +1,5 @@
 """
-City Registry Service for FIGHTCITYTICKETS.com
+City Registry Service for Fight City Tickets
 
 Handles multi-city configuration management for 37 cities.
 Loads, validates, and provides routing for citation patterns and mailing addresses
@@ -10,6 +10,7 @@ Implements Schema 4.3.0 with strict validation rules.
 import json
 import logging
 import re
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -17,6 +18,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 # Set up logger
 logger = logging.getLogger(__name__)
+
+# Cache TTL for city configs (1 hour)
+CITY_CONFIG_CACHE_TTL = 3600
 
 
 class AppealMailStatus(str, Enum):
@@ -34,6 +38,10 @@ try:
     SCHEMA_ADAPTER_AVAILABLE = True
 except ImportError:
     SCHEMA_ADAPTER_AVAILABLE = False
+    # Stub for type checking when import fails
+    class SchemaAdapter:  # type: ignore[no-redef]
+        """Stub when schema_adapter is not available."""
+        pass
     logger.warning("SchemaAdapter not available - will only load Schema 4.3.0 files")
 
 
@@ -88,30 +96,31 @@ class AppealMailAddress:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
-        result = {"status": self.status.value}
+        result: Dict[str, Any] = {"status": self.status.value}
 
         if self.status == AppealMailStatus.COMPLETE:
-            result.update(
-                {
-                    "department": self.department,
-                    "attention": self.attention,
-                    "address1": self.address1,
-                    "address2": self.address2,
-                    "city": self.city,
-                    "state": self.state,
-                    "zip": self.zip,
-                    "country": self.country,
-                }
-            )
+            # Only include non-None values for complete addresses
+            if self.department:
+                result["department"] = self.department
+            if self.attention:
+                result["attention"] = self.attention
+            if self.address1:
+                result["address1"] = self.address1
+            if self.address2:
+                result["address2"] = self.address2
+            if self.city:
+                result["city"] = self.city
+            if self.state:
+                result["state"] = self.state
+            if self.zip:
+                result["zip"] = self.zip
+            if self.country:
+                result["country"] = self.country
         elif self.status == AppealMailStatus.ROUTES_ELSEWHERE:
-            result["routes_to_section_id"] = self.routes_to_section_id
+            result["routes_to_section_id"] = self.routes_to_section_id  # type: ignore[assignment]
         elif self.status == AppealMailStatus.MISSING:
-            result.update(
-                {
-                    "missing_fields": self.missing_fields,
-                    "missing_reason": self.missing_reason,
-                }
-            )
+            result["missing_fields"] = self.missing_fields  # type: ignore[assignment]
+            result["missing_reason"] = self.missing_reason  # type: ignore[assignment]
         return result
 
     @classmethod
@@ -176,15 +185,15 @@ class PhoneConfirmationPolicy:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
-        result = {"required": self.required}
+        result: Dict[str, Any] = {"required": self.required}
         if self.phone_format_regex:
-            result["phone_format_regex"] = self.phone_format_regex
+            result["phone_format_regex"] = self.phone_format_regex  # type: ignore[assignment]
         if self.confirmation_message:
-            result["confirmation_message"] = self.confirmation_message
+            result["confirmation_message"] = self.confirmation_message  # type: ignore[assignment]
         if self.confirmation_deadline_hours:
-            result["confirmation_deadline_hours"] = self.confirmation_deadline_hours
+            result["confirmation_deadline_hours"] = self.confirmation_deadline_hours  # type: ignore[assignment]
         if self.phone_number_examples:
-            result["phone_number_examples"] = self.phone_number_examples
+            result["phone_number_examples"] = self.phone_number_examples  # type: ignore[assignment]
         return result
 
 
@@ -211,13 +220,13 @@ class CitationPattern:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
-        result = {
+        result: Dict[str, Any] = {
             "regex": self.regex,
             "section_id": self.section_id,
             "description": self.description,
         }
         if self.example_numbers:
-            result["example_numbers"] = self.example_numbers
+            result["example_numbers"] = self.example_numbers  # type: ignore[assignment]
         return result
 
 

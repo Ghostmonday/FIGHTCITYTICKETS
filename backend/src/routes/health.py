@@ -8,9 +8,18 @@ from fastapi.responses import JSONResponse
 
 from ..services.database import get_db_service
 from ..config import settings
+from ..middleware.resilience import CircuitBreaker
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def get_circuit_breaker_status() -> dict:
+    """Get status of all circuit breakers."""
+    status = {}
+    for name, cb in CircuitBreaker.get_all_instances().items():
+        status[name] = cb.get_status()
+    return status
 
 
 @router.get("")
@@ -158,6 +167,21 @@ async def health_detailed():
         # Don't mark as degraded for AI service issues
     
     # Determine overall status - only degraded if critical dependencies fail
+    # Include circuit breaker status
+    health_status["circuit_breakers"] = get_circuit_breaker_status()
+    
+    # Check if any circuit breakers are open
+    open_circuits = [
+        name for name, status in get_circuit_breaker_status().items()
+        if status["state"] == "open"
+    ]
+    if open_circuits:
+        health_status["services"]["resilience"] = {
+            "status": "degraded",
+            "open_circuits": open_circuits
+        }
+        health_status["status"] = "degraded"
+
     if health_status["status"] == "degraded":
         return JSONResponse(
             status_code=503,
