@@ -117,10 +117,9 @@ app = FastAPI(
 
     1. **Citation Validation** - Validate citation numbers and deadlines
     2. **Statement Refinement** - AI-assisted appeal letter writing (UPL-compliant)
-    3. **Audio Transcription** - Convert voice memos to text for appeals
-    4. **Checkout & Payment** - Database-first Stripe integration
-    5. **Webhook Processing** - Idempotent payment fulfillment
-    6. **Mail Fulfillment** - Physical mail sending via Lob API
+    3. **Checkout & Payment** - Database-first Stripe integration
+    4. **Webhook Processing** - Idempotent payment fulfillment
+    5. **Mail Fulfillment** - Physical mail sending via Lob API
 
     ### Key Architecture Features:
 
@@ -233,7 +232,6 @@ async def root():
             "checkout": "/checkout/create-session",
             "webhook": "/api/webhook/stripe",  # Public URL (nginx adds /api/ prefix)
         },
-        "note": "Audio transcription endpoint removed - not implemented",
         "compliance": {
             "upl": "UPL-compliant: Never provides legal advice",
             "data_persistence": "All data stored in database before payment",
@@ -285,9 +283,6 @@ async def status(request: Request):
                 "ai_services": {
                     "deepseek": "configured"
                     if settings.deepseek_api_key != "change-me"
-                    else "not_configured",
-                    "openai": "configured"
-                    if settings.openai_api_key != "change-me"
                     else "not_configured",
                 },
             },

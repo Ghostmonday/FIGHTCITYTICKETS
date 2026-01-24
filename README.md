@@ -42,7 +42,7 @@
 ### Key Features
 
 - 🎯 **Multi-City Support** - San Francisco, Los Angeles, New York, Chicago, and more
-- 🤖 **AI-Powered** - OpenAI transcription + DeepSeek statement refinement
+- 🤖 **AI-Powered** - DeepSeek statement refinement
 - 💳 **Secure Payments** - Stripe integration with webhook handling
 - 📮 **Physical Mail** - Automated letter delivery via Lob API
 - 🧱 **Database-First** - All data persisted before payment
@@ -86,7 +86,7 @@ docker compose up --build
 | **Orchestration** | Docker, Docker Compose |
 | **Payments** | Stripe API |
 | **Physical Mail** | Lob API |
-| **AI Services** | OpenAI (transcription), DeepSeek (reasoning) |
+| **AI Services** | DeepSeek (statement refinement) |
 
 ### System Architecture
 
@@ -102,7 +102,7 @@ docker compose up --build
          │                    │                    │
          v                    v                    v
     ┌─────────┐         ┌─────────┐         ┌─────────┐
-    │ Stripe  │         │   Lob   │         │ OpenAI  │
+    │ Stripe  │         │   Lob   │         │DeepSeek │
     │Payments │         │  Mail   │         │   AI    │
     └─────────┘         └─────────┘         └─────────┘
 ```
@@ -157,7 +157,6 @@ LOB_API_KEY=live_...
 LOB_MODE=live
 
 # AI Services
-OPENAI_API_KEY=sk-...
 DEEPSEEK_API_KEY=sk-...
 
 # Database

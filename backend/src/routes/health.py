@@ -229,14 +229,8 @@ async def health_detailed():
             and settings.deepseek_api_key != "sk_dummy"
             and settings.deepseek_api_key != "change-me"
         )
-        openai_configured = (
-            settings.openai_api_key
-            and settings.openai_api_key != "sk_dummy"
-            and settings.openai_api_key != "change-me"
-        )
         health_status["services"]["ai"] = {
             "deepseek": "configured" if deepseek_configured else "not_configured",
-            "openai": "configured" if openai_configured else "not_configured",
         }
         # AI services not configured is not a failure - service can still operate
     except Exception as e:

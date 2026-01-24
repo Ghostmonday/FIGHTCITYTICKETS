@@ -182,7 +182,7 @@ import LegalDisclaimer from "../components/LegalDisclaimer";
 |---------|---------|-----------------|
 | Stripe | Payment Processing | STRIPE_SECRET_KEY |
 | Lob | Physical Mailing | LOB_API_KEY |
-| OpenAI/DeepSeek | AI Statement Refinement | OPENAI_API_KEY |
+| DeepSeek | AI Statement Refinement | DEEPSEEK_API_KEY |
 | PostgreSQL | Database | DATABASE_URL |
 
 ---
@@ -258,7 +258,7 @@ The script will:
 Get these before deployment:
 - [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
 - [Lob Dashboard](https://dashboard.lob.com/settings/keys)
-- [OpenAI Platform](https://platform.openai.com/api-keys)
+- [DeepSeek Platform](https://platform.deepseek.com/api-keys)
 - [DeepSeek Platform](https://platform.deepseek.com/api-keys)
 
 ---

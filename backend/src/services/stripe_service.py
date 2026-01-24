@@ -40,7 +40,7 @@ class CheckoutRequest:
     
     # Optional fields with defaults
     # CERTIFIED-ONLY MODEL: All appeals use Certified Mail with tracking
-    # No subscription, no standard option - single $14.50 transaction
+    # No subscription, no standard option - single $19.95 transaction
     appeal_type: str = "certified"
     user_address_line2: str | None = None
     user_city: str = ""

@@ -92,7 +92,6 @@ export default function PrivacyPage() {
               <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
                 <li>Photos of parking signs, meters, or circumstances</li>
                 <li>Written statements about your situation</li>
-                <li>Voice recordings (if you use voice input)</li>
                 <li>Digital signature</li>
               </ul>
             </div>

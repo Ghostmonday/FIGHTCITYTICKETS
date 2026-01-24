@@ -1,97 +1,38 @@
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 venv/
-.venv/
+env/
 ENV/
+.venv
 
-# Temporary cleanup scripts
-simple_ssh_login.py
-strict_project_cleanup.py
-server_inventory_cleanup.py
-deploy-fightsftickets-frontend.py
-enumeration_results.json
-
-# Frontend - Node.js
+# Node
 node_modules/
-**/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnp
-.pnp.js
-.pnp.cjs
-
-# Frontend - Next.js
+.pnpm-debug.log*
 .next/
-**/.next/
 out/
-**/out/
+dist/
 build/
-**/build/
-*.tsbuildinfo
-next-env.d.ts
-
-# Frontend - Testing
-coverage/
-**/coverage/
-test-results/
-**/test-results/
-playwright-report/
-**/playwright-report/
-playwright/.cache/
-**/playwright/.cache/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# Environment
-.env
-.env.local
-*.local
-
-# Secrets - NEVER COMMIT
-*AUDIT*.local
-*credentials*
-*secrets*
-*.pem
-*.key
-*_key.txt
-*_secret.txt
-*api_key*
-*apikey*
-
-# Specific credential files
-databasecreds.jpg
-postgridcreds.jpg
-
-# AI Operations - Contains sensitive server info
-AI_OPS_CENTER.md
-CLEANUP_SDNA_CHECKLIST.md
-SESSION_HANDOFF.md
-.env.carticket.template
-scripts/server_diagnostic.py
-scripts/cleanup_and_qc.py
-scripts/final_cleanup.py
-scripts/server_session.py
-scripts/health_monitor.py
-scripts/prepare_test_run.py
-scripts/setup_test_mode.py
-scripts/verify_test_mode.py
-scripts/check_nginx_errors.py
-paramiko.log
-data/health_report_*.json
-
-# Temporary files from recent cleanup
-all_text_files.zip
-all_text_files/
+*~
+.cursor/
 
 # OS
 .DS_Store
@@ -101,69 +42,20 @@ Thumbs.db
 *.log
 logs/
 
-# Testing
-.coverage
-htmlcov/
-.pytest_cache/
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
-# Cache
-.cache/
+# Server info
+.kamatera-server-info.json
+.server-credentials.txt
+
+# Docker
+.dockerignore
 
 # Temporary files
 *.tmp
 *.temp
-
-# Build artifacts
-dist/
-*.min.js
-*.min.css
-
-# Generated SEO Artifacts
-frontend/public/seo-pages/*.html
-frontend/public/seo-pages/*.json
-data/seo/generated_pages/*.html
-data/seo/generated_pages/*.json
-# Keep the directory structure, just ignore files
-!frontend/public/seo-pages/.gitkeep
-!data/seo/generated_pages/.gitkeep
-
-# Large binary files
-*.node
-*.exe
-*.dll
-*.so
-*.dylib
-*.tar.gz
-*.tar.bz2
-*.zip
-*.7z
-*.rar
-
-# Package manager files
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# Editor and IDE
-*.swp
-*.swo
-*~
-*.orig
 *.bak
-
-# System files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Temporary Google Drive sync directories
-.tmp.driveupload/
-**/.tmp.driveupload/
-.tmp.drivedownload/
-**/.tmp.drivedownload/
-.env
-*.env.local
-*.key
-*secret*
-*password*
-*credential*
+*.backup

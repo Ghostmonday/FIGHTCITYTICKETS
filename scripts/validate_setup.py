@@ -96,7 +96,6 @@ def main():
     ok &= check_var("STRIPE_SECRET_KEY", "sk_")
     ok &= check_var("STRIPE_PUBLISHABLE_KEY", "pk_")
     ok &= check_var("LOB_API_KEY")
-    ok &= check_var("OPENAI_API_KEY", "sk-")
     ok &= check_var("DEEPSEEK_API_KEY")
     ok &= check_var("DATABASE_URL", "postgresql")
 

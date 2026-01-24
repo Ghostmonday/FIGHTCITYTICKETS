@@ -56,9 +56,6 @@ class Settings(BaseSettings):
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-chat"
 
-    # AI Services - OpenAI
-    openai_api_key: str = "sk_dummy"
-
     # Application URLs - Configure these for your deployment
     app_url: str = "http://localhost:3000"  # Override with APP_URL env var (e.g., https://yourdomain.com)
     api_url: str = "http://localhost:8000"  # Override with API_URL env var (e.g., https://yourdomain.com/api)
@@ -71,10 +68,10 @@ class Settings(BaseSettings):
     compliance_version: str = "civil_shield_v1"
 
     # Service Fees (in cents)
-    # CERTIFIED-ONLY MODEL: $14.50 flat rate for all appeals
+    # CERTIFIED-ONLY MODEL: $19.95 flat rate for all appeals
     # Includes Certified Mail with Electronic Return Receipt (ERR)
     # No subscriptions - single transactional payment
-    fightcity_service_fee: int = 1450  # $14.50 certified only
+    fightcity_service_fee: int = 1995  # $19.95 certified only
     fightcity_standard_fee: int = 0  # DEPRECATED - Certified-only model
 
     @property
@@ -91,7 +88,6 @@ class Settings(BaseSettings):
         "stripe_webhook_secret",
         "lob_api_key",
         "deepseek_api_key",
-        "openai_api_key",
         mode="after",
     )
     @classmethod
@@ -104,7 +100,6 @@ class Settings(BaseSettings):
             "stripe_webhook_secret": "change-me",
             "lob_api_key": "change-me",
             "deepseek_api_key": "change-me",
-            "openai_api_key": "change-me",
             "hetzner_api_token": "",
         }
 
@@ -212,7 +207,6 @@ class Settings(BaseSettings):
             ("stripe_webhook_secret", "change-me"),
             ("lob_api_key", "change-me"),
             ("deepseek_api_key", "change-me"),
-            ("openai_api_key", "change-me"),
         ]
 
         for field_name, default_value in default_checks:

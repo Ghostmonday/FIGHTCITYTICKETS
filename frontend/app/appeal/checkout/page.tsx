@@ -59,8 +59,8 @@ export default function CheckoutPage() {
     );
   };
 
-  // CERTIFIED-ONLY MODEL: $14.50 flat rate
-  const totalFee = 1450; // $14.50 in cents
+  // CERTIFIED-ONLY MODEL: $19.95 flat rate
+  const totalFee = 1995; // $19.95 in cents
 
   const formatPrice = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;

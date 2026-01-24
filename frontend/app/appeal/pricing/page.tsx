@@ -22,7 +22,7 @@ export default function PricingPage() {
     updateState({ appealType: "certified" });
   };
 
-  const PRICE = "$14.50";
+  const PRICE = "$19.95";
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -169,7 +169,7 @@ export default function PricingPage() {
           {/* What's Included */}
           <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-6">
             <p className="text-stone-700 font-medium mb-2">
-              Your $14.50 includes:
+              Your $19.95 includes:
             </p>
             <div className="grid md:grid-cols-3 gap-4 text-sm text-stone-600">
               <div>• Professional appeal letter</div>
