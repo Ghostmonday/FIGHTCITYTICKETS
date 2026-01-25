@@ -1,5 +1,31 @@
 "use client";
 
+/**
+ * Appeal Context - Global state management for appeal workflow
+ *
+ * Manages the complete appeal process from citation capture to submission.
+ * All state is persisted to sessionStorage for recovery on refresh.
+ *
+ * DATA RETENTION NOTES:
+ * - Photos stored as base64 strings (sessionStorage limit ~5MB)
+ * - Consider: Offload photos to S3/Blob storage for large appeals
+ * - Consider: IndexedDB for larger local storage
+ *
+ * TODO: Implement S3 photo upload for large appeals
+ *       - sessionStorage has ~5MB limit
+ *       - Photos quickly exceed this
+ *       - Upload to S3, store reference in state
+ *
+ * TODO: Add multi-step progress saving
+ *       - Save after each major step
+ *       - Enable "continue where you left off" via email
+ *
+ * TODO: Add citation OCR retry logic
+ *       - Tesseract.js can fail on blurry photos
+ *       - Add "Try again" button
+ *       - Fallback to manual entry
+ */
+
 import React, {
   createContext,
   useContext,

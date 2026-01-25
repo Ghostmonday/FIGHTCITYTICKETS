@@ -5,6 +5,30 @@ Handles multi-city configuration management for 37 cities.
 Loads, validates, and provides routing for citation patterns and mailing addresses
 across multiple jurisdictions.
 Implements Schema 4.3.0 with strict validation rules.
+
+CITY EXPANSION STRATEGY (see docs/MARKET_STRATEGY.md):
+======================================================
+
+TIER 1 - HIGH PRIORITY (Easy entry, high volume):
+  - NYC (us-ny-new_york) ✓ Active - simple checkbox, digital signatures
+  - Boston (us-ma-boston) TODO - easy to add, digital signatures accepted
+
+TIER 2 - CAUTION (Moderate risk):
+  - San Francisco (us-ca-san_francisco) ✓ Active - UPL risk if AI drafts arguments
+  - Los Angeles (us-ca-los_angeles) ✓ Active - same UPL risk
+
+TIER 3 - BLOCKED (Do not enter):
+  - Chicago (us-il-chicago) - attorney required for fleet
+  - D.C. - Power of Attorney requirement
+  - Any city requiring wet-ink signatures
+
+SCRIVENER DEFENSE:
+  This service is a "document preparation service" only.
+  We transcribe user facts onto municipal forms - NO legal advice.
+
+TODO: Add Boston (us-ma-boston)
+TODO: Add eligibility filter to get_all_cities()
+TODO: Add is_eligible_for_appeals(city_id) method
 """
 
 import json

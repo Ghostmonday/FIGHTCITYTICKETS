@@ -6,6 +6,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """
+    Application Configuration
+
+    All settings should be set via environment variables or .env file.
+    Never hardcode production credentials in this file.
+    """
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
@@ -17,62 +24,67 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:3000"
 
-    database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/fights"
+    database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/fightsf"
 
     # Stripe Configuration
-    # IMPORTANT: Set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET in .env
-    # Use sk_live_... for production, sk_test_... for testing
-    stripe_secret_key: str = "sk_live_dummy"  # Override with STRIPE_SECRET_KEY env var
-    stripe_publishable_key: str = (
-        "pk_live_dummy"  # Override with STRIPE_PUBLISHABLE_KEY env var
-    )
-    stripe_webhook_secret: str = (
-        "whsec_dummy"  # Override with STRIPE_WEBHOOK_SECRET env var
-    )
+    stripe_secret_key: str = "sk_live_dummy"
+    stripe_publishable_key: str = "pk_live_dummy"
+    stripe_webhook_secret: str = "whsec_dummy"
 
-    # Stripe Price IDs - Set these in .env for production
-    # Get live price IDs from: https://dashboard.stripe.com/products
-    stripe_price_standard: str = ""  # Set STRIPE_PRICE_STANDARD in .env
-    stripe_price_certified: str = ""  # Set STRIPE_PRICE_CERTIFIED in .env
+    # Stripe Price IDs
+    stripe_price_standard: str = ""
+    stripe_price_certified: str = ""
 
     # Lob Configuration
     lob_api_key: str = "test_dummy"
-    lob_mode: str = "test"  # "test" or "live"
+    lob_mode: str = "test"
 
     # SendGrid Email Configuration
-    sendgrid_api_key: str = "change-me"  # Override with SENDGRID_API_KEY env var
-    service_email: str = "noreply@example.com"  # Override with SERVICE_EMAIL env var
-    support_email: str = "support@example.com"  # Override with SUPPORT_EMAIL env var
+    sendgrid_api_key: str = "change-me"
+    service_email: str = "noreply@example.com"
+    support_email: str = "support@example.com"
 
-    # Optional: Infrastructure Management (Hetzner Cloud)
-    # Only needed if using Hetzner Cloud auto-suspend feature
-    hetzner_api_token: str = ""  # Override with HETZNER_API_TOKEN env var (optional)
-    hetzner_droplet_name: Optional[str] = (
-        None  # Override with HETZNER_DROPLET_NAME env var (optional)
-    )
+    # Infrastructure Management (Optional)
+    hetzner_api_token: str = ""
+    hetzner_droplet_name: Optional[str] = None
 
     # AI Services - DeepSeek
     deepseek_api_key: str = "sk_dummy"
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-chat"
 
-    # Application URLs - Configure these for your deployment
-    app_url: str = "http://localhost:3000"  # Override with APP_URL env var (e.g., https://yourdomain.com)
-    api_url: str = "http://localhost:8000"  # Override with API_URL env var (e.g., https://yourdomain.com/api)
+    # Application URLs
+    app_url: str = "http://localhost:3000"
+    api_url: str = "http://localhost:8000"
 
     # Security
     secret_key: str = "dev-secret-change-in-production"
 
-    # Civil Shield Compliance Versioning
+    # Compliance Versioning
     clerical_engine_version: str = "2.1.0"
     compliance_version: str = "civil_shield_v1"
 
-    # Service Fees (in cents)
-    # CERTIFIED-ONLY MODEL: $19.95 flat rate for all appeals
-    # Includes Certified Mail with Electronic Return Receipt (ERR)
-    # No subscriptions - single transactional payment
+    # Service Fees
     fightcity_service_fee: int = 1995  # $19.95 certified only
-    fightcity_standard_fee: int = 0  # DEPRECATED - Certified-only model
+    fightcity_standard_fee: int = 0  # DEPRECATED
+
+    # =========================================================================
+    # PENDING ITEMS
+    # =========================================================================
+    #
+    # TODO: Add Stripe Connect for sub-accounts (fleet management)
+    #       - Allow fleet companies to manage multiple citations
+    #       - Requires: Stripe Connect onboarding flow
+    #
+    # TODO: Add email verification service (SendGrid domain verification)
+    #       - Prevent spam complaints
+    #       - Improve deliverability
+    #
+    # TODO: Add analytics/tracking configuration
+    #       - Google Analytics ID
+    #       - Mixpanel/Amplitude for product analytics
+    #
+    # =========================================================================
 
     @property
     def debug(self) -> bool:
