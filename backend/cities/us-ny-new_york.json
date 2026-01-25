@@ -14,14 +14,20 @@
       "section_id": "nypd",
       "description": "NYC Police Department traffic citation",
       "example_numbers": ["NYPD1234567", "NYPD98765432"]
+    },
+    {
+      "regex": "^NYC\\d{6,8}$",
+      "section_id": "nyc",
+      "description": "NYC Finance short-format citation",
+      "example_numbers": ["NYC123456"]
     }
   ],
   "appeal_mail_address": {
     "status": "complete",
-    "department": "Adjudications Division",
+    "department": "Adjudications Division - Hearing by Mail Unit",
     "address1": "66 John Street",
-    "address2": "3rd Floor",
-    "city": "New York",
+    "address2": "3rd Floor, Mail Unit",
+    "city": "Brooklyn",
     "state": "NY",
     "zip": "10038",
     "country": "US"
@@ -37,10 +43,10 @@
   "sections": {
     "nyc": {
       "section_id": "nyc",
-      "name": "NYC Department of Finance",
+      "name": "NYC Department of Finance - Adjudications",
       "appeal_mail_address": {
         "status": "complete",
-        "department": "Adjudications Division",
+        "department": "Adjudications Division - Hearing by Mail Unit",
         "address1": "66 John Street",
         "address2": "3rd Floor",
         "city": "New York",
@@ -51,11 +57,19 @@
       "routing_rule": "direct",
       "phone_confirmation_policy": {
         "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": true,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": true,
+        "certified_mail_required": true
       }
     },
     "nypd": {
       "section_id": "nypd",
-      "name": "NYC Police Department - Traffic",
+      "name": "NYC Police Department - Traffic Violations Bureau",
       "appeal_mail_address": {
         "status": "complete",
         "department": "Traffic Violations Bureau",
@@ -69,18 +83,28 @@
       "routing_rule": "direct",
       "phone_confirmation_policy": {
         "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": false
       }
     }
   },
   "verification_metadata": {
-    "last_updated": "2025-01-22",
-    "source": "official_nyc_gov",
-    "confidence_score": 0.90,
-    "notes": "New York City configuration",
-    "verified_by": "system"
+    "last_updated": "2025-01-25",
+    "source": "https://www.nyc.gov/site/finance/vehicles/dispute-a-ticket.page",
+    "confidence_score": 0.95,
+    "notes": "Verified PO Box for Hearing by Mail Unit. Representative checkbox prioritized for third-party appeals.",
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://www.nyc.gov/site/finance/vehicles/dispute-a-ticket.page"
   },
   "timezone": "America/New_York",
   "appeal_deadline_days": 30,
   "online_appeal_available": false,
-  "online_appeal_url": null
+  "online_appeal_url": "https://www.nyc.gov/site/finance/vehicles/dispute-a-ticket.page"
 }

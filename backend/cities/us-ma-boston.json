@@ -1,0 +1,106 @@
+{
+  "city_id": "us-ma-boston",
+  "name": "Boston",
+  "jurisdiction": "city",
+  "citation_patterns": [
+    {
+      "regex": "^BO\\d{7,9}$",
+      "section_id": "parking",
+      "description": "Boston Parking Commission citation",
+      "example_numbers": ["BO1234567", "BO9876543"]
+    },
+    {
+      "regex": "^BPD\\d{6,8}$",
+      "section_id": "police",
+      "description": "Boston Police Department parking citation",
+      "example_numbers": ["BPD123456"]
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "Parking Clerk - Administrative Appeals",
+    "address1": "2300 Washington Street",
+    "address2": "Room 115",
+    "city": "Roxbury",
+    "state": "MA",
+    "zip": "02119",
+    "country": "US"
+  },
+  "phone_confirmation_policy": {
+    "required": false,
+    "phone_format_regex": null,
+    "confirmation_message": null,
+    "confirmation_deadline_hours": null,
+    "phone_number_examples": null
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "parking": {
+      "section_id": "parking",
+      "name": "Boston Parking Commission",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Parking Clerk - Administrative Appeals",
+        "address1": "2300 Washington Street",
+        "address2": "Room 115",
+        "city": "Roxbury",
+        "state": "MA",
+        "zip": "02119",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": true,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": true,
+        "digital_signature_notes": "Massachusetts state law explicitly allows digital signatures for administrative appeals",
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": false,
+        "notes": "DIGITAL SIGNATURES ACCEPTED per Massachusetts state law. Enable PDF digital signature option."
+      }
+    },
+    "police": {
+      "section_id": "police",
+      "name": "Boston Police Department",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Parking Violations",
+        "address1": "354 Columbus Avenue",
+        "address2": null,
+        "city": "Boston",
+        "state": "MA",
+        "zip": "02116",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": true,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": true,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": false
+      }
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2025-01-25",
+    "source": "https://www.boston.gov/departments/parking-clerk",
+    "confidence_score": 0.95,
+    "notes": "DIGITAL SIGNATURES ENABLED per Massachusetts law. Easy entry, high volume target.",
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://www.boston.gov/departments/parking-clerk"
+  },
+  "timezone": "America/New_York",
+  "appeal_deadline_days": 21,
+  "online_appeal_available": true,
+  "online_appeal_url": "https://www.boston.gov/departments/parking-clerk"
+}

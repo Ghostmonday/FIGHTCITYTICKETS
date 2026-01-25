@@ -1,0 +1,75 @@
+{
+  "city_id": "us-dc-washington",
+  "name": "Washington D.C.",
+  "jurisdiction": "district",
+  "citation_patterns": [
+    {
+      "regex": "^DC\\d{7,9}$",
+      "section_id": "dmv",
+      "description": "DC DMV parking citation",
+      "example_numbers": ["DC1234567", "DC9876543"]
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "DC DMV - Adjudication Services",
+    "address1": "1101 4th Street SW",
+    "address2": "2nd Floor",
+    "city": "Washington",
+    "state": "DC",
+    "zip": "20024",
+    "country": "US"
+  },
+  "phone_confirmation_policy": {
+    "required": false,
+    "phone_format_regex": null,
+    "confirmation_message": null,
+    "confirmation_deadline_hours": null,
+    "phone_number_examples": null
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "dmv": {
+      "section_id": "dmv",
+      "name": "DC Department of Motor Vehicles",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "DMV Adjudication Services",
+        "address1": "1101 4th Street SW",
+        "address2": "2nd Floor",
+        "city": "Washington",
+        "state": "DC",
+        "zip": "20024",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": false,
+        "digital_signature_accepted": false,
+        "requires_poa": true,
+        "hard_poa_required": true,
+        "poa_form_required": true,
+        "lockbox_city": false,
+        "certified_mail_required": true,
+        "notes": "HARD REQUIREMENT: Power of Attorney (POA) form REQUIRED. No appeal can be generated without signed POA attached."
+      }
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2025-01-25",
+    "source": "https://dmv.dc.gov/service/contest-parking-ticket",
+    "confidence_score": 0.95,
+    "notes": "HARD POA REQUIREMENT - Power of Attorney form must be attached. Third-party representation requires formal POA.",
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://dmv.dc.gov/service/contest-parking-ticket"
+  },
+  "timezone": "America/New_York",
+  "appeal_deadline_days": 30,
+  "online_appeal_available": true,
+  "online_appeal_url": "https://dmv.dc.gov/service/contest-parking-ticket"
+}

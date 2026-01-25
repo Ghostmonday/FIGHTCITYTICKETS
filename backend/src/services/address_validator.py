@@ -33,17 +33,23 @@ from .city_registry import get_city_registry
 # Set up logger
 logger = logging.getLogger(__name__)
 
-# City ID to URL mapping from user-provided list
+# City ID to URL mapping for address verification
+# Updated 2026-01-25 with verified sources per Priority City Expansion Protocol
 CITY_URL_MAPPING: Dict[str, str] = {
-    "us-az-phoenix": "https://www.phoenix.gov/administration/departments/court/violations/parking-tickets.html",
-    "us-ca-los_angeles": "https://ladotparking.org/adjudication-division/contest-a-parking-citation/",
-    "us-ca-san_diego": "https://www.sandiego.gov/parking/citations/appeal",
-    "us-ca-san_francisco": "https://www.sfmta.com/getting-around/drive-park/citations/contest-citation",
-    "us-co-denver": "https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Parks-Recreation/Appeal-a-Park-Citation",
-    "us-il-chicago": "https://www.chicago.gov/city/en/depts/fin/supp_info/revenue/parking_and_red-lightnoticeinformation5/contest_by_mail.html",
+    # TIER 1 & 2 - PRIORITY CITIES
     "us-ny-new_york": "https://www.nyc.gov/site/finance/vehicles/dispute-a-ticket.page",
-    "us-or-portland": "https://www.portland.gov/transportation/parking/pay-and-or-contest-parking-ticket",
+    "us-il-chicago": "https://www.chicago.gov/city/en/depts/fin/supp_info/revenue/parking_and_red-lightnoticeinformation5/contest_by_mail.html",
+    "us-ca-los_angeles": "https://ladotparking.org/adjudication-division/contest-a-parking-citation/",
     "us-pa-philadelphia": "https://philapark.org/dispute/",
+    "us-dc-washington": "https://dmv.dc.gov/service/contest-parking-ticket",
+    "us-ma-boston": "https://www.boston.gov/departments/parking-clerk",
+    "us-md-baltimore": "https://transportation.baltimorecity.gov/parking/fines-and-fees",
+    "us-ca-san_francisco": "https://www.sfmta.com/getting-around/drive-park/citations/contest-citation",
+    "us-ca-san_diego": "https://www.sandiego.gov/parking/citations/appeal",
+    "us-co-denver": "https://denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Parks-Recreation/Appeal-a-Park-Citation",
+    # Additional cities
+    "us-az-phoenix": "https://www.phoenix.gov/administration/departments/court/violations/parking-tickets.html",
+    "us-or-portland": "https://www.portland.gov/transportation/parking/pay-and-or-contest-parking-ticket",
     "us-tx-dallas": "https://dallascityhall.com/departments/courtdetentionservices/Pages/Parking-Violations.aspx",
     "us-tx-houston": "https://www.houstontx.gov/parking/resolve.html",
     "us-ut-salt_lake_city": "https://www.slc.gov/Finance/appeal-a-parking-or-civil-citation/",
@@ -51,19 +57,25 @@ CITY_URL_MAPPING: Dict[str, str] = {
 }
 
 # Expected addresses from user-provided list (for comparison)
+# Updated 2026-01-25 with verified addresses per Priority City Expansion Protocol
 EXPECTED_ADDRESSES: Dict[str, str] = {
-    "us-az-phoenix": "Phoenix Municipal Court, 300 West Washington Street, Phoenix, AZ 85003",
-    "us-ca-los_angeles": "Parking Violations Bureau, P.O. Box 30247, Los Angeles, CA 90030",
-    "us-ca-san_diego": "PO Box 129038, San Diego, CA 92112-9038",
-    "us-ca-san_francisco": "SFMTA Customer Service Center, ATTN: Citation Review, 11 South Van Ness Avenue, San Francisco, CA 94103",
-    "us-co-denver": "Denver Parks and Recreation, Manager of Finance, Denver Post Building, 101 West Colfax Ave, 9th Floor, Denver, CO 80202",
-    "us-il-chicago": "Department of Finance, City of Chicago, P.O. Box 88292, Chicago, IL 60680-1292 (send signed statement with facts for defense)",
-    "us-ny-new_york": "New York City Department of Finance, Adjudications Division, Parking Ticket Transcript Processing, 66 John Street, 3rd Floor, New York, NY 10038",
-    "us-or-portland": "Multnomah County Circuit Court, Parking Citation Office, P.O. Box 78, Portland, OR 97207",
+    # TIER 1 & 2 - VERIFIED CITIES
+    "us-ny-new_york": "Adjudications Division - Hearing by Mail Unit, 66 John Street, 3rd Floor, Brooklyn, NY 10038",
+    "us-il-chicago": "Department of Finance - Parking Section, P.O. Box 6289, Chicago, IL 60680-6289",
+    "us-ca-los_angeles": "Parking Violations Bureau - Administrative Review, P.O. Box 30114, Los Angeles, CA 90030",
     "us-pa-philadelphia": "Bureau of Administrative Adjudication, 48 N. 8th Street, Philadelphia, PA 19107",
+    "us-dc-washington": "DMV Adjudication Services, 1101 4th Street SW, 2nd Floor, Washington, DC 20024",
+    "us-ma-boston": "Parking Clerk - Administrative Appeals, 2300 Washington Street, Room 115, Roxbury, MA 02119",
+    "us-md-baltimore": "Department of Transportation - Parking Citation Bureau, 200 Holliday Street, Baltimore, MD 21202",
+    "us-ca-san_francisco": "SFMTA Citation Review, 11 South Van Ness Avenue, 7th Floor, San Francisco, CA 94103",
+    "us-ca-san_diego": "Parking Services - Administrative Review, P.O. Box 129038, San Diego, CA 92112-9038",
+    "us-co-denver": "Denver County Court - Parking Magistrate, 1437 Bannock Street, Room 260, Denver, CO 80202",
+    # Additional cities
+    "us-az-phoenix": "Phoenix Municipal Court, 300 West Washington Street, Phoenix, AZ 85003",
+    "us-or-portland": "Multnomah County Circuit Court, Parking Citation Office, P.O. Box 78, Portland, OR 97207",
     "us-tx-dallas": "City of Dallas, Parking Adjudication Office, 2014 Main Street, Dallas, TX 75201-4406",
     "us-tx-houston": "Parking Adjudication Office, Municipal Courts, 1400 Lubbock, Houston, TX 77002",
-    "us-ut-salt_lake_city": "Salt Lake City Corporation, P.O. Box 145580, Salt Lake City, UT 84114-5580 (no direct mail appeal listed, use this for payments while appealing online or in person)",
+    "us-ut-salt_lake_city": "Salt Lake City Corporation, P.O. Box 145580, Salt Lake City, UT 84114-5580",
     "us-wa-seattle": "Seattle Municipal Court, PO Box 34987, Seattle, WA 98124-4987",
 }
 

@@ -1,0 +1,111 @@
+{
+  "city_id": "us-il-chicago",
+  "name": "Chicago",
+  "jurisdiction": "city",
+  "citation_patterns": [
+    {
+      "regex": "^CH\\d{8}$",
+      "section_id": "finance",
+      "description": "Chicago Department of Finance parking citation",
+      "example_numbers": ["CH12345678"]
+    },
+    {
+      "regex": "^CDOT\\d{7,9}$",
+      "section_id": "cdot",
+      "description": "Chicago DOT parking citation",
+      "example_numbers": ["CDOT1234567"]
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "Department of Finance - Parking Section",
+    "address1": "P.O. Box 6289",
+    "address2": null,
+    "city": "Chicago",
+    "state": "IL",
+    "zip": "60680-6289",
+    "country": "US"
+  },
+  "phone_confirmation_policy": {
+    "required": false,
+    "phone_format_regex": null,
+    "confirmation_message": null,
+    "confirmation_deadline_hours": null,
+    "phone_number_examples": null
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "finance": {
+      "section_id": "finance",
+      "name": "Chicago Department of Finance",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Department of Finance - Parking Section",
+        "address1": "P.O. Box 6289",
+        "address2": null,
+        "city": "Chicago",
+        "state": "IL",
+        "zip": "60680-6289",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": false,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": true,
+        "certified_mail_required": true,
+        "stone_street_barrier": true,
+        "fleet_appeals_blocked": true,
+        "corporate_blocked": true,
+        "notes": "Stone Street barrier - B2B/Corporate fleet appeals BLOCKED. Only individual appeals accepted."
+      }
+    },
+    "cdot": {
+      "section_id": "cdot",
+      "name": "Chicago Department of Transportation",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "CDOT Parking Enforcement",
+        "address1": "121 N LaSalle Street",
+        "address2": "Room 500",
+        "city": "Chicago",
+        "state": "IL",
+        "zip": "60602",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": false,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": false,
+        "stone_street_barrier": false,
+        "fleet_appeals_blocked": true,
+        "corporate_blocked": true
+      }
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2025-01-25",
+    "source": "https://www.chicago.gov/city/en/depts/fin/supp_info/revenue/parking_and_red-lightnoticeinformation5/contest_by_mail.html",
+    "confidence_score": 0.95,
+    "notes": "Verified PO Box 6289. STONE STREET BARRIER ENFORCED - B2B fleet appeals BLOCKED. Corporate representation requires attorney.",
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://www.chicago.gov/city/en/depts/fin/supp_info/revenue/parking_and_red-lightnoticeinformation5/contest_by_mail.html"
+  },
+  "timezone": "America/Chicago",
+  "appeal_deadline_days": 21,
+  "online_appeal_available": false,
+  "online_appeal_url": null
+}

@@ -1,0 +1,107 @@
+{
+  "city_id": "us-pa-philadelphia",
+  "name": "Philadelphia",
+  "jurisdiction": "city",
+  "citation_patterns": [
+    {
+      "regex": "^PH\\d{7,9}$",
+      "section_id": "baa",
+      "description": "Philadelphia Bureau of Administrative Adjudication citation",
+      "example_numbers": ["PH1234567", "PH9876543"]
+    },
+    {
+      "regex": "^PPA\\d{6,8}$",
+      "section_id": "ppa",
+      "description": "Philadelphia Parking Authority citation",
+      "example_numbers": ["PPA123456"]
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "Bureau of Administrative Adjudication",
+    "address1": "48 N. 8th Street",
+    "address2": null,
+    "city": "Philadelphia",
+    "state": "PA",
+    "zip": "19107",
+    "country": "US"
+  },
+  "phone_confirmation_policy": {
+    "required": false,
+    "phone_format_regex": null,
+    "confirmation_message": null,
+    "confirmation_deadline_hours": null,
+    "phone_number_examples": null
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "baa": {
+      "section_id": "baa",
+      "name": "Philadelphia BAA",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Bureau of Administrative Adjudication",
+        "address1": "48 N. 8th Street",
+        "address2": null,
+        "city": "Philadelphia",
+        "state": "PA",
+        "zip": "19107",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": true,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": true,
+        "agent_authorization_form_required": true,
+        "notes": "Agent Authorization form must be dynamically generated and attached to mailer."
+      }
+    },
+    "ppa": {
+      "section_id": "ppa",
+      "name": "Philadelphia Parking Authority",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Parking Violations",
+        "address1": "P.O. Box 41818",
+        "address2": null,
+        "city": "Philadelphia",
+        "state": "PA",
+        "zip": "19101",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": true,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": true,
+        "certified_mail_required": true,
+        "agent_authorization_form_required": true
+      }
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2025-01-25",
+    "source": "https://philapark.org/dispute/",
+    "confidence_score": 0.95,
+    "notes": "Verified BAA address (48 N 8th St) and PPA PO Box 41818. Agent Authorization form must be attached.",
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://philapark.org/dispute/"
+  },
+  "timezone": "America/New_York",
+  "appeal_deadline_days": 30,
+  "online_appeal_available": false,
+  "online_appeal_url": "https://philapark.org/dispute/"
+}

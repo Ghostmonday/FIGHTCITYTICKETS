@@ -18,8 +18,8 @@
   ],
   "appeal_mail_address": {
     "status": "complete",
-    "department": "Parking Violations Bureau",
-    "address1": "P.O. Box 30247",
+    "department": "Parking Violations Bureau - Administrative Review",
+    "address1": "P.O. Box 30114",
     "address2": null,
     "city": "Los Angeles",
     "state": "CA",
@@ -40,8 +40,8 @@
       "name": "Los Angeles Department of Transportation",
       "appeal_mail_address": {
         "status": "complete",
-        "department": "Parking Violations Bureau",
-        "address1": "P.O. Box 30247",
+        "department": "Parking Violations Bureau - Administrative Review",
+        "address1": "P.O. Box 30114",
         "address2": null,
         "city": "Los Angeles",
         "state": "CA",
@@ -51,6 +51,16 @@
       "routing_rule": "direct",
       "phone_confirmation_policy": {
         "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": true,
+        "certified_mail_required": true,
+        "stage_1_only": true,
+        "notes": "Stage 1 Administrative Review ONLY. Post to PO Box 30114."
       }
     },
     "lapd": {
@@ -69,18 +79,28 @@
       "routing_rule": "direct",
       "phone_confirmation_policy": {
         "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": false,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": false
       }
     }
   },
   "verification_metadata": {
-    "last_updated": "2025-01-22",
-    "source": "official_ladot_website",
-    "confidence_score": 0.90,
-    "notes": "Los Angeles city configuration",
-    "verified_by": "system"
+    "last_updated": "2025-01-25",
+    "source": "https://ladotparking.org/adjudication-division/contest-a-parking-citation/",
+    "confidence_score": 0.95,
+    "notes": "Verified PO Box 30114 for Stage 1 Administrative Review. UPL RISK - Scrivener defense only.",
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://ladotparking.org/adjudication-division/contest-a-parking-citation/"
   },
   "timezone": "America/Los_Angeles",
   "appeal_deadline_days": 21,
   "online_appeal_available": false,
-  "online_appeal_url": null
+  "online_appeal_url": "https://ladotparking.org/adjudication-division/contest-a-parking-citation/"
 }

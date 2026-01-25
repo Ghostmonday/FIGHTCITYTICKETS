@@ -1,0 +1,109 @@
+{
+  "city_id": "us-md-baltimore",
+  "name": "Baltimore",
+  "jurisdiction": "city",
+  "citation_patterns": [
+    {
+      "regex": "^BAL\\d{7,9}$",
+      "section_id": "transportation",
+      "description": "Baltimore DOT parking citation",
+      "example_numbers": ["BAL1234567", "BAL9876543"]
+    },
+    {
+      "regex": "^BPD\\d{6,8}$",
+      "section_id": "police",
+      "description": "Baltimore Police parking citation",
+      "example_numbers": ["BPD123456"]
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "Department of Transportation - Parking Citation Bureau",
+    "address1": "200 Holliday Street",
+    "address2": null,
+    "city": "Baltimore",
+    "state": "MD",
+    "zip": "21202",
+    "country": "US"
+  },
+  "phone_confirmation_policy": {
+    "required": false,
+    "phone_format_regex": null,
+    "confirmation_message": null,
+    "confirmation_deadline_hours": null,
+    "phone_number_examples": null
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "transportation": {
+      "section_id": "transportation",
+      "name": "Baltimore DOT",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Department of Transportation - Parking Citation Bureau",
+        "address1": "200 Holliday Street",
+        "address2": null,
+        "city": "Baltimore",
+        "state": "MD",
+        "zip": "21202",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": true,
+        "manual_processing": true,
+        "back_of_citation_fields": true,
+        "notes": "Manual processing environment. Recreate 'back of citation' fields for mail request compliance."
+      }
+    },
+    "police": {
+      "section_id": "police",
+      "name": "Baltimore Police Department",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Parking Violations Unit",
+        "address1": "601 E Fayette Street",
+        "address2": null,
+        "city": "Baltimore",
+        "state": "MD",
+        "zip": "21202",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": true,
+        "manual_processing": true,
+        "back_of_citation_fields": true
+      }
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2025-01-25",
+    "source": "https://transportation.baltimorecity.gov/parking/fines-and-fees",
+    "confidence_score": 0.95,
+    "notes": "Manual processing - recreate 'back of citation' fields. Certified mail required.",
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://transportation.baltimorecity.gov/parking/fines-and-fees"
+  },
+  "timezone": "America/New_York",
+  "appeal_deadline_days": 15,
+  "online_appeal_available": false,
+  "online_appeal_url": null
+}

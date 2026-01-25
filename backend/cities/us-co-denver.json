@@ -1,0 +1,107 @@
+{
+  "city_id": "us-co-denver",
+  "name": "Denver",
+  "jurisdiction": "city",
+  "citation_patterns": [
+    {
+      "regex": "^DN\\d{7,9}$",
+      "section_id": "parks",
+      "description": "Denver Parks and Recreation parking citation",
+      "example_numbers": ["DN1234567", "DN9876543"]
+    },
+    {
+      "regex": "^DPO\\d{6,8}$",
+      "section_id": "police",
+      "description": "Denver Police parking citation",
+      "example_numbers": ["DPO123456"]
+    }
+  ],
+  "appeal_mail_address": {
+    "status": "complete",
+    "department": "Denver County Court - Parking Magistrate",
+    "address1": "1437 Bannock Street",
+    "address2": "Room 260",
+    "city": "Denver",
+    "state": "CO",
+    "zip": "80202",
+    "country": "US"
+  },
+  "phone_confirmation_policy": {
+    "required": false,
+    "phone_format_regex": null,
+    "confirmation_message": null,
+    "confirmation_deadline_hours": null,
+    "phone_number_examples": null
+  },
+  "routing_rule": "direct",
+  "sections": {
+    "parks": {
+      "section_id": "parks",
+      "name": "Denver Parks and Recreation",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Denver County Court - Parking Magistrate",
+        "address1": "1437 Bannock Street",
+        "address2": "Room 260",
+        "city": "Denver",
+        "state": "CO",
+        "zip": "80202",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": true,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": false,
+        "parking_magistrate_system": true,
+        "notes": "Parking Magistrate system - align messaging with clerical arguments, not legal strategy."
+      }
+    },
+    "police": {
+      "section_id": "police",
+      "name": "Denver Police Department",
+      "appeal_mail_address": {
+        "status": "complete",
+        "department": "Traffic Bureau - Parking Citations",
+        "address1": "1331 Cherokee Street",
+        "address2": null,
+        "city": "Denver",
+        "state": "CO",
+        "zip": "80204",
+        "country": "US"
+      },
+      "routing_rule": "direct",
+      "phone_confirmation_policy": {
+        "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": true,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": false,
+        "parking_magistrate_system": false
+      }
+    }
+  },
+  "verification_metadata": {
+    "last_updated": "2025-01-25",
+    "source": "https://www.denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Parks-Recreation/Appeal-a-Park-Citation",
+    "confidence_score": 0.95,
+    "notes": "Parking Magistrate system - use clerical arguments, not legal strategy.",
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://www.denvergov.org/Government/Agencies-Departments-Offices/Agencies-Departments-Offices-Directory/Parks-Recreation/Appeal-a-Park-Citation"
+  },
+  "timezone": "America/Denver",
+  "appeal_deadline_days": 20,
+  "online_appeal_available": false,
+  "online_appeal_url": null
+}

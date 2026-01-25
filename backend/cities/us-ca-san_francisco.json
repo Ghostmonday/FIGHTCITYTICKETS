@@ -14,18 +14,6 @@
       "section_id": "sfpd",
       "description": "SF Police Department parking/traffic citation",
       "example_numbers": ["AB1234567", "SF9876543"]
-    },
-    {
-      "regex": "^(SFSU|CAMPUS|UNIV)[A-Z0-9]*$",
-      "section_id": "sfsu",
-      "description": "San Francisco State University citation",
-      "example_numbers": ["SFSU12345", "CAMPUS001"]
-    },
-    {
-      "regex": "^(SFUD|SFMUD)[A-Z0-9]*$",
-      "section_id": "sfmud",
-      "description": "SF Municipal Utility District citation",
-      "example_numbers": ["SFUD001234"]
     }
   ],
   "appeal_mail_address": {
@@ -63,6 +51,17 @@
       "routing_rule": "direct",
       "phone_confirmation_policy": {
         "required": false
+      },
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": false,
+        "stage_1_only": true,
+        "uprl_risk": true,
+        "notes": "Stage 1 Administrative Review ONLY. UPL RISK - Scrivener defense only, no legal advice."
       }
     },
     "sfpd": {
@@ -81,51 +80,26 @@
       "routing_rule": "direct",
       "phone_confirmation_policy": {
         "required": false
-      }
-    },
-    "sfsu": {
-      "section_id": "sfsu",
-      "name": "San Francisco State University Police Department",
-      "appeal_mail_address": {
-        "status": "complete",
-        "department": "Parking Services",
-        "address1": "1600 Holloway Avenue",
-        "address2": "Building 1",
-        "city": "San Francisco",
-        "state": "CA",
-        "zip": "94132",
-        "country": "US"
       },
-      "routing_rule": "direct",
-      "phone_confirmation_policy": {
-        "required": false
-      }
-    },
-    "sfmud": {
-      "section_id": "sfmud",
-      "name": "SF Municipal Transportation Agency - Utilities",
-      "appeal_mail_address": {
-        "status": "complete",
-        "department": "Customer Service Center",
-        "address1": "1 South Van Ness Avenue",
-        "address2": "7th Floor",
-        "city": "San Francisco",
-        "state": "CA",
-        "zip": "94103",
-        "country": "US"
-      },
-      "routing_rule": "direct",
-      "phone_confirmation_policy": {
-        "required": false
+      "special_requirements": {
+        "representative_checkbox_enabled": false,
+        "agent_authorization_optional": true,
+        "digital_signature_accepted": false,
+        "requires_poa": false,
+        "lockbox_city": false,
+        "certified_mail_required": false,
+        "uprl_risk": true
       }
     }
   },
   "verification_metadata": {
-    "last_updated": "2025-01-22",
-    "source": "official_sfmta_website",
+    "last_updated": "2025-01-25",
+    "source": "https://www.sfmta.com/getting-around/drive-park/citations/contest-citation",
     "confidence_score": 0.95,
-    "notes": "Primary San Francisco configuration for parking citation appeals",
-    "verified_by": "system"
+    "notes": "Verified 11 South Van Ness Ave. Stage 1 only. UPL RISK - Scrivener defense only.",
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://www.sfmta.com/getting-around/drive-park/citations/contest-citation"
   },
   "timezone": "America/Los_Angeles",
   "appeal_deadline_days": 21,

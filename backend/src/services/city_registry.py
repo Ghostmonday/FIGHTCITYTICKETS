@@ -65,7 +65,7 @@ else:
         SCHEMA_ADAPTER_AVAILABLE = True
     except ImportError:
         SCHEMA_ADAPTER_AVAILABLE = False
-        logger.warning("SchemaAdapter not available - will only load Schema 4.3.0 files")
+        logger.warning(f"SchemaAdapter not available - will only load Schema 4.3.0 files")
 
 
 class RoutingRule(str, Enum):
@@ -85,6 +85,7 @@ class Jurisdiction(str, Enum):
     CAMPUS = "campus"
     REGIONAL = "regional"
     SPECIAL_DISTRICT = "special_district"
+    DISTRICT = "district"
 
 
 @dataclass
@@ -203,7 +204,7 @@ class PhoneConfirmationPolicy:
                     error += f". Examples: {', '.join(self.phone_number_examples)}"
                 return False, error
         except re.error:
-            logger.warning("Invalid regex pattern: {self.phone_format_regex}")
+            logger.warning(f"Invalid regex pattern: {self.phone_format_regex}")
             return True, None  # Don't fail validation due to bad regex
 
     def to_dict(self) -> Dict[str, Any]:
@@ -288,6 +289,8 @@ class VerificationMetadata:
     confidence_score: float = 1.0
     notes: Optional[str] = None
     verified_by: Optional[str] = None
+    verification_date: Optional[str] = None
+    verified_url: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
@@ -359,7 +362,7 @@ class CityRegistry:
     def load_cities(self) -> None:
         """Load all city configurations from JSON files."""
         if not self.cities_dir.exists():
-            logger.warning("Cities directory not found: {self.cities_dir}")
+            logger.warning(f"Cities directory not found: {self.cities_dir}")
             return
 
         # Load all JSON files, not just us-*.json, but skip phase1 files
@@ -369,10 +372,10 @@ class CityRegistry:
             if not f.name.endswith("_phase1.json")
         ]
         if not json_files:
-            logger.warning("No JSON files found in {self.cities_dir}")
+            logger.warning(f"No JSON files found in {self.cities_dir}")
             return
 
-        logger.info("Found {len(json_files)} JSON files (excluding phase1 files)")
+        logger.info(f"Found {len(json_files)} JSON files (excluding phase1 files)")
 
         loaded = 0
         errors = 0
@@ -470,10 +473,10 @@ class CityRegistry:
                 self._build_citation_cache_for_city(city_id, config)
                 loaded_city_ids.add(city_id)
                 loaded += 1
-                logger.info("Loaded city configuration: {city_id}")
+                logger.info(f"Loaded city configuration: {city_id}")
 
             except Exception as e:
-                logger.error("Failed to load {json_file}: {e}")
+                logger.error(f"Failed to load {json_file}: {e}")
                 errors += 1
 
         logger.info(
