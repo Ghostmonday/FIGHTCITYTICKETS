@@ -353,3 +353,18 @@ export default function CameraPage() {
     </div>
   );
 }
+
+// Cleanup camera stream on unmount
+useEffect(() => {
+  return () => {
+    // Cleanup camera stream when component unmounts
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  };
+}, []);
+
+CameraPage.getLayout = function getLayout(page: React.ReactNode) {
+  return page;
+};

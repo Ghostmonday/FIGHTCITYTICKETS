@@ -81,7 +81,7 @@ class AddressValidator:
 
         # Initialize city registry
         if cities_dir is None:
-            cities_dir = Path(__file__).parent.parent.parent.parent / "cities"
+            cities_dir = Path(__file__).parent.parent.parent / "cities"
         self.cities_dir = Path(cities_dir) if isinstance(cities_dir, str) else cities_dir
         self.city_registry = get_city_registry(self.cities_dir)
 

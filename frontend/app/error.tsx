@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { error as logError } from "@/lib/logger";
 
 export default function Error({
   error,
@@ -11,8 +12,8 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log error to console for debugging
-    console.error("Route error:", error);
+    // Log error using proper logging
+    logError("Route error:", error);
   }, [error]);
 
   return (

@@ -8,6 +8,7 @@ import React, {
   useCallback,
   ReactNode,
 } from "react";
+import { debug, error as logError, info } from "@/lib/logger";
 
 export interface UserInfo {
   name: string;
@@ -40,6 +41,8 @@ export interface AppealState {
   intakeId?: number;
   draftId?: number;
   lastSaved?: string;
+  // Optional features
+  telemetryEnabled?: boolean;
 }
 
 interface AppealContextType {
@@ -80,6 +83,7 @@ const defaultState: AppealState = {
   intakeId: undefined,
   draftId: undefined,
   lastSaved: undefined,
+  telemetryEnabled: undefined,
 };
 
 const AppealContext = createContext<AppealContextType | undefined>(undefined);
@@ -97,33 +101,71 @@ export function AppealProvider({ children }: { children: ReactNode }) {
       const stored = sessionStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        setState((prev) => ({ ...prev, ...parsed }));
+        // Don't restore sensitive PII from storage - only restore non-sensitive fields
+        setState((prev) => ({
+          ...prev,
+          citationNumber: parsed.citationNumber || prev.citationNumber,
+          violationDate: parsed.violationDate || prev.violationDate,
+          licensePlate: parsed.licensePlate || prev.licensePlate,
+          vehicleInfo: parsed.vehicleInfo || prev.vehicleInfo,
+          appealType: parsed.appealType || prev.appealType,
+          cityId: parsed.cityId || prev.cityId,
+          sectionId: parsed.sectionId || prev.sectionId,
+          intakeId: parsed.intakeId || prev.intakeId,
+          draftId: parsed.draftId || prev.draftId,
+          // Don't restore userInfo, photos, signature, or other PII from storage
+        }));
       }
     } catch (e) {
-      console.error("Failed to load state from storage", e);
+      logError("Failed to load state from storage", e);
     } finally {
       setIsInitialized(true);
     }
   }, []);
 
-  // Save to sessionStorage on change
+  // Save to sessionStorage on change - but exclude sensitive PII
   useEffect(() => {
     if (isInitialized) {
       try {
-        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        // Only save non-sensitive fields to sessionStorage
+        const safeState = {
+          citationNumber: state.citationNumber,
+          violationDate: state.violationDate,
+          licensePlate: state.licensePlate,
+          vehicleInfo: state.vehicleInfo,
+          appealType: state.appealType,
+          cityId: state.cityId,
+          sectionId: state.sectionId,
+          intakeId: state.intakeId,
+          draftId: state.draftId,
+          // Explicitly exclude: userInfo, photos, signature, draftLetter, transcript
+        };
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(safeState));
       } catch (e) {
-        console.error("Failed to save state to storage", e);
+        logError("Failed to save state to storage", e);
       }
     }
-  }, [state, isInitialized]);
+  }, [
+    isInitialized,
+    state.citationNumber,
+    state.violationDate,
+    state.licensePlate,
+    state.vehicleInfo,
+    state.appealType,
+    state.cityId,
+    state.sectionId,
+    state.intakeId,
+    state.draftId,
+  ]);
 
   // Auto-save to database when needed
+  // NOTE: saveToDatabase uses useCallback with proper dependencies, so we include it here
   useEffect(() => {
     if (needsDatabaseSync && state.intakeId && isInitialized) {
       saveToDatabase();
       setNeedsDatabaseSync(false);
     }
-  }, [needsDatabaseSync, state.intakeId, isInitialized]);
+  }, [needsDatabaseSync, state.intakeId, isInitialized, saveToDatabase]);
 
   const updateState = useCallback((updates: Partial<AppealState>) => {
     setState((prev) => {
@@ -139,14 +181,14 @@ export function AppealProvider({ children }: { children: ReactNode }) {
     try {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch (e) {
-      console.error("Failed to clear storage", e);
+      logError("Failed to clear storage", e);
     }
   }, []);
 
   const saveToDatabase = useCallback(async (): Promise<boolean> => {
     // Only save if we have an intake_id
     if (!state.intakeId) {
-      console.log("No intakeId, skipping database save");
+      debug("No intakeId, skipping database save");
       return false;
     }
 
@@ -184,14 +226,14 @@ export function AppealProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const timestamp = new Date().toISOString();
         setState((prev) => ({ ...prev, lastSaved: timestamp }));
-        console.log(`State saved to database at ${timestamp}`);
+        info(`State saved to database at ${timestamp}`);
         return true;
       } else {
-        console.error("Failed to save to database:", response.statusText);
+        logError("Failed to save to database:", response.statusText);
         return false;
       }
     } catch (error) {
-      console.error("Error saving to database:", error);
+      logError("Error saving to database:", error);
       return false;
     }
   }, [state]);
@@ -233,14 +275,14 @@ export function AppealProvider({ children }: { children: ReactNode }) {
           }
 
           setState((prev) => ({ ...prev, ...newState }));
-          console.log(`State loaded from database for intake ${intakeId}`);
+          debug(`State loaded from database for intake ${intakeId}`);
           return true;
         } else {
-          console.error("Failed to load from database:", response.statusText);
+          logError("Failed to load from database:", response.statusText);
           return false;
         }
       } catch (error) {
-        console.error("Error loading from database:", error);
+        logError("Error loading from database:", error);
         return false;
       }
     },

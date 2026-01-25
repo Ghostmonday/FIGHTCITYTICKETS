@@ -24,6 +24,9 @@ interface IntakeDetail {
 }
 
 export default function AdminPage() {
+  // SECURITY WARNING: Admin secret stored in client state is accessible via DevTools.
+  // TODO: Move to server-side session with httpOnly cookies for production.
+  // Current implementation is acceptable for development but should be hardened for production.
   const [adminKey, setAdminKey] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");

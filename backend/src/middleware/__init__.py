@@ -2,10 +2,19 @@
 Middleware package for Fight City Tickets.com
 
 Provides cross-cutting concerns for the API:
-- Request ID tracking
-- Rate limiting
+|- Request ID tracking
+|- Rate limiting
+|- Error handling
 """
 
+from .errors import (
+    APIError,
+    ErrorCode,
+    api_error_handler,
+    create_error_response,
+    error_response,
+    unhandled_exception_handler,
+)
 from .rate_limit import (
     RATE_LIMITS,
     RateLimitExceeded,
@@ -23,4 +32,10 @@ __all__ = [
     "RATE_LIMITS",
     "_rate_limit_exceeded_handler",
     "RateLimitExceeded",
+    "APIError",
+    "ErrorCode",
+    "api_error_handler",
+    "unhandled_exception_handler",
+    "create_error_response",
+    "error_response",
 ]

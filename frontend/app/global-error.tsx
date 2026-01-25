@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import { error as logError } from "@/lib/logger";
 
 export default function GlobalError({
   error,
@@ -11,8 +12,8 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log error to console for debugging
-    console.error("Global error:", error);
+    // Log error using proper logging
+    logError("Global error:", error);
   }, [error]);
 
   return (

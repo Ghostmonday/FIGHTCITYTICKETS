@@ -13,7 +13,18 @@ RUN mkdir -p data/seo
 
 RUN npm run build --no-eslint
 
+# Install curl for healthcheck (wget not available in alpine)
+RUN apk add --no-cache curl
+
 EXPOSE 3000
 
 ENV PORT=3000
+
+# Healthcheck for frontend
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
+  CMD curl -f http://localhost:3000 || exit 1
+
+# Run as non-root user for security
+USER node
+
 CMD ["npm", "run", "start", "--", "-p", "3000"]

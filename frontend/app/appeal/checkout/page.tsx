@@ -102,8 +102,9 @@ export default function CheckoutPage() {
     setError(null);
 
     try {
+      // Use NEXT_PUBLIC_API_BASE consistently (fallback to localhost for development)
       const apiBase =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
       const response = await fetch(
         `${apiBase}/checkout/create-appeal-checkout`,
         {
@@ -172,12 +173,18 @@ export default function CheckoutPage() {
               <label className="block mb-2 font-medium text-stone-700">
                 Street Address *
                 <span className="text-sm text-stone-500 ml-2 font-normal">
-                  (Start typing to autocomplete)
+                  (Choose verification method below)
                 </span>
               </label>
+              <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-800">
+                  <strong>Two ways to ensure accuracy:</strong> Use autocomplete for instant verification, or enter manually - both methods ensure your address is correct for mail delivery.
+                </p>
+              </div>
               <AddressAutocomplete
                 value={state.userInfo.addressLine1 || ""}
                 onChange={(address) => {
+                  // Called when autocomplete selection is made
                   updateState({
                     userInfo: {
                       ...state.userInfo,
@@ -189,6 +196,15 @@ export default function CheckoutPage() {
                     },
                   });
                   setAddressError(null);
+                }}
+                onInputChange={(value) => {
+                  // Called for manual input changes
+                  updateState({
+                    userInfo: {
+                      ...state.userInfo,
+                      addressLine1: value,
+                    },
+                  });
                 }}
                 onError={(errorMsg) => {
                   setAddressError(errorMsg);

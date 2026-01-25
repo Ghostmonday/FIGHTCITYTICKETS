@@ -580,9 +580,9 @@ class LobMailService:
                 name=agency_info["name"],
                 address_line1=agency_lines[0] if len(agency_lines) > 0 else "",
                 address_line2=agency_lines[1] if len(agency_lines) > 1 else None,
-                city=request.user_city,
-                state=request.user_state,
-                zip=request.user_zip,
+                city=agency_lines[2].split(",")[0].strip() if len(agency_lines) > 2 else "",
+                state=(agency_lines[2].split(",")[1].strip() if len(agency_lines) > 2 else "").split(" ")[0],
+                zip=agency_lines[2].split(",")[1].strip()[-5:] if len(agency_lines) > 2 and "," in agency_lines[2] else "",
                 country="US",
             )
 

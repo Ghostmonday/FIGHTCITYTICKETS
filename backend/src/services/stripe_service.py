@@ -157,27 +157,41 @@ class StripeService:
         return [w for w in self._failed_webhooks if w["retry_count"] < self.MAX_WEBHOOK_RETRIES]
 
     def _retry_failed_webhooks(self) -> int:
-        """Retry failed webhooks. Returns number of successfully processed webhooks."""
+        """
+        Retry failed webhooks. Returns number of successfully processed webhooks.
+        
+        NOTE: This is a placeholder implementation. Actual retry should call the webhook
+        processing endpoint with the stored event data. For now, webhooks are retried
+        manually via the /webhook/retry admin endpoint.
+        """
         retry_count = 0
         remaining = []
 
         for webhook in self._failed_webhooks:
             if webhook["retry_count"] >= self.MAX_WEBHOOK_RETRIES:
-                logger.error(f"Webhook {webhook['event_id']} exceeded max retries, needs manual review")
+                logger.error(
+                    f"Webhook {webhook['event_id']} exceeded max retries ({self.MAX_WEBHOOK_RETRIES}), "
+                    "needs manual review via /webhook/retry endpoint"
+                )
                 continue
 
             try:
-                # Simple delay before retry
-                time.sleep(self.WEBHOOK_RETRY_DELAY)
-
-                # For demo, just increment retry count
-                # In production, would actually retry the webhook processing
+                # Log retry attempt
+                logger.info(
+                    f"Retrying webhook {webhook['event_id']} (attempt {webhook['retry_count'] + 1}/{self.MAX_WEBHOOK_RETRIES})"
+                )
+                
+                # TODO: Implement actual retry by calling webhook processing logic
+                # For now, increment retry count and log
                 webhook["retry_count"] += 1
                 webhook["last_retry"] = time.time()
                 retry_count += 1
                 remaining.append(webhook)
+                
+                # Note: Actual retry should be done via /webhook/retry admin endpoint
+                # which calls handle_checkout_session_completed with the stored event
             except Exception as e:
-                logger.error(f"Retry failed for webhook {webhook['event_id']}: {e}")
+                logger.error(f"Error during retry for webhook {webhook['event_id']}: {e}")
                 remaining.append(webhook)
 
         self._failed_webhooks = remaining
@@ -289,10 +303,16 @@ class StripeService:
         if len(state_clean) != STATE_CODE_LENGTH:
             return False, "State must be 2-letter code (e.g., CA)"
 
-        # Validate ZIP code format
-        zip_clean = request.user_zip.strip()
-        if not (zip_clean.isdigit() and len(zip_clean) == ZIP_CODE_LENGTH):
-            return False, "ZIP code must be 5 digits"
+        # Validate ZIP code format (5 digits, optionally +4)
+        zip_clean = request.user_zip.strip().replace("-", "").replace(" ", "")
+        if len(zip_clean) == 5:
+            if not zip_clean.isdigit():
+                return False, "ZIP code must be 5 digits"
+        elif len(zip_clean) == 9:
+            if not zip_clean.isdigit():
+                return False, "ZIP code must be 5 digits or 5+4 format"
+        else:
+            return False, "ZIP code must be 5 digits or 5+4 format"
 
         return True, None
 

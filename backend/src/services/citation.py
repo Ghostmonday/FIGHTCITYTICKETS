@@ -5,7 +5,11 @@ Validates parking citation numbers and calculates appeal deadlines across multip
 Implements multi-city support via CityRegistry (Schema 4.3.0) with backward compatibility for SF-only implementation.
 """
 
+import json
+import logging
+import os
 import re
+import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
@@ -26,6 +30,85 @@ PhoneConfirmationPolicy = Any
 
 # Define enum stubs as fallback
 AppealMailStatus = Enum("AppealMailStatus", ["COMPLETE", "ROUTES_ELSEWHERE", "MISSING"])
+
+# Redis caching configuration
+REDIS_URL = os.getenv("REDIS_URL", "")
+REDIS_CACHE_TTL = 3600  # 1 hour cache for citation validations
+_CITATION_CACHE: dict[str, tuple[Any, float]] = {}  # In-memory fallback cache
+
+# Logger for caching operations
+logger = logging.getLogger(__name__)
+
+
+def _get_redis_client():
+    """Get Redis client if available."""
+    try:
+        import redis
+        if REDIS_URL:
+            return redis.Redis.from_url(REDIS_URL, decode_responses=True)
+    except ImportError:
+        pass
+    return None
+
+
+def _get_cached_citation(citation_number: str) -> Optional[Dict[str, Any]]:
+    """
+    Get cached citation validation result.
+
+    Args:
+        citation_number: The citation number to look up
+
+    Returns:
+        Cached validation result dict or None if not cached
+    """
+    cache_key = f"citation:{citation_number.upper().strip()}"
+
+    # Try Redis first
+    redis_client = _get_redis_client()
+    if redis_client:
+        try:
+            cached_data = redis_client.get(cache_key)
+            if cached_data:
+                logger.debug(f"Redis cache hit for {citation_number}")
+                return json.loads(cached_data)
+        except Exception as e:
+            logger.warning(f"Redis cache lookup failed: {e}")
+
+    # Fall back to in-memory cache
+    if cache_key in _CITATION_CACHE:
+        value, timestamp = _CITATION_CACHE[cache_key]
+        if time.time() - timestamp < REDIS_CACHE_TTL:
+            logger.debug(f"Memory cache hit for {citation_number}")
+            return value
+        else:
+            del _CITATION_CACHE[cache_key]
+
+    return None
+
+
+def _set_cached_citation(citation_number: str, result: Dict[str, Any]) -> None:
+    """
+    Cache citation validation result.
+
+    Args:
+        citation_number: The citation number
+        result: The validation result to cache
+    """
+    cache_key = f"citation:{citation_number.upper().strip()}"
+
+    # Try Redis first
+    redis_client = _get_redis_client()
+    if redis_client:
+        try:
+            redis_client.setex(cache_key, REDIS_CACHE_TTL, json.dumps(result))
+            logger.debug(f"Cached in Redis: {citation_number}")
+            return
+        except Exception as e:
+            logger.warning(f"Redis cache set failed: {e}")
+
+    # Fall back to in-memory cache
+    _CITATION_CACHE[cache_key] = (result, time.time())
+    logger.debug(f"Cached in memory: {citation_number}")
 
 try:
     # Strategy 1: Relative import (works when module is imported)
@@ -308,6 +391,7 @@ class CitationValidator:
         violation_date: Optional[str] = None,
         license_plate: Optional[str] = None,
         city_id: Optional[str] = None,
+        use_cache: bool = True,
     ) -> CitationValidationResult:
         """
         Complete citation validation with multi-city matching.
@@ -316,10 +400,39 @@ class CitationValidator:
             citation_number: The citation number to validate
             violation_date: Optional violation date for deadline calculation
             license_plate: Optional license plate for additional validation
+            city_id: Optional city hint for matching
+            use_cache: Whether to use cached results (default True)
 
         Returns:
             CitationValidationResult with all validation details
         """
+        # Check cache first if enabled and we have format validation
+        if use_cache:
+            clean_number = re.sub(r"[\s\-\.]", "", citation_number.strip().upper())
+            cached = _get_cached_citation(clean_number)
+            if cached:
+                # Return cached result (create new object to avoid mutation issues)
+                return CitationValidationResult(
+                    is_valid=cached.get("is_valid", False),
+                    citation_number=cached.get("citation_number", citation_number),
+                    agency=CitationAgency(cached.get("agency", "UNKNOWN")),
+                    deadline_date=cached.get("deadline_date"),
+                    days_remaining=cached.get("days_remaining"),
+                    is_past_deadline=cached.get("is_past_deadline", False),
+                    is_urgent=cached.get("is_urgent", False),
+                    error_message=cached.get("error_message"),
+                    formatted_citation=cached.get("formatted_citation"),
+                    city_id=cached.get("city_id"),
+                    section_id=cached.get("section_id"),
+                    appeal_deadline_days=cached.get("appeal_deadline_days", 21),
+                    phone_confirmation_required=cached.get(
+                        "phone_confirmation_required", False
+                    ),
+                    phone_confirmation_policy=cached.get("phone_confirmation_policy"),
+                    clerical_defect_detected=cached.get("clerical_defect_detected", False),
+                    clerical_defect_description=cached.get("clerical_defect_description"),
+                )
+
         # Step 1: Basic format validation
         is_valid_format, error_msg = self.validate_citation_format(citation_number)
 
@@ -412,7 +525,8 @@ class CitationValidator:
             if len(license_plate_clean) < 2 or len(license_plate_clean) > 8:
                 error_msg = "Invalid license plate format"
 
-        return CitationValidationResult(
+        # Create result
+        result = CitationValidationResult(
             is_valid=True,
             citation_number=citation_number,
             agency=agency,
@@ -428,6 +542,36 @@ class CitationValidator:
             phone_confirmation_required=phone_confirmation_required,
             phone_confirmation_policy=phone_confirmation_policy,
         )
+
+        # Cache valid results for future lookups (skip caching if violation_date was provided
+        # since deadline calculations are time-sensitive)
+        if use_cache and not violation_date:
+            try:
+                result_dict = {
+                    "is_valid": result.is_valid,
+                    "citation_number": result.citation_number,
+                    "agency": result.agency.value,
+                    "deadline_date": result.deadline_date,
+                    "days_remaining": result.days_remaining,
+                    "is_past_deadline": result.is_past_deadline,
+                    "is_urgent": result.is_urgent,
+                    "error_message": result.error_message,
+                    "formatted_citation": result.formatted_citation,
+                    "city_id": result.city_id,
+                    "section_id": result.section_id,
+                    "appeal_deadline_days": result.appeal_deadline_days,
+                    "phone_confirmation_required": result.phone_confirmation_required,
+                    "phone_confirmation_policy": result.phone_confirmation_policy,
+                    "clerical_defect_detected": result.clerical_defect_detected,
+                    "clerical_defect_description": result.clerical_defect_description,
+                }
+                _set_cached_citation(citation_number, result_dict)
+            except Exception as e:
+                logger.warning(f"Failed to cache citation validation: {e}")
+
+        return result
+
+        return result
 
     def _get_citation_info(
         self,

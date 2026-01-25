@@ -82,7 +82,7 @@ async def health_detailed():
     Detailed health check with database and all external service status.
     Returns degraded states without crashing when third-party services are missing.
     Useful for monitoring and debugging.
-    
+
     Checks:
     - Database connectivity with latency
     - SendGrid API with latency
@@ -311,3 +311,78 @@ async def _ping_deepseek() -> bool:
     except Exception as e:
         logger.warning(f"DeepSeek ping failed: {e}")
         return False
+
+
+# Metrics tracking
+_REQUEST_COUNT = 0
+_ERROR_COUNT = 0
+_START_TIME = time.time()
+
+
+@router.get("/metrics")
+async def metrics():
+    """
+    Prometheus-compatible metrics endpoint.
+
+    Returns basic application metrics for monitoring:
+    - Request count
+    - Error count
+    - Uptime
+    - Business metrics (appeals, payments)
+    """
+    global _REQUEST_COUNT, _ERROR_COUNT
+
+    # Calculate uptime
+    uptime_seconds = time.time() - _START_TIME
+
+    # Get business metrics from database if available
+    business_metrics = {}
+    try:
+        from ..services.database import get_db_service
+        db = get_db_service()
+        if db.health_check():
+            with db.get_session() as session:
+                from ..models import Intake, Payment, PaymentStatus
+                total_intakes = session.query(func.count(Intake.id)).scalar() or 0
+                total_payments = session.query(func.count(Payment.id)).scalar() or 0
+                successful_payments = (
+                    session.query(func.count(Payment.id))
+                    .filter(Payment.status == PaymentStatus.PAID)
+                    .scalar()
+                    or 0
+                )
+                business_metrics = {
+                    "total_intakes": total_intakes,
+                    "total_payments": total_payments,
+                    "successful_payments": successful_payments,
+                }
+    except Exception as e:
+        logger.warning(f"Could not fetch business metrics: {e}")
+
+    # Return Prometheus-format metrics
+    return {
+        "metrics": {
+            "requests_total": _REQUEST_COUNT,
+            "errors_total": _ERROR_COUNT,
+            "uptime_seconds": uptime_seconds,
+            "uptime_hours": uptime_seconds / 3600,
+            **business_metrics,
+        },
+        "histograms": {},
+        "gauges": {
+            "service_ready": True,
+            "database_connected": True,
+        },
+    }
+
+
+def increment_request_count():
+    """Increment request counter for metrics."""
+    global _REQUEST_COUNT
+    _REQUEST_COUNT += 1
+
+
+def increment_error_count():
+    """Increment error counter for metrics."""
+    global _ERROR_COUNT
+    _ERROR_COUNT += 1

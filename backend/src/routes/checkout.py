@@ -9,18 +9,20 @@ Civil Shield Compliance: Includes Clerical ID and compliance metadata.
 
 import hashlib
 import logging
+import os
 import secrets
 from datetime import datetime
 from typing import Optional
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request, status
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, EmailStr, Field, validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import text
 
 from ..config import settings
+from ..models import Payment, PaymentStatus
 from ..services.database import get_db_service
 from ..services.stripe_service import StripeService
 
@@ -31,7 +33,10 @@ logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
 # States where service is blocked due to UPL regulations
-BLOCKED_STATES = ["TX", "NC", "NJ", "WA"]
+# Can be overridden via BLOCKED_STATES environment variable (comma-separated)
+BLOCKED_STATES = os.getenv(
+    "BLOCKED_STATES", "TX,NC,NJ,WA"
+).split(",") if os.getenv("BLOCKED_STATES") else ["TX", "NC", "NJ", "WA"]
 
 # Compliance version for document tracking
 COMPLIANCE_VERSION = "civil_shield_v1"
@@ -94,8 +99,11 @@ async def verify_user_address(
             )
 
         if resp.status_code != 200:
-            logger.warning(f"Lob address verification returned {resp.status_code}")
-            return True, None  # Allow through if API fails
+            logger.error(f"Lob address verification returned {resp.status_code}")
+            return (
+                False,
+                "Address verification service is temporarily unavailable. Please try again later.",
+            )
 
         data = resp.json()
         deliverability = data.get("deliverability", "unknown")
@@ -115,8 +123,11 @@ async def verify_user_address(
         return True, None
 
     except Exception as e:
-        logger.warning(f"Address verification API error: {e}")
-        return True, None  # Allow through if API fails
+        logger.error(f"Address verification API error: {e}")
+        return (
+            False,
+            "Address verification service is temporarily unavailable. Please try again later.",
+        )
 
 
 class AppealCheckoutRequest(BaseModel):
@@ -125,7 +136,8 @@ class AppealCheckoutRequest(BaseModel):
     citation_number: str = Field(..., min_length=3, max_length=50)
     city_id: str = Field(..., min_length=2, max_length=100)
     section_id: Optional[str] = None
-    user_attestation: bool = False
+    user_email: Optional[EmailStr] = None  # Optional email for intake creation
+    user_attestation: bool = Field(..., description="User must acknowledge terms")
 
     @validator("city_id")
     def validate_city_id(cls, v):
@@ -143,7 +155,7 @@ class AppealCheckoutRequest(BaseModel):
 
     @validator("user_attestation")
     def validate_attestation(cls, v):
-        """Validate user attestation"""
+        """Validate user attestation - must be True"""
         if not v:
             raise ValueError("User must acknowledge the terms")
         return v
@@ -192,7 +204,12 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
 
     # Step 1: Validate city_id and get state
     city_id = data.city_id
-    state = city_id.split("-")[1] if "-" in city_id else None
+    if "-" not in city_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid city ID format",
+        )
+    state = city_id.split("-")[1]
 
     # Step 2: Check if service is blocked in this state (UPL compliance)
     if state in BLOCKED_STATES:
@@ -224,6 +241,27 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
 
     try:
         with db_service.get_session() as session:
+            # Check for existing intake with this citation
+            existing_intake = db_service.get_intake_by_citation(data.citation_number.upper())
+            
+            # If intake exists, check for existing paid payments
+            if existing_intake:
+                existing_payments = (
+                    session.query(Payment)
+                    .filter(
+                        Payment.intake_id == existing_intake.id,
+                        Payment.status == PaymentStatus.PAID
+                    )
+                    .all()
+                )
+                if existing_payments:
+                    logger.warning(
+                        f"Citation {data.citation_number.upper()} already has a paid payment"
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="A payment already exists for this citation number. Please check your payment status.",
+                    )
             # Upsert intake record with Clerical ID
             # Use the intakes table from the new database schema
             result = session.execute(
@@ -307,11 +345,13 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
         stripe_svc = StripeService()
 
         # Create checkout session with comprehensive metadata
+        # Use frontend_url if configured, otherwise derive from app_url
+        frontend_base = getattr(settings, 'frontend_url', None) or f"{settings.app_url}"
         checkout_session = stripe_svc.create_checkout_session(
             amount=settings.fightcity_service_fee,
             currency="usd",
-            success_url=f"{settings.frontend_url}/success?session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{settings.frontend_url}/appeal/checkout",
+            success_url=f"{frontend_base}/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{frontend_base}/appeal/checkout",
             metadata={
                 "citation_number": data.citation_number.upper(),
                 "city_id": city_id,
@@ -385,8 +425,9 @@ async def get_session_status(request: Request, session_id: str):
             # Check payment status from payments table
             db_service = get_db_service()
             with db_service.get_session() as db:
+                # Use parameterized query to prevent SQL injection
                 result = db.execute(
-                    "SELECT status, lob_tracking_id FROM payments WHERE stripe_session_id = :session_id",
+                    text("SELECT status, lob_tracking_id FROM payments WHERE stripe_session_id = :session_id"),
                     {"session_id": session_id},
                 )
                 row = result.fetchone()
@@ -394,6 +435,13 @@ async def get_session_status(request: Request, session_id: str):
                 if row:
                     mailing_status = "fulfilled" if row[0] == "paid" else "pending"
                     tracking_number = row[1]
+                    # Get clerical_id from intake via payment relationship
+                    from ..models import Intake
+                    payment = db.query(Payment).filter(Payment.stripe_session_id == session_id).first()
+                    if payment and payment.intake_id:
+                        intake = db.query(Intake).filter(Intake.id == payment.intake_id).first()
+                        if intake:
+                            clerical_id = intake.clerical_id
 
         return SessionStatusResponse(
             status=session["status"],

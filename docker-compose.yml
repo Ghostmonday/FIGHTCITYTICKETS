@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-fightsf}
+      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-fightsf}
     expose:
       - "8000"
     depends_on:
@@ -44,7 +44,7 @@ services:
     depends_on:
       - api
     healthcheck:
-      test: [ "CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1" ]
+      test: [ "CMD-SHELL", "curl -f http://localhost:3000 || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -73,6 +73,12 @@ services:
     depends_on:
       - web
       - api
+    healthcheck:
+      test: [ "CMD-SHELL", "nginx -t && curl -f http://localhost/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
     # Resource limits (conservative)
     deploy:
@@ -87,8 +93,8 @@ services:
   db:
     image: postgres:16
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-fightsf}
       # PostgreSQL performance tuning (conservative values - adjust based on available RAM)
       POSTGRES_SHARED_BUFFERS: 128MB # 25% of RAM, conservative

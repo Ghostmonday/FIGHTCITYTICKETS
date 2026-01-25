@@ -5,15 +5,17 @@ Provides endpoints for monitoring server status, viewing logs, and accessing rec
 Protected by admin secret key header.
 """
 
+import json
 import logging
 import os
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload, selectinload
 
 from ..models import Draft, Intake, Payment, PaymentStatus
 from ..services.database import get_db_service
@@ -24,6 +26,39 @@ logger = logging.getLogger(__name__)
 # Rate limiter - shared instance from app.py
 limiter = Limiter(key_func=get_remote_address)
 
+# Audit logging for admin actions
+ADMIN_AUDIT_LOG = "admin_audit.log"
+
+
+def log_admin_action(action: str, admin_id: str, request: Request, details: dict[str, Any] = None):
+    """
+    Log admin actions for security auditing.
+
+    Args:
+        action: The admin action being performed
+        admin_id: Identifier for the admin (secret or IP)
+        request: The original request
+        details: Additional details to log
+    """
+    import json
+    from datetime import datetime
+
+    log_entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "action": action,
+        "admin_id": admin_id,
+        "ip": request.client.host if request.client else "unknown",
+        "path": request.url.path,
+        "method": request.method,
+        "details": details or {},
+    }
+
+    try:
+        with open(ADMIN_AUDIT_LOG, "a") as f:
+            f.write(json.dumps(log_entry) + "\n")
+    except Exception as e:
+        logger.warning(f"Failed to write admin audit log: {e}")
+
 # Basic admin security (header check)
 ADMIN_SECRET_HEADER = "X-Admin-Secret"
 
@@ -32,6 +67,8 @@ def verify_admin_secret(x_admin_secret: str = Header(...)):
     """
     Verify the admin secret header.
     Requires explicit ADMIN_SECRET environment variable.
+
+    Also logs all admin access attempts for security auditing.
     """
     admin_secret = os.getenv("ADMIN_SECRET")
 
@@ -44,11 +81,26 @@ def verify_admin_secret(x_admin_secret: str = Header(...)):
             detail="Admin authentication not configured. Set ADMIN_SECRET environment variable.",
         )
 
-    if x_admin_secret != admin_secret:
+    import secrets
+    if not secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
+        client_ip = os.getenv('REMOTE_ADDR', 'unknown')
         logger.warning(
             f"Failed admin access attempt - Invalid admin secret provided. "
-            f"IP: {os.getenv('REMOTE_ADDR', 'unknown')}"
+            f"IP: {client_ip}"
         )
+        # Log failed attempt
+        try:
+            with open(ADMIN_AUDIT_LOG, "a") as f:
+                from datetime import datetime
+                f.write(json.dumps({
+                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "action": "auth_failure",
+                    "ip": client_ip,
+                    "status": "failed",
+                }) + "\n")
+        except Exception:
+            pass
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid admin secret",
@@ -107,7 +159,7 @@ class LogResponse(BaseModel):
 
 
 @router.get("/stats", response_model=SystemStats)
-@limiter.limit("30/minute")
+@limiter.limit("5/minute")
 def get_system_stats(
     request: Request, admin_secret: str = Depends(verify_admin_secret)
 ):
@@ -115,6 +167,7 @@ def get_system_stats(
     Get high-level system statistics.
     """
     logger.info("Admin action: get_system_stats")
+    log_admin_action("get_system_stats", admin_secret, request)
     db = get_db_service()
 
     if not db.health_check():
@@ -155,7 +208,7 @@ def get_system_stats(
 
 
 @router.get("/activity", response_model=List[RecentActivity])
-@limiter.limit("30/minute")
+@limiter.limit("5/minute")
 def get_recent_activity(
     request: Request, limit: int = 50, admin_secret: str = Depends(verify_admin_secret)
 ):
@@ -163,6 +216,7 @@ def get_recent_activity(
     Get recent intake activity.
     """
     logger.info(f"Admin action: get_recent_activity (limit={limit})")
+    log_admin_action("get_recent_activity", admin_secret, request, {"limit": limit})
     db = get_db_service()
 
     if not db.health_check():
@@ -171,8 +225,15 @@ def get_recent_activity(
     activity_list = []
 
     with db.get_session() as session:
+        # Use eager loading to prevent N+1 queries
         intakes = (
-            session.query(Intake).order_by(Intake.created_at.desc()).limit(limit).all()
+            session.query(Intake)
+            .options(
+                selectinload(Intake.payments)
+            )
+            .order_by(Intake.created_at.desc())
+            .limit(limit)
+            .all()
         )
 
         for intake in intakes:
@@ -180,6 +241,7 @@ def get_recent_activity(
             amount = None
             lob_tracking_id = None
 
+            # Access pre-loaded payments (no additional query)
             if intake.payments:
                 last_payment = intake.payments[-1]
                 payment_status = (
@@ -210,7 +272,7 @@ def get_recent_activity(
 
 
 @router.get("/intake/{intake_id}", response_model=IntakeDetail)
-@limiter.limit("30/minute")
+@limiter.limit("5/minute")
 def get_intake_detail(
     request: Request, intake_id: int, admin_secret: str = Depends(verify_admin_secret)
 ):
@@ -218,15 +280,25 @@ def get_intake_detail(
     Get full details for a specific intake.
     """
     logger.info(f"Admin action: get_intake_detail (intake_id={intake_id})")
+    log_admin_action("get_intake_detail", admin_secret, request, {"intake_id": intake_id})
     db = get_db_service()
 
     with db.get_session() as session:
-        intake = session.query(Intake).filter(Intake.id == intake_id).first()
+        # Use eager loading to prevent N+1 queries
+        intake = (
+            session.query(Intake)
+            .options(
+                joinedload(Intake.drafts),
+                selectinload(Intake.payments)
+            )
+            .filter(Intake.id == intake_id)
+            .first()
+        )
 
         if not intake:
             raise HTTPException(status_code=404, detail="Intake not found")
 
-        # Get draft text
+        # Access pre-loaded drafts (no additional query)
         draft_text = None
         if intake.drafts:
             latest_draft = sorted(
@@ -234,7 +306,7 @@ def get_intake_detail(
             )[0]
             draft_text = latest_draft.draft_text
 
-        # Get payment info
+        # Access pre-loaded payments (no additional query)
         payment_status = None
         amount_total = None
         lob_tracking_id = None
@@ -287,7 +359,7 @@ def get_intake_detail(
 
 
 @router.get("/logs", response_model=LogResponse)
-@limiter.limit("30/minute")
+@limiter.limit("5/minute")
 def get_server_logs(
     request: Request, lines: int = 100, admin_secret: str = Depends(verify_admin_secret)
 ):
@@ -296,6 +368,7 @@ def get_server_logs(
     Reads from 'server.log' if it exists.
     """
     logger.info(f"Admin action: get_server_logs (lines={lines})")
+    log_admin_action("get_server_logs", admin_secret, request, {"lines": lines})
     log_file = "server.log"
 
     if not os.path.exists(log_file):

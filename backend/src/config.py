@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     api_url: str = "http://localhost:8000"  # Override with API_URL env var (e.g., https://yourdomain.com/api)
 
     # Security
-    secret_key: str = "dev_secret_change_in_production"
+    secret_key: str = "dev-secret-change-in-production"
 
     # Civil Shield Compliance Versioning
     clerical_engine_version: str = "2.1.0"

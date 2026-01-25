@@ -45,15 +45,20 @@ class DatabaseService:
         if not self.database_url:
             raise ValueError("Database URL not configured. Set DATABASE_URL in .env")
 
-        # Create engine with connection pooling (conservative for safety)
+        # Get pool size from environment or use production default
+        pool_size = int(os.getenv("DB_POOL_SIZE", "10"))
+        max_overflow = int(os.getenv("DB_MAX_OVERFLOW", "20"))
+        pool_timeout = int(os.getenv("DB_POOL_TIMEOUT", "30"))
+
+        # Create engine with connection pooling (tuned for production)
         self.engine = create_engine(
             self.database_url,
-            pool_size=5,          # Base connections - safe for most setups
-            max_overflow=10,      # Extra connections during spikes
-            pool_pre_ping=True,   # Verify connections before using
-            pool_recycle=3600,    # Recycle connections after 1 hour
-            pool_timeout=30,      # Wait up to 30s for connection
-            echo=settings.debug,  # Log SQL queries in debug mode
+            pool_size=pool_size,      # Base connections (configurable, default 10 for production)
+            max_overflow=max_overflow, # Extra connections during spikes (configurable, default 20)
+            pool_pre_ping=True,       # Verify connections before using
+            pool_recycle=3600,        # Recycle connections after 1 hour
+            pool_timeout=pool_timeout, # Wait up to 30s for connection (configurable)
+            echo=settings.debug,      # Log SQL queries in debug mode
         )
 
         # Create session factory
@@ -259,7 +264,7 @@ class DatabaseService:
             # Verify intake exists
             intake = session.query(Intake).filter(Intake.id == intake_id).first()
             if not intake:
-                raise ValueError("Intake {intake_id} not found")
+                raise ValueError(f"Intake {intake_id} not found")
 
             draft = Draft(
                 intake_id=intake_id,
@@ -332,6 +337,18 @@ class DatabaseService:
             intake = session.query(Intake).filter(Intake.id == intake_id).first()
             if not intake:
                 raise ValueError(f"Intake {intake_id} not found")
+            
+            # Check for existing payment for this intake to prevent duplicates
+            existing_payment = (
+                session.query(Payment)
+                .filter(Payment.intake_id == intake_id)
+                .first()
+            )
+            if existing_payment:
+                logger.warning(
+                    f"Payment already exists for intake {intake_id}: {existing_payment.id}"
+                )
+                return existing_payment
 
             payment = Payment(
                 intake_id=intake_id,
@@ -411,7 +428,7 @@ class DatabaseService:
         Returns:
             Updated Payment object or None if not found
         """
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         with self.get_session() as session:
             payment = (
@@ -422,7 +439,7 @@ class DatabaseService:
 
             if payment:
                 payment.is_fulfilled = True
-                payment.fulfillment_date = datetime.utcnow()
+                payment.fulfillment_date = datetime.now(timezone.utc)
                 payment.lob_tracking_id = lob_tracking_id
                 payment.lob_mail_type = lob_mail_type
 

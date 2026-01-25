@@ -70,7 +70,11 @@ def _is_event_processed(event_id: str) -> tuple[bool, Optional[dict]]:
 
 def _mark_event_processed(event_id: str, result: dict) -> None:
     """Mark an event as processed and cache the result."""
-    # Clean up old entries if cache is too large
+    # Proactively clean up expired entries if cache is getting large
+    if len(_WEBHOOK_CACHE) >= _WEBHOOK_CACHE_MAX_SIZE * 0.8:  # Clean at 80% capacity
+        _cleanup_expired_entries()
+    
+    # Clean up old entries if cache is still too large after cleanup
     if len(_WEBHOOK_CACHE) >= _WEBHOOK_CACHE_MAX_SIZE:
         # Remove oldest 20% of entries
         sorted_items = sorted(_WEBHOOK_CACHE.items(), key=lambda x: x[1].get("timestamp", 0))
@@ -159,37 +163,43 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
         result["message"] = "No session ID provided"
         return result
 
-    # Idempotency check using in-memory cache
+    # Idempotency check - check database first to avoid race conditions
     event_id = _generate_event_id("checkout.session.completed", session_id)
-    is_processed, cached_result = _is_event_processed(event_id)
     
-    if is_processed and cached_result:
-        logger.info("Returning cached result for event %s", event_id)
-        return cached_result
-
     try:
         db_service = get_db_service()
         payment = db_service.get_payment_by_session(session_id)
+        
+        # Check database for existing payment status before checking cache
+        if payment:
+            payment_status_value = (
+                payment.status.value
+                if hasattr(payment.status, "value")
+                else str(payment.status)
+            )
+            is_paid = payment_status_value == PaymentStatus.PAID.value
+            is_fulfilled = getattr(payment, "is_fulfilled", False)
+            
+            if is_paid and is_fulfilled:
+                result["processed"] = True
+                result["message"] = "Already fulfilled (idempotent)"
+                logger.info("Webhook already processed for payment %s", payment.id)
+                # Cache the result for future quick lookups
+                _mark_event_processed(event_id, result)
+                return result
+        
+        # Check cache only after database check to avoid race conditions
+        is_processed, cached_result = _is_event_processed(event_id)
+        if is_processed and cached_result:
+            logger.info("Returning cached result for event %s", event_id)
+            return cached_result
 
         if not payment:
             payment_id = metadata.get("payment_id")
             logger.warning("Payment not found for session %s", session_id)
             result["message"] = f"Payment not found for session {session_id}"
-            return result
-
-        # Idempotency check - compare enum values, not SQLAlchemy Column objects
-        payment_status_value = (
-            payment.status.value
-            if hasattr(payment.status, "value")
-            else str(payment.status)
-        )
-        is_paid = payment_status_value == PaymentStatus.PAID.value
-        is_fulfilled = getattr(payment, "is_fulfilled", False)
-
-        if is_paid and is_fulfilled:
-            result["processed"] = True
-            result["message"] = "Already fulfilled (idempotent)"
-            logger.info("Webhook already processed for payment %s", payment.id)
+            # Cache the result to prevent retries
+            _mark_event_processed(event_id, result)
             return result
 
         # Update payment status to PAID
@@ -335,7 +345,7 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
             )
 
             # Suspend droplet on critical failure in production
-            if settings.app_env == "production":
+            if settings.app_env in ("prod", "production"):
                 try:
                     from ..services.hetzner import get_hetzner_service
 
@@ -347,11 +357,25 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
                 except Exception as suspend_err:
                     logger.error("Error suspending droplet: %s", suspend_err)
 
-    except Exception as e:
-        logger.exception(
-            "Error processing checkout.session.completed for session %s", session_id
+    except ValueError as e:
+        # Specific error for missing data
+        logger.error(
+            "Validation error processing checkout.session.completed for session %s: %s",
+            session_id,
+            str(e),
         )
-        result["message"] = f"Error processing payment: {str(e)}"
+        result["message"] = f"Validation error: {str(e)}"
+    except Exception as e:
+        # Log specific error type and message for debugging
+        error_type = type(e).__name__
+        error_msg = str(e)
+        logger.exception(
+            "Error processing checkout.session.completed for session %s: %s (%s)",
+            session_id,
+            error_msg,
+            error_type,
+        )
+        result["message"] = f"Error processing payment: {error_type}: {error_msg}"
 
     # Always cache the result for idempotency
     _mark_event_processed(event_id, result)

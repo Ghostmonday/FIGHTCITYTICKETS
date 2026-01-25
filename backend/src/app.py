@@ -18,6 +18,13 @@ from .config import settings
 from .logging_config import setup_logging
 from .sentry_config import init_sentry
 from .middleware.request_id import RequestIDMiddleware, get_request_id
+from .middleware.errors import (
+    APIError,
+    ErrorCode,
+    api_error_handler,
+    error_response,
+    unhandled_exception_handler,
+)
 from .middleware.rate_limit import (
     get_rate_limiter,
     _rate_limit_exceeded_handler,
@@ -27,6 +34,7 @@ from .routes.admin import router as admin_router
 from .routes.appeals import router as appeals_router
 from .routes.checkout import router as checkout_router
 from .routes.health import router as health_router
+from .routes.places import router as places_router
 from .routes.statement import router as statement_router
 from .routes.status import router as status_router
 from .routes.telemetry import router as telemetry_router
@@ -149,6 +157,21 @@ app = FastAPI(
 # Request ID Middleware - adds unique ID to every request for tracking
 app.add_middleware(RequestIDMiddleware)
 
+# Metrics middleware - track request counts
+from .routes.health import increment_request_count, increment_error_count
+
+
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Track request and error counts for metrics."""
+    increment_request_count()
+    try:
+        response = await call_next(request)
+        return response
+    except Exception:
+        increment_error_count()
+        raise
+
 # Rate Limiting - initialize limiter and exception handler
 # BACKLOG PRIORITY 1: Rate limiting middleware integration
 limiter_instance = get_rate_limiter()
@@ -195,6 +218,7 @@ app.include_router(statement_router, prefix="/statement", tags=["statement"])
 
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
+app.include_router(places_router, prefix="/places", tags=["places"])
 # Appeal storage router for frontend persistence
 app.include_router(appeals_router, prefix="/api", tags=["appeals"])
 # Webhook router: nginx strips /api/, so mount at /webhook (not /api/webhook)
@@ -329,43 +353,25 @@ async def not_found_handler(request: Request, exc):
 
     return JSONResponse(
         status_code=404,
-        content={
-            "error": "Not Found",
-            "message": "The requested resource was not found",
-            "path": request.url.path,
-            "request_id": request_id,
-            "suggestions": [
-                "Check the API documentation at /docs",
-                "Verify the endpoint URL",
-                "Ensure you're using the correct HTTP method",
-            ],
-        },
+        content=error_response(
+            error_code=ErrorCode.NOT_FOUND,
+            message="The requested resource was not found",
+            status_code=404,
+            request=request,
+            details={"path": request.url.path},
+            suggestion="Check the API documentation at /docs",
+        ),
     )
 
 
 @app.exception_handler(500)
 async def internal_error_handler(request: Request, exc):
-    """Custom 500 handler."""
-    import traceback
+    """Custom 500 handler - now delegates to unhandled_exception_handler."""
+    return await unhandled_exception_handler(request, exc)
 
-    from fastapi.responses import JSONResponse
 
-    # Get request ID from request state using helper function
-    request_id = get_request_id(request)
-
-    # Log the full error with request ID
-    logger.error(f"Internal server error [request_id={request_id}]: {exc}")
-    logger.error(traceback.format_exc())
-
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": "Internal Server Error",
-            "message": "An unexpected error occurred",
-            "request_id": request_id,
-            "support": f"contact {settings.support_email}",
-        },
-    )
+# Register APIError exception handler
+app.add_exception_handler(APIError, api_error_handler)
 
 
 if __name__ == "__main__":

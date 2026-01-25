@@ -59,3 +59,6 @@ logs/
 *.temp
 *.bak
 *.backup
+cloudcli*
+cloudcli-*.tar.gz
+cloudcli-*.json

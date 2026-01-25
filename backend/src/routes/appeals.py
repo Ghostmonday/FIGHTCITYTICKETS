@@ -6,14 +6,14 @@ Enables persistence across sessions and devices.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
-from sqlalchemy import text
+from pydantic import BaseModel, EmailStr, validator
 
 from ..config import settings
+from ..models import Intake
 from ..services.database import get_db_service
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ class AppealUpdateRequest(BaseModel):
     user_city: Optional[str] = None
     user_state: Optional[str] = None
     user_zip: Optional[str] = None
-    user_email: Optional[str] = None
+    user_email: Optional[EmailStr] = None
     user_phone: Optional[str] = None
 
     # City info
@@ -136,35 +136,29 @@ async def update_appeal(intake_id: int, data: AppealUpdateRequest):
             if not updates:
                 return {"message": "No valid updates provided", "intake_id": intake_id}
 
-            # Add updated timestamp
-            updates["updated_at"] = datetime.utcnow()
-
-            # Build dynamic SQL with validated column names
-            set_clauses = ", ".join([f"{k} = :{k}" for k in updates.keys()])
-            updates["id"] = intake_id
-
-            result = session.execute(
-                text(f"""
-                UPDATE intakes SET {set_clauses}
-                WHERE id = :id
-                RETURNING id, citation_number, created_at, updated_at
-                """),
-                updates,
-            )
-
-            row = result.fetchone()
-            if not row:
+            # Use ORM to update instead of raw SQL to prevent injection
+            intake = session.query(Intake).filter(Intake.id == intake_id).first()
+            if not intake:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"Intake {intake_id} not found",
                 )
+            
+            # Update fields using ORM
+            for key, value in updates.items():
+                if hasattr(intake, key):
+                    setattr(intake, key, value)
+            
+            # Update timestamp
+            intake.updated_at = datetime.now(timezone.utc)
+            session.flush()
 
             logger.info(f"Updated intake {intake_id} with progress data")
 
             return {
                 "message": "Intake updated successfully",
                 "intake_id": intake_id,
-                "updated_at": updates["updated_at"].isoformat(),
+                "updated_at": intake.updated_at.isoformat(),
             }
 
     except HTTPException:

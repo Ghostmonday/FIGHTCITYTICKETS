@@ -22,6 +22,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 # Copy application code
 COPY backend/src /app/src
 
+# Copy city configuration files for address validation
+COPY backend/cities /app/cities
+
 # Switch to non-root user
 USER appuser
 
