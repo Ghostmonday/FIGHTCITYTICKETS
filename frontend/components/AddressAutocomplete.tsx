@@ -22,7 +22,31 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { error as logError } from "@/lib/logger";
+import { error as logError } from "../lib/logger";
+
+// Type declaration for Google Maps API
+declare global {
+  interface Window {
+    google?: {
+      maps: {
+        places: {
+          AutocompleteService: new () => {
+            getPlacePredictions: (
+              request: any,
+              callback: (predictions: any[], status: any) => void
+            ) => void;
+          };
+          PlacesService: new (element: HTMLElement) => {
+            getDetails: (
+              request: any,
+              callback: (place: any, status: any) => void
+            ) => void;
+          };
+        };
+      };
+    };
+  }
+}
 
 interface AddressAutocompleteProps {
   value: string;
@@ -45,7 +69,10 @@ interface AddressAutocompleteProps {
 let sessionToken: string | null = null;
 
 function generateSessionToken(): string {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  return (
+    Math.random().toString(36).substring(2, 15) +
+    Math.random().toString(36).substring(2, 15)
+  );
 }
 
 export default function AddressAutocomplete({
@@ -59,7 +86,9 @@ export default function AddressAutocomplete({
   enableAutocomplete = true, // Default to enabled
 }: AddressAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [suggestions, setSuggestions] = useState<Array<{ place_id: string; description: string }>>([]);
+  const [suggestions, setSuggestions] = useState<
+    Array<{ place_id: string; description: string }>
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAutocompleting, setIsAutocompleting] = useState(false);
   const [useAutocomplete, setUseAutocomplete] = useState(enableAutocomplete);
@@ -128,9 +157,12 @@ export default function AddressAutocomplete({
 
     try {
       setIsAutocompleting(true);
-      const response = await fetch(`/places/autocomplete?input=${encodeURIComponent(input)}`, {
-        signal: abortControllerRef.current.signal,
-      });
+      const response = await fetch(
+        `/places/autocomplete?input=${encodeURIComponent(input)}`,
+        {
+          signal: abortControllerRef.current.signal,
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to fetch suggestions");
@@ -151,13 +183,13 @@ export default function AddressAutocomplete({
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const input = e.target.value;
-    
+
     // If manual mode, just pass the value to parent
     if (!useAutocomplete) {
       onInputChange?.(input);
       return;
     }
-    
+
     // If autocomplete mode, trigger suggestions
     onInputChange?.(input); // Still notify parent of input changes
     // Debounce the API call
@@ -262,9 +294,8 @@ export default function AddressAutocomplete({
               : "Enter your complete address"
           }
           required={required}
-          className={`w-full p-3 border rounded-lg pr-24 ${className} ${
-            isLoading ? "bg-gray-100" : ""
-          }`}
+          className={`w-full p-3 border rounded-lg pr-24 ${className} ${isLoading ? "bg-gray-100" : ""
+            }`}
           autoComplete="street-address"
           onChange={handleInputChange}
         />
@@ -276,11 +307,10 @@ export default function AddressAutocomplete({
               setSuggestions([]); // Clear suggestions when toggling
               setAddressVerified(false); // Reset verification status
             }}
-            className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs whitespace-nowrap px-2 py-1 bg-white rounded border transition-colors ${
-              useAutocomplete
+            className={`absolute right-2 top-1/2 -translate-y-1/2 text-xs whitespace-nowrap px-2 py-1 bg-white rounded border transition-colors ${useAutocomplete
                 ? "text-green-700 border-green-300 hover:bg-green-50"
                 : "text-blue-600 border-blue-300 hover:bg-blue-50"
-            }`}
+              }`}
             title={
               useAutocomplete
                 ? "Address verification enabled - Click to switch to manual entry"
@@ -311,12 +341,14 @@ export default function AddressAutocomplete({
       )}
       {!useAutocomplete && (
         <p className="text-xs text-blue-600 mt-1">
-          ✨ Click "Auto" to verify your address instantly with autocomplete
+          ✨ Click &quot;Auto&quot; to verify your address instantly with
+          autocomplete
         </p>
       )}
       {useAutocomplete && addressVerified && (
         <p className="text-xs text-green-600 mt-1 font-medium animate-pulse">
-          ✓ Address verified and validated! Your mail will be delivered correctly.
+          ✓ Address verified and validated! Your mail will be delivered
+          correctly.
         </p>
       )}
       {useAutocomplete && !addressVerified && (

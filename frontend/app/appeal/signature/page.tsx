@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppeal } from "../../lib/appeal-context";
 import Link from "next/link";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
+import { Card } from "../../../components/ui/Card";
+import { Button } from "../../../components/ui/Button";
 
 // Force dynamic rendering - this page uses client-side context
 export const dynamic = "force-dynamic";
@@ -15,39 +17,93 @@ export default function SignaturePage() {
   const [signature, setSignature] = useState(state.signature || "");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    setIsDrawing(true);
+  // Initialize canvas with proper sizing
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.strokeStyle = "#000";
+
+    // Set canvas size for high DPI displays
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.scale(dpr, dpr);
+
+    // Set drawing style
+    ctx.strokeStyle = "#111827";
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }, []);
+
+  const getCanvasCoordinates = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+
     const rect = canvas.getBoundingClientRect();
-    ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    let clientX: number;
+    let clientY: number;
+
+    if ("touches" in e) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top,
+    };
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
+  const startDrawing = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
+    e.preventDefault();
+    setIsDrawing(true);
+    setHasSignature(true);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const rect = canvas.getBoundingClientRect();
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+
+    const coords = getCanvasCoordinates(e);
+    ctx.beginPath();
+    ctx.moveTo(coords.x, coords.y);
+  };
+
+  const draw = (
+    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
+  ) => {
+    if (!isDrawing) return;
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const coords = getCanvasCoordinates(e);
+    ctx.lineTo(coords.x, coords.y);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    ctx.moveTo(coords.x, coords.y);
   };
 
   const stopDrawing = () => {
+    if (!isDrawing) return;
     setIsDrawing(false);
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dataURL = canvas.toDataURL();
+    const dataURL = canvas.toDataURL("image/png");
     setSignature(dataURL);
     updateState({ signature: dataURL });
   };
@@ -57,75 +113,120 @@ export default function SignaturePage() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const rect = canvas.getBoundingClientRect();
+    ctx.clearRect(0, 0, rect.width, rect.height);
     setSignature("");
+    setHasSignature(false);
     updateState({ signature: null });
   };
 
+  const handleContinue = () => {
+    if (signature) {
+      router.push("/appeal/checkout");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-2xl font-bold mb-4">Sign Your Appeal</h1>
-          <p className="text-gray-600 mb-6">
-            Draw your signature below. This will be included on your appeal
-            letter.
+    <main className="min-h-screen bg-bg-page">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-heading-lg text-text-primary mb-2">
+            Sign Your Appeal
+          </h1>
+          <p className="text-body text-text-secondary">
+            Your signature is required on the official appeal document.
           </p>
-          <LegalDisclaimer variant="inline" className="mb-4" />
+        </div>
 
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 mb-4 bg-white">
-            <canvas
-              ref={canvasRef}
-              width={600}
-              height={200}
-              className="w-full border rounded cursor-crosshair"
-              onMouseDown={startDrawing}
-              onMouseMove={draw}
-              onMouseUp={stopDrawing}
-              onMouseLeave={stopDrawing}
-            />
-          </div>
+        <div className="space-y-6">
+          {/* Signature Canvas */}
+          <Card padding="lg">
+            <h2 className="text-heading-md text-text-primary mb-4">
+              Draw Your Signature
+            </h2>
+            <p className="text-body-sm text-text-secondary mb-4">
+              Sign using your mouse or finger on a touch screen.
+            </p>
 
-          <div className="flex gap-4 mb-6">
-            <button
-              onClick={clearSignature}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Clear
-            </button>
-          </div>
+            <div className="relative">
+              <canvas
+                ref={canvasRef}
+                className="w-full border-2 border-border rounded-input bg-bg-surface cursor-crosshair touch-none"
+                style={{ height: "180px" }}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+              />
+              {!hasSignature && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <p className="text-text-muted text-body">Sign here</p>
+                </div>
+              )}
+            </div>
 
+            <div className="flex justify-between items-center mt-4">
+              <button
+                onClick={clearSignature}
+                className="text-body text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Clear signature
+              </button>
+              {signature && (
+                <div className="flex items-center gap-2 text-success">
+                  <svg
+                    className="w-5 h-5"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="text-body-sm font-medium">
+                    Signature captured
+                  </span>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Preview */}
           {signature && (
-            <div className="mb-6">
+            <Card padding="md">
+              <h3 className="text-heading-sm text-text-primary mb-3">
+                Signature Preview
+              </h3>
               <img
                 src={signature}
-                alt="Signature preview"
-                className="max-w-xs border rounded"
+                alt="Your signature"
+                className="max-h-16 border border-border rounded bg-bg-surface p-2"
               />
-            </div>
+            </Card>
           )}
 
-          <div className="flex justify-between">
+          {/* Actions */}
+          <div className="flex justify-between items-center pt-4">
             <Link
               href="/appeal/review"
-              className="text-gray-600 hover:text-gray-800"
+              className="text-body text-text-secondary hover:text-text-primary transition-colors"
             >
               ← Back
             </Link>
-            <button
-              onClick={() => router.push("/appeal/checkout")}
-              disabled={!signature}
-              className={`px-6 py-2 rounded-lg ${
-                signature
-                  ? "bg-blue-600 text-white hover:bg-blue-700"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-            >
+            <Button onClick={handleContinue} disabled={!signature}>
               Continue to Payment →
-            </button>
+            </Button>
           </div>
+
+          {/* Legal Disclaimer */}
+          <LegalDisclaimer variant="compact" className="mt-6" />
         </div>
       </div>
-    </div>
+    </main>
   );
 }

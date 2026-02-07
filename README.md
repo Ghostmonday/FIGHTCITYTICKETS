@@ -18,7 +18,7 @@
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
-**FIGHTCITYTICKETS.com**  
+**FIGHTCITYTICKETS.com**
 *Procedural compliance, not legal advice.*
 
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org)
@@ -65,11 +65,11 @@ cp .env.example .env
 docker compose up --build
 ```
 
-**Local URLs:**
-- Frontend: http://localhost:3000
+**Local URLs (backend only; frontend may run separately):**
 - API: http://localhost:8000
-- Health: http://localhost:8000/health
-- Docs: http://localhost:8000/docs
+- Health: http://localhost:8000/health — Docs: http://localhost:8000/docs
+- If using Docker Compose with web service: frontend at http://localhost:3000
+- If using Vite frontend (e.g. `frontend2/`): typically http://localhost:5173
 
 ---
 
@@ -79,7 +79,7 @@ docker compose up --build
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | Next.js 15, React 19, TypeScript, Tailwind CSS |
+| **Frontend** | Next.js 15 (in `frontend/`) or React + Vite (e.g. `frontend2/`); Tailwind CSS |
 | **Backend** | FastAPI (Python 3.12), SQLAlchemy 2.0, Alembic |
 | **Database** | PostgreSQL 16 |
 | **Reverse Proxy** | Nginx (Alpine) |
@@ -173,10 +173,12 @@ DATABASE_URL=postgresql+psycopg://postgres:password@db:5432/fightsf
 |--------|----------|-------------|
 | `POST` | `/tickets/validate` | Validate citation number |
 | `POST` | `/statement/refine` | AI-powered statement refinement |
-| `POST` | `/checkout/create-session` | Create Stripe checkout |
-| `POST` | `/webhook/stripe` | Stripe webhook handler |
-| `GET` | `/health` | Health check |
-| `GET` | `/status` | Detailed status |
+| `POST` | `/checkout/create-appeal-checkout` | Create Stripe checkout session |
+| `POST` | `/webhook/webhook` | Stripe webhook handler (raw body + signature) |
+| `GET` | `/health` | Liveness check |
+| `GET` | `/health/ready` | Readiness (DB required) |
+| `POST` | `/status/lookup` | Appeal status by email + citation |
+| `GET` | `/api/appeals/{id}` | Get appeal; `PUT` to update |
 
 **Full API Documentation:** http://localhost:8000/docs
 
@@ -191,8 +193,9 @@ docker compose exec api pytest
 # Integration tests
 docker compose exec api pytest tests/test_e2e_integration.py
 
-# Frontend tests
+# Frontend tests (when applicable)
 cd frontend && npm test
+# Or for Vite frontend: cd frontend2 && npm run test
 ```
 
 ---
@@ -254,17 +257,19 @@ Use these tools when the browser shows `ERR_CONNECTION_RESET` for
 
 ### Usage
 
+From project root:
+
 ```bash
-sudo python3 /home/evan/Documents/Projects/FightSFTickets/scripts/diagnostics/debug_connection.py
+sudo python3 scripts/diagnostics/debug_connection.py
 ```
 
 ```bash
-sudo bash /home/evan/Documents/Projects/FightSFTickets/scripts/diagnostics/test_connection.sh
+sudo bash scripts/diagnostics/test_connection.sh
 ```
 
 ### Notes for AI operators
 
-- Clear `/home/evan/Documents/Projects/FightSFTickets/.cursor/debug.log` before each run.
+- Clear `.cursor/debug.log` (in project root) before each run.
 - Do not log secrets or API keys.
 - Keep instrumentation until a post-fix verification run succeeds.
 
@@ -287,9 +292,8 @@ See `CIVIL_SHIELD_COMPLIANCE_AUDIT.md` for full compliance details.
 
 ```
 FightSFTickets/
-├── frontend/          # Next.js 15 frontend
-│   ├── app/           # App router pages
-│   └── components/    # React components
+├── frontend/          # Next.js 15 frontend (existing)
+├── frontend2/         # Optional: React + Vite frontend (see docs/FRONTEND_BUILD_PROMPT.md)
 ├── backend/           # FastAPI backend
 │   ├── src/
 │   │   ├── routes/    # API endpoints
@@ -297,6 +301,7 @@ FightSFTickets/
 │   │   └── models/    # SQLAlchemy models
 │   └── alembic/       # Database migrations
 ├── nginx/             # Nginx configuration
+├── docs/              # Prompts and systems docs
 └── docker-compose.yml # Production orchestration
 ```
 
@@ -340,7 +345,7 @@ curl http://localhost/health/detailed
 ### External Service Resilience
 
 - **Stripe**: 3 retries with exponential backoff, 30s timeout
-- **Lob**: 3 retries with exponential backoff, 30s timeout  
+- **Lob**: 3 retries with exponential backoff, 30s timeout
 - **DeepSeek AI**: 3 retries with exponential backoff, 60s timeout, local fallback
 
 ### Test Plan

@@ -1,6 +1,6 @@
 /**
  * API Client with retries, timeouts, and error handling
- * 
+ *
  * Provides a resilient wrapper around fetch with:
  * - Automatic retries with exponential backoff
  * - Configurable timeouts
@@ -112,7 +112,8 @@ class ApiClient {
                 const errorData = await response.json();
                 throw {
                   ...error,
-                  message: errorData.detail || errorData.message || error.message,
+                  message:
+                    errorData.detail || errorData.message || error.message,
                 };
               } catch {
                 throw error;
@@ -208,7 +209,11 @@ class ApiClient {
     options?: RequestInit,
     clientOptions?: ApiClientOptions
   ): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: "GET" }, clientOptions);
+    return this.request<T>(
+      endpoint,
+      { ...options, method: "GET" },
+      clientOptions
+    );
   }
 
   /**
@@ -259,7 +264,11 @@ class ApiClient {
     options?: RequestInit,
     clientOptions?: ApiClientOptions
   ): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: "DELETE" }, clientOptions);
+    return this.request<T>(
+      endpoint,
+      { ...options, method: "DELETE" },
+      clientOptions
+    );
   }
 }
 

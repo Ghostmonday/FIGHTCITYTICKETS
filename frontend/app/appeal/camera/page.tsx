@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useCallback, useRef, type ChangeEvent } from "react";
-import { useRouter } from "next/navigation";
-import { useAppeal } from "../../lib/appeal-context";
-import type { AppealState } from "../../lib/appeal-context";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useRef, useState, type ChangeEvent } from "react";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
+import { Alert } from "../../../components/ui/Alert";
+import { Button } from "../../../components/ui/Button";
+import { Card } from "../../../components/ui/Card";
+import { useAppeal } from "../../lib/appeal-context";
 import { extractTextFromImage } from "../../lib/ocr-helper";
 
 // Force dynamic rendering - this page uses client-side context
@@ -23,7 +25,9 @@ export default function CameraPage() {
   const [photos, setPhotos] = useState<string[]>(state.photos || []);
   const [isProcessing, setIsProcessing] = useState(false);
   const [ocrResults, setOcrResults] = useState<OcrResult[]>([]);
-  const [manualCitation, setManualCitation] = useState(state.citationNumber || "");
+  const [manualCitation, setManualCitation] = useState(
+    state.citationNumber || ""
+  );
   const [showManualInput, setShowManualInput] = useState(false);
   const [cameraActive, setCameraActive] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -33,7 +37,11 @@ export default function CameraPage() {
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } }
+        video: {
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -49,7 +57,7 @@ export default function CameraPage() {
   // Stop camera
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     setCameraActive(false);
@@ -88,7 +96,7 @@ export default function CameraPage() {
 
     setPhotos(newPhotos);
     setOcrResults(newOcrResults);
-    updateState((prev: AppealState) => ({ ...prev, photos: newPhotos }));
+    updateState({ photos: newPhotos });
     setIsProcessing(false);
   };
 
@@ -116,7 +124,9 @@ export default function CameraPage() {
 
   const removePhoto = (index: number): void => {
     const newPhotos = photos.filter((_: string, i: number) => i !== index);
-    const newOcrResults = ocrResults.filter((_: OcrResult, i: number) => i !== index);
+    const newOcrResults = ocrResults.filter(
+      (_: OcrResult, i: number) => i !== index
+    );
     setPhotos(newPhotos);
     setOcrResults(newOcrResults);
     updateState({ photos: newPhotos });
@@ -129,7 +139,7 @@ export default function CameraPage() {
     }
   };
 
-  const useOcrCitation = (index: number): void => {
+  const applyOcrCitation = (index: number): void => {
     const result: OcrResult = ocrResults[index];
     if (result.citationNumber) {
       updateState({ citationNumber: result.citationNumber.toUpperCase() });
@@ -138,233 +148,225 @@ export default function CameraPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-2xl font-bold mb-4 text-stone-800">
-            Submit Evidence
+    <main className="min-h-screen bg-bg-page">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-heading-lg text-text-primary mb-2">
+            Upload Evidence
           </h1>
-          <p className="text-gray-600 mb-6">
-            Upload photos of parking signs, meters, or circumstances that
-            support your procedural appeal. The Clerical Engine will attach
-            these to your submission.
+          <p className="text-body text-text-secondary">
+            Add photos of signs, meters, or anything that supports your appeal.
           </p>
+        </div>
 
-          {/* Telemetry opt-in */}
-          <div className="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-6">
-            <div className="flex items-start gap-3">
-              <input
-                type="checkbox"
-                id="telemetry-optin"
-                className="mt-1"
-                defaultChecked={state.telemetryEnabled}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => updateState({ telemetryEnabled: e.target.checked })}
-              />
-              <label htmlFor="telemetry-optin" className="text-sm text-stone-700">
-                <strong>Help improve OCR accuracy</strong>
-                <p className="text-gray-600 mt-1">
-                  Opt-in to share anonymous image data to help train better
-                  citation recognition models. No personal information is
-                  collected.
-                </p>
-              </label>
-            </div>
-          </div>
+        <div className="space-y-6">
+          {/* Upload Zone */}
+          <Card padding="lg">
+            <h2 className="text-heading-md text-text-primary mb-4">
+              Add Photos
+            </h2>
+            <p className="text-body-sm text-text-secondary mb-6">
+              Upload 2-5 photos. JPG or PNG, max 10MB each.
+            </p>
 
-          <LegalDisclaimer variant="inline" className="mb-6" />
+            {/* Camera Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block font-medium text-text-primary">
+                  Take Photo
+                </label>
+                {!cameraActive ? (
+                  <Button variant="secondary" size="sm" onClick={startCamera}>
+                    Open Camera
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="sm" onClick={stopCamera}>
+                    Close Camera
+                  </Button>
+                )}
+              </div>
 
-          {/* Camera Section */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <label className="block font-medium text-stone-700">
-                Take Photo
-              </label>
-              {!cameraActive ? (
-                <button
-                  onClick={startCamera}
-                  className="bg-stone-800 text-white px-4 py-2 rounded-lg hover:bg-stone-900 text-sm"
-                >
-                  Open Camera
-                </button>
-              ) : (
-                <button
-                  onClick={stopCamera}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm"
-                >
-                  Close Camera
-                </button>
+              {cameraActive && (
+                <div className="relative mb-4">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    className="w-full rounded-lg bg-text-primary"
+                    style={{ minHeight: "250px", objectFit: "cover" }}
+                  />
+                  <button
+                    onClick={capturePhoto}
+                    className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-primary text-white w-16 h-16 rounded-full border-4 border-white shadow-lg flex items-center justify-center hover:bg-primary-hover transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white" />
+                  </button>
+                </div>
               )}
             </div>
 
-            {cameraActive && (
-              <div className="relative mb-4">
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full rounded-lg bg-stone-900"
-                />
-                <button
-                  onClick={capturePhoto}
-                  className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white text-stone-800 w-16 h-16 rounded-full border-4 border-stone-300 hover:border-stone-500 flex items-center justify-center shadow-lg"
-                >
-                  <div className="w-12 h-12 rounded-full bg-stone-800" />
-                </button>
-              </div>
-            )}
-          </div>
+            {/* Divider */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex-1 h-px bg-border" />
+              <span className="text-text-muted text-body-sm">or</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
 
-          {/* Divider */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 h-px bg-stone-200" />
-            <span className="text-stone-500 text-sm">or</span>
-            <div className="flex-1 h-px bg-stone-200" />
-          </div>
-
-          {/* File Upload Section */}
-          <div className="mb-6">
-            <label className="block mb-2 font-medium text-stone-700">
-              Upload from Gallery
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleFileChange}
-              disabled={isProcessing}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-stone-100 file:text-stone-700 hover:file:bg-stone-200 disabled:opacity-50"
-            />
-            {isProcessing && (
-              <p className="text-sm text-stone-500 mt-2">
-                Processing images and extracting citation numbers...
-              </p>
-            )}
-          </div>
+            {/* File Upload */}
+            <div>
+              <label className="block font-medium text-text-primary mb-2">
+                Upload from Gallery
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileChange}
+                disabled={isProcessing}
+                className="block w-full text-body-sm text-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-input file:border-0 file:text-body file:font-medium file:bg-bg-subtle file:text-text-primary hover:file:bg-border disabled:opacity-50"
+              />
+              {isProcessing && (
+                <p className="text-body-sm text-text-secondary mt-2">
+                  Processing images...
+                </p>
+              )}
+            </div>
+          </Card>
 
           {/* OCR Results */}
           {ocrResults.some((r: OcrResult) => r.citationNumber) && (
-            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h3 className="font-medium text-green-800 mb-3">
-                Citation Number Detected
-              </h3>
+            <Alert variant="success" title="Citation detected">
               {ocrResults.map(
                 (result: OcrResult, i: number) =>
                   result.citationNumber && (
                     <div
                       key={i}
-                      className="flex items-center justify-between bg-white p-3 rounded mb-2"
+                      className="flex items-center justify-between bg-bg-surface p-3 rounded mt-2"
                     >
                       <div>
-                        <span className="text-sm text-gray-500">
+                        <span className="text-body-sm text-text-muted">
                           Photo {i + 1}:
                         </span>{" "}
-                        <code className="font-mono font-bold text-lg">
+                        <code className="font-mono font-medium text-text-primary">
                           {result.citationNumber}
                         </code>
-                        <span className="text-xs text-green-600 ml-2">
+                        <span className="text-caption text-success ml-2">
                           ({Math.round(result.confidence * 100)}% confidence)
                         </span>
                       </div>
-                      <button
-                        onClick={() => useOcrCitation(i)}
-                        className="text-sm bg-green-100 text-green-800 px-3 py-1 rounded hover:bg-green-200"
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => applyOcrCitation(i)}
                       >
                         Use this
-                      </button>
+                      </Button>
                     </div>
                   )
               )}
-              <p className="text-xs text-green-700 mt-2">
+              <p className="text-caption text-text-muted mt-2">
                 Please verify the detected citation number matches your ticket.
               </p>
-            </div>
+            </Alert>
           )}
 
-          {/* Manual citation input toggle */}
-          <div className="mb-6">
+          {/* Photo Preview */}
+          {photos.length > 0 && (
+            <Card padding="lg">
+              <h3 className="text-heading-sm text-text-primary mb-4">
+                Uploaded Photos ({photos.length})
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                {photos.map((photo: string, i: number) => (
+                  <div key={i} className="relative">
+                    <img
+                      src={photo}
+                      alt={`Evidence ${i + 1}`}
+                      className="w-full h-24 object-cover rounded border border-border"
+                    />
+                    <button
+                      onClick={() => removePhoto(i)}
+                      className="absolute top-1 right-1 bg-text-primary/80 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-text-primary transition-colors"
+                      aria-label="Remove photo"
+                    >
+                      ×
+                    </button>
+                    {ocrResults[i]?.citationNumber && (
+                      <div className="absolute bottom-1 left-1 bg-success text-white text-xs px-2 py-0.5 rounded">
+                        OCR
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Manual citation input */}
+          <Card padding="md">
             <button
               onClick={() => setShowManualInput(!showManualInput)}
-              className="text-stone-600 hover:text-stone-800 text-sm underline"
+              className="text-body text-primary hover:text-primary-hover font-medium"
             >
               {showManualInput ? "Hide" : "Enter"} citation number manually
             </button>
 
             {showManualInput && (
-              <div className="mt-3 flex gap-2">
+              <div className="mt-4 flex gap-3">
                 <input
                   type="text"
                   value={manualCitation}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => setManualCitation(e.target.value.toUpperCase())}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                    setManualCitation(e.target.value.toUpperCase())
+                  }
                   placeholder="e.g., A12345678"
-                  className="flex-1 px-4 py-2 border border-stone-300 rounded-lg font-mono"
+                  className="flex-1 px-4 py-3 bg-bg-surface border border-border rounded-input text-text-primary placeholder-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 min-h-touch"
                 />
-                <button
-                  onClick={handleManualCitationSubmit}
-                  className="bg-stone-800 text-white px-4 py-2 rounded-lg hover:bg-stone-900"
-                >
-                  Save
-                </button>
+                <Button onClick={handleManualCitationSubmit}>Save</Button>
               </div>
             )}
-          </div>
+          </Card>
 
-          {/* Photo preview */}
-          {photos.length > 0 && (
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              {photos.map((photo: string, i: number) => (
-                <div key={i} className="relative">
-                  <img
-                    src={photo}
-                    alt={`Evidence ${i + 1}`}
-                    className="w-full h-32 object-cover rounded border border-stone-200"
-                  />
-                  <button
-                    onClick={() => removePhoto(i)}
-                    className="absolute top-1 right-1 bg-stone-800 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-stone-900 transition-colors"
-                  >
-                    ×
-                  </button>
-                  {ocrResults[i]?.citationNumber && (
-                    <div className="absolute bottom-1 left-1 bg-green-600 text-white text-xs px-2 py-0.5 rounded">
-                      OCR
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Telemetry opt-in */}
+          <Card padding="md">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1 h-5 w-5 text-primary border-border rounded focus:ring-primary/50 cursor-pointer"
+                defaultChecked={state.telemetryEnabled}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  updateState({ telemetryEnabled: e.target.checked })
+                }
+              />
+              <div>
+                <span className="font-medium text-text-primary">
+                  Help improve citation recognition
+                </span>
+                <p className="text-body-sm text-text-secondary mt-1">
+                  Opt-in to share anonymous image data to help train better
+                  recognition models. No personal information is collected.
+                </p>
+              </div>
+            </label>
+          </Card>
 
-          <div className="flex justify-between items-center">
+          {/* Actions */}
+          <div className="flex justify-between items-center pt-4">
             <Link
               href="/appeal"
-              className="text-stone-600 hover:text-stone-800 transition-colors"
+              className="text-body text-text-secondary hover:text-text-primary transition-colors"
             >
               ← Back
             </Link>
-            <button
-              onClick={() => router.push("/appeal/review")}
-              className="bg-stone-800 text-white px-6 py-3 rounded-lg hover:bg-stone-900 transition-colors font-medium"
-            >
+            <Button onClick={() => router.push("/appeal/review")}>
               Continue to Review →
-            </button>
+            </Button>
           </div>
+
+          {/* Legal Disclaimer */}
+          <LegalDisclaimer variant="compact" className="mt-6" />
         </div>
       </div>
-    </div>
+    </main>
   );
 }
-
-// Cleanup camera stream on unmount
-useEffect(() => {
-  return () => {
-    // Cleanup camera stream when component unmounts
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-  };
-}, []);
-
-CameraPage.getLayout = function getLayout(page: React.ReactNode) {
-  return page;
-};

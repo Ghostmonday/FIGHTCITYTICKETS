@@ -1,16 +1,15 @@
 import { Metadata } from "next";
-import { notFound } from "next/navigation";
 import Link from "next/link";
+import { notFound } from "next/navigation";
+import LegalDisclaimer from "../../../../../components/LegalDisclaimer";
+import { getCityBySlug } from "../../../../lib/city-routing";
+import { config } from "../../../../lib/config";
 import {
-  getSearchPhrase,
-  violationCodeToSlug,
-  locationToSlug,
   getSearchPhrasesByCity,
   loadSearchPhrases,
+  locationToSlug,
+  violationCodeToSlug
 } from "../../../../lib/seo-data";
-import { getCityBySlug } from "../../../../lib/city-routing";
-import LegalDisclaimer from "../../../../../components/LegalDisclaimer";
-import { config } from "../../../../lib/config";
 
 interface ViolationLocationPageProps {
   params: Promise<{
@@ -204,13 +203,13 @@ export default async function ViolationLocationPage({
             Stop Paying. Get It Dismissed.
           </h2>
           <p className="mb-2 text-lg text-green-100 font-medium">
-            Don't let this ticket cost you hundreds of dollars.
+            Don&apos;t let this ticket cost you hundreds of dollars.
           </p>
           <p className="mb-6 text-green-50">
             Appeal your {phrase.violation_code} citation at{" "}
             {phrase.hot_location} now. Keep your money. Protect your record.{" "}
             <strong>
-              The cost to appeal is a fraction of what you'll save.
+              The cost to appeal is a fraction of what you&apos;ll save.
             </strong>
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
@@ -242,7 +241,7 @@ export default async function ViolationLocationPage({
               .filter(
                 (p) =>
                   p.violation_code !== phrase.violation_code ||
-                  p.hot_location !== phrase.hot_location,
+                  p.hot_location !== phrase.hot_location
               )
               .slice(0, 4)
               .map((relatedPhrase) => (

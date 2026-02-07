@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { useAppeal } from "../../lib/appeal-context";
 import Link from "next/link";
+import { useEffect } from "react";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
+import { useAppeal } from "../../lib/appeal-context";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
@@ -183,7 +183,7 @@ export default function PricingPage() {
             <p className="text-green-800 text-sm">
               <strong>Worth it:</strong> For the cost of this service, you get a
               physical tracking number and proof the municipality received your
-              appeal. Critical if they claim "we never got it."
+              appeal. Critical if they claim &quot;we never got it.&quot;
             </p>
           </div>
         </div>

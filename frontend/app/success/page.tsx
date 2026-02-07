@@ -1,8 +1,12 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams, Link } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import LegalDisclaimer from "../../components/LegalDisclaimer";
+import { Card } from "../../components/ui/Card";
+import { Alert } from "../../components/ui/Alert";
+import { Button } from "../../components/ui/Button";
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -30,7 +34,7 @@ function SuccessContent() {
         const apiBase =
           process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
         const response = await fetch(
-          `${apiBase}/checkout/session/${sessionId}`
+          `${apiBase}/checkout/session-status?session_id=${sessionId}`
         );
 
         if (!response.ok) {
@@ -38,12 +42,10 @@ function SuccessContent() {
         }
 
         const data = await response.json();
-        // Generate Clerical ID for display
-        const clericalId = `ND-${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Date.now().toString().slice(-4)}`;
 
         setPaymentData({
           citation_number: data.citation_number || "Unknown",
-          clerical_id: clericalId,
+          clerical_id: data.clerical_id || "",
           amount_total: data.amount_total || 0,
           appeal_type: data.appeal_type || "standard",
           tracking_number: data.tracking_number,
@@ -62,54 +64,33 @@ function SuccessContent() {
   }, [sessionId]);
 
   const formatAmount = (cents: number) => `$${(cents / 100).toFixed(2)}`;
-  const formatAppealType = (type: string) =>
-    type === "certified" ? "Certified Mail" : "Standard Mail";
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <main className="min-h-screen bg-bg-page">
       <div className="max-w-3xl mx-auto px-4 py-12">
         {loading ? (
-          <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-12 text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-stone-800 mx-auto mb-4"></div>
-            <p className="text-stone-600">Processing your submission...</p>
-          </div>
+          <Card padding="lg" className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mx-auto mb-4" />
+            <p className="text-body text-text-secondary">
+              Processing your submission...
+            </p>
+          </Card>
         ) : error ? (
-          <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-8">
-            <div className="text-center">
-              <div className="w-14 h-14 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="w-6 h-6 text-stone-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                  />
-                </svg>
-              </div>
-              <h1 className="text-xl font-bold text-stone-800 mb-2">
-                Submission Status Unavailable
-              </h1>
-              <p className="text-stone-600 mb-6">{error}</p>
-              <Link
-                href="/"
-                className="inline-block bg-stone-800 text-white px-6 py-3 rounded-lg font-medium hover:bg-stone-900 transition"
-              >
-                Return to Home
+          <Alert variant="error" title="Unable to load submission details">
+            {error}
+            <div className="mt-4">
+              <Link href="/" className="text-primary hover:underline">
+                Return to home
               </Link>
             </div>
-          </div>
+          </Alert>
         ) : (
-          <div className="space-y-6">
-            {/* Success Header - Institutional */}
-            <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-8 text-center">
-              <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="space-y-6 animate-fade-in">
+            {/* Success Header - Clerical ID as Hero */}
+            <Card padding="lg" className="text-center">
+              <div className="w-16 h-16 bg-success-bg rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg
-                  className="w-8 h-8 text-stone-700"
+                  className="w-8 h-8 text-success"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -122,157 +103,131 @@ function SuccessContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-semibold text-stone-800 mb-3">
-                Due Process Submission Complete
+              <h1 className="text-heading-lg text-text-primary mb-2">
+                Appeal Submitted
               </h1>
-              <p className="text-stone-600">
-                Your procedural compliance submission has been received and is
-                being processed.
+              <p className="text-body text-text-secondary mb-6">
+                Your appeal documents have been received and are being
+                processed.
               </p>
-            </div>
+
+              {/* Clerical ID Hero */}
+              <div className="bg-bg-subtle border border-border rounded-lg p-4 inline-block">
+                <p className="text-caption text-text-muted mb-1">
+                  Reference ID
+                </p>
+                <p className="text-xl font-mono font-semibold text-text-primary">
+                  {paymentData?.clerical_id}
+                </p>
+              </div>
+            </Card>
 
             {/* Submission Details */}
-            <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-8">
-              <h2 className="text-lg font-semibold text-stone-800 mb-6">
+            <Card padding="lg">
+              <h2 className="text-heading-md text-text-primary mb-4">
                 Submission Details
               </h2>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-stone-100">
-                  <span className="text-stone-600">Citation Number</span>
-                  <span className="font-mono text-stone-800">
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 border-b border-border">
+                  <span className="text-text-secondary">Citation</span>
+                  <span className="font-mono text-text-primary">
                     {paymentData?.citation_number}
                   </span>
                 </div>
-                <div className="flex justify-between items-center py-3 border-b border-stone-100">
-                  <span className="text-stone-600">Clerical ID</span>
-                  <span className="font-mono text-stone-800">
-                    {paymentData?.clerical_id}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-stone-100">
-                  <span className="text-stone-600">Submission Type</span>
-                  <span className="text-stone-800">
-                    {formatAppealType(paymentData?.appeal_type || "standard")}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-stone-100">
-                  <span className="text-stone-600">Procedural Fee</span>
-                  <span className="font-semibold text-stone-800">
+                <div className="flex justify-between py-2 border-b border-border">
+                  <span className="text-text-secondary">Amount paid</span>
+                  <span className="font-medium text-text-primary">
                     {formatAmount(paymentData?.amount_total || 0)}
                   </span>
                 </div>
-                {paymentData?.tracking_number && (
-                  <div className="flex justify-between items-center py-3 border-b border-stone-100">
-                    <span className="text-stone-600">Tracking Number</span>
-                    <span className="font-mono text-stone-800">
-                      {paymentData.tracking_number}
-                    </span>
-                  </div>
-                )}
-                {paymentData?.expected_delivery && (
-                  <div className="flex justify-between items-center py-3">
-                    <span className="text-stone-600">Expected Processing</span>
-                    <span className="text-stone-800">
-                      {paymentData.expected_delivery}
-                    </span>
-                  </div>
-                )}
+                <div className="flex justify-between py-2">
+                  <span className="text-text-secondary">Status</span>
+                  <span className="text-success font-medium">Submitted</span>
+                </div>
               </div>
-            </div>
+            </Card>
 
-            {/* Process Timeline */}
-            <div className="bg-stone-100 rounded-lg border border-stone-200 p-6">
-              <h2 className="text-lg font-semibold text-stone-800 mb-4">
-                Procedural Timeline
+            {/* Next Steps */}
+            <Card padding="lg">
+              <h2 className="text-heading-md text-text-primary mb-4">
+                What Happens Next
               </h2>
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-stone-700 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                  <div className="w-6 h-6 bg-primary-muted rounded-full flex items-center justify-center flex-shrink-0 text-primary text-sm font-medium">
                     1
                   </div>
                   <div>
-                    <p className="font-medium text-stone-800">
-                      Submission Received
+                    <p className="font-medium text-text-primary">
+                      Your appeal is being prepared
                     </p>
-                    <p className="text-sm text-stone-600">
-                      Your procedural compliance documents are being prepared.
+                    <p className="text-body-sm text-text-secondary">
+                      We format your documents for procedural compliance.
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-stone-300 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                  <div className="w-6 h-6 bg-bg-subtle rounded-full flex items-center justify-center flex-shrink-0 text-text-muted text-sm">
                     2
                   </div>
                   <div>
-                    <p className="font-medium text-stone-600">
-                      Mailing in Progress
+                    <p className="font-medium text-text-primary">
+                      Mailed via certified mail
                     </p>
-                    <p className="text-sm text-stone-500">
+                    <p className="text-body-sm text-text-secondary">
                       Your appeal will be mailed within 1-2 business days.
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-6 h-6 bg-stone-300 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                  <div className="w-6 h-6 bg-bg-subtle rounded-full flex items-center justify-center flex-shrink-0 text-text-muted text-sm">
                     3
                   </div>
                   <div>
-                    <p className="font-medium text-stone-600">
-                      Municipal Review
+                    <p className="font-medium text-text-primary">
+                      Municipal review
                     </p>
-                    <p className="text-sm text-stone-500">
-                      The issuing agency will review your submission.
+                    <p className="text-body-sm text-text-secondary">
+                      The city will respond to your mailing address.
                     </p>
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
 
             {/* Important Information */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
-              <h3 className="font-semibold text-amber-900 mb-3">
-                Important Information
-              </h3>
-              <ul className="space-y-2 text-sm text-amber-800">
+            <Alert variant="warning" title="What to know">
+              <ul className="space-y-1 text-body-sm">
+                <li>• Response times vary by city (typically 2-8 weeks)</li>
                 <li>
-                  • The municipal authority will respond directly to your
-                  mailing address.
+                  • The municipal authority will mail their response to you
                 </li>
-                <li>
-                  • Response times vary by jurisdiction (typically 2-8 weeks).
-                </li>
-                <li>
-                  • This service provides procedural compliance documentation
-                  only.
-                </li>
-                <li>
-                  • Outcome determinations are made solely by the issuing
-                  agency.
-                </li>
+                <li>• This is document preparation only—not legal advice</li>
+                <li>• Outcome determined by the issuing agency</li>
               </ul>
-            </div>
+            </Alert>
 
             {/* Support */}
-            <div className="bg-stone-100 rounded-lg p-6 text-center">
-              <p className="text-stone-700 mb-4">
-                Questions about your procedural submission?
+            <Card padding="md" className="text-center">
+              <p className="text-body text-text-secondary mb-4">
+                Questions about your submission?
               </p>
               <a
                 href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}`}
-                className="inline-block bg-stone-800 text-white px-6 py-3 rounded-lg font-medium hover:bg-stone-900 transition"
+                className="text-primary hover:text-primary-hover font-medium"
               >
-                Contact Compliance Support
+                Contact support
               </a>
-            </div>
+            </Card>
 
             {/* Legal Disclaimer */}
             <LegalDisclaimer variant="elegant" />
 
-            {/* Continue */}
+            {/* Actions */}
             <div className="text-center pt-4">
               <Link
                 href="/"
-                className="inline-block bg-stone-800 text-white px-8 py-4 rounded-lg font-medium hover:bg-stone-900 transition"
+                className="inline-flex items-center justify-center font-medium rounded-button px-6 py-3 text-body min-h-touch bg-primary text-white hover:bg-primary-hover active:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50 transition-all duration-200"
               >
                 Submit Another Citation →
               </Link>
@@ -280,7 +235,7 @@ function SuccessContent() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -288,10 +243,10 @@ export default function SuccessPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-8 text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-stone-800 mx-auto mb-4"></div>
-            <p className="text-stone-600">Loading...</p>
+        <div className="min-h-screen bg-bg-page flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mx-auto mb-4" />
+            <p className="text-body text-text-secondary">Loading...</p>
           </div>
         </div>
       }

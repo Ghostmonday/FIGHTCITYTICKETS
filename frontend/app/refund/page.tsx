@@ -50,10 +50,12 @@ export default function RefundPage() {
               while protecting both you and our business.
             </p>
             <p>
-              <strong>We aren't lawyers. We're paperwork experts.</strong> Our
-              service is to prepare and mail your appeal exactly as you provide
-              it. We do not control the outcome of your appeal—that rests with
-              the municipal agency.
+              <strong>
+                We aren&apos;t lawyers. We&apos;re paperwork experts.
+              </strong>{" "}
+              Our service is to prepare and mail your appeal exactly as you
+              provide it. We do not control the outcome of your appeal—that
+              rests with the municipal agency.
             </p>
 
             <h2>2. When Refunds Are Available</h2>
@@ -71,16 +73,16 @@ export default function RefundPage() {
                   </li>
                   <li>
                     <strong>Processing error:</strong> If we make an error in
-                    processing your appeal, you'll receive a full refund plus a
-                    credit toward future use.
+                    processing your appeal, you&apos;ll receive a full refund
+                    plus a credit toward future use.
                   </li>
                   <li>
-                    <strong>Service unavailable:</strong> If we're unable to
-                    provide the service for any reason, you'll receive a full
-                    refund.
+                    <strong>Service unavailable:</strong> If we&apos;re unable
+                    to provide the service for any reason, you&apos;ll receive a
+                    full refund.
                   </li>
                   <li>
-                    <strong>Duplicate payment:</strong> If you're charged
+                    <strong>Duplicate payment:</strong> If you&apos;re charged
                     multiple times for the same appeal.
                   </li>
                 </ul>
@@ -98,8 +100,8 @@ export default function RefundPage() {
                   </li>
                   <li>
                     <strong>Deadline passed:</strong> If the appeal deadline has
-                    passed and we couldn't mail in time, partial refund (minus
-                    processing fees).
+                    passed and we couldn&apos;t mail in time, partial refund
+                    (minus processing fees).
                   </li>
                 </ul>
               </div>

@@ -70,7 +70,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   // Extract city from content or title
   const cityMatch = post.title.match(
-    /(phoenix|san francisco|los angeles|new york|chicago|seattle|dallas|houston|denver|portland|philadelphia|miami|atlanta|boston|baltimore|detroit|minneapolis|charlotte|louisville|salt lake city|oakland|sacramento|san diego)/i,
+    /(phoenix|san francisco|los angeles|new york|chicago|seattle|dallas|houston|denver|portland|philadelphia|miami|atlanta|boston|baltimore|detroit|minneapolis|charlotte|louisville|salt lake city|oakland|sacramento|san diego)/i
   );
   const citySlug = cityMatch
     ? cityMatch[0].toLowerCase().replace(/\s+/g, "_")
@@ -78,7 +78,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   // Extract violation code from title
   const violationMatch = post.title.match(
-    /(PCC \d+-\d+[a-z]?|Section \d+\.\d+\.\d+[\(a-z\)]?|Section \d+[a-z]?)/i,
+    /(PCC \d+-\d+[a-z]?|Section \d+\.\d+\.\d+[\(a-z\)]?|Section \d+[a-z]?)/i
   );
   const violationCode = violationMatch ? violationMatch[0] : null;
 

@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
+import { Alert } from "../../../components/ui/Alert";
+import { Button } from "../../../components/ui/Button";
+import { Card } from "../../../components/ui/Card";
+import { Input } from "../../../components/ui/Input";
 
 export default function AppealStatusPage() {
   const [email, setEmail] = useState("");
@@ -76,263 +80,367 @@ export default function AppealStatusPage() {
     return `$${(cents / 100).toFixed(2)}`;
   };
 
-  const getStatusColor = (status: string) => {
-    if (status === "paid" || status === "mailed")
-      return "text-green-600 bg-green-100";
-    if (status === "pending") return "text-yellow-600 bg-yellow-100";
-    if (status === "failed") return "text-red-600 bg-red-100";
-    return "text-gray-600 bg-gray-100";
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case "paid":
+      case "mailed":
+        return {
+          bg: "bg-success-bg",
+          border: "border-success-border",
+          text: "text-success",
+          icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ),
+        };
+      case "pending":
+        return {
+          bg: "bg-warning-bg",
+          border: "border-warning-border",
+          text: "text-warning",
+          icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ),
+        };
+      case "failed":
+        return {
+          bg: "bg-error-bg",
+          border: "border-error-border",
+          text: "text-error",
+          icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ),
+        };
+      default:
+        return {
+          bg: "bg-bg-subtle",
+          border: "border-border",
+          text: "text-text-secondary",
+          icon: (
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clipRule="evenodd"
+              />
+            </svg>
+          ),
+        };
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-white">
-      <div className="max-w-4xl mx-auto px-4 py-12">
+    <main className="min-h-screen bg-bg-page">
+      <div className="max-w-3xl mx-auto px-4 py-12">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 mb-4">
+          <h1 className="text-heading-lg text-text-primary mb-3">
             Check Your Appeal Status
           </h1>
-          <p className="text-lg text-gray-600">
-            Enter your email and citation number to see the status of your
-            appeal
+          <p className="text-body text-text-secondary">
+            Enter your email and citation number to see your appeal status.
           </p>
         </div>
 
         {/* Lookup Form */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
-          <form onSubmit={handleLookup} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address *
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="your@email.com"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Citation Number *
-              </label>
-              <input
-                type="text"
-                value={citationNumber}
-                onChange={(e) => setCitationNumber(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="e.g., 912345678"
-                required
-              />
-            </div>
+        <Card padding="lg" className="mb-8">
+          <form onSubmit={handleLookup} className="space-y-5">
+            <Input
+              label="Email address *"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your@email.com"
+            />
+            <Input
+              label="Citation number *"
+              value={citationNumber}
+              onChange={(e) => setCitationNumber(e.target.value)}
+              placeholder="e.g., 912345678"
+            />
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <Alert
+                variant="error"
+                dismissible
+                onDismiss={() => setError(null)}
+              >
                 {error}
-              </div>
+              </Alert>
             )}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-4 px-6 rounded-lg font-bold text-lg shadow-lg hover:shadow-xl disabled:bg-gray-400 disabled:shadow-none transition"
-            >
+            <Button type="submit" loading={loading} fullWidth>
               {loading ? "Looking up..." : "Check Status →"}
-            </button>
+            </Button>
           </form>
-        </div>
+        </Card>
 
         {/* Appeal Status Results */}
         {appealData && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in">
             {/* Status Overview */}
-            <div className="bg-white rounded-2xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            <Card padding="lg">
+              <h2 className="text-heading-md text-text-primary mb-6">
                 Appeal Status
               </h2>
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    Citation Number
-                  </div>
-                  <div className="text-xl font-bold text-gray-900">
+                  <p className="text-body-sm text-text-muted mb-1">Citation</p>
+                  <p className="font-mono text-lg text-text-primary">
                     {appealData.citation_number}
-                  </div>
+                  </p>
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    Payment Status
-                  </div>
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(appealData.payment_status)}`}
-                  >
-                    {appealData.payment_status === "paid"
-                      ? "✅ Paid"
-                      : appealData.payment_status}
-                  </span>
+                  <p className="text-body-sm text-text-muted mb-1">Payment</p>
+                  {(() => {
+                    const config = getStatusConfig(appealData.payment_status);
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.border} ${config.text}`}
+                      >
+                        {config.icon}
+                        {appealData.payment_status === "paid"
+                          ? "Paid"
+                          : appealData.payment_status}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600 mb-2">
-                    Mailing Status
-                  </div>
-                  <span
-                    className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(appealData.mailing_status)}`}
-                  >
-                    {appealData.mailing_status === "mailed"
-                      ? "📮 Mailed"
-                      : appealData.mailing_status === "pending"
-                        ? "⏳ Pending"
-                        : appealData.mailing_status}
-                  </span>
+                  <p className="text-body-sm text-text-muted mb-1">Mailing</p>
+                  {(() => {
+                    const config = getStatusConfig(appealData.mailing_status);
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.border} ${config.text}`}
+                      >
+                        {config.icon}
+                        {appealData.mailing_status === "mailed"
+                          ? "Mailed"
+                          : appealData.mailing_status === "pending"
+                            ? "Pending"
+                            : appealData.mailing_status}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div>
-                  <div className="text-sm text-gray-600 mb-2">Amount Paid</div>
-                  <div className="text-xl font-bold text-green-600">
+                  <p className="text-body-sm text-text-muted mb-1">
+                    Amount Paid
+                  </p>
+                  <p className="text-lg font-semibold text-success">
                     {formatAmount(appealData.amount_paid)}
-                  </div>
+                  </p>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            {/* Tracking Information - Certified Mail Only */}
+            {/* Tracking Information */}
             {appealData.tracking_number && appealData.tracking_visible && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border-2 border-green-200 p-8">
-                <div className="flex items-center gap-2 mb-4">
-                  <svg
-                    className="w-6 h-6 text-green-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Certified Mail with Tracking
-                  </h3>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-sm text-gray-600 mb-1">
-                      Tracking Number
-                    </div>
-                    <div className="text-lg font-mono font-semibold text-gray-900">
-                      {appealData.tracking_number}
-                    </div>
+              <Card
+                padding="lg"
+                className="bg-success-bg border-success-border"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg
+                      className="w-5 h-5 text-success"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   </div>
-                  {appealData.expected_delivery && (
-                    <div>
-                      <div className="text-sm text-gray-600 mb-1">
-                        Expected Delivery
-                      </div>
-                      <div className="text-lg font-semibold text-gray-900">
-                        {appealData.expected_delivery}
-                      </div>
-                    </div>
-                  )}
-                  <p className="text-sm text-gray-700 mt-4">
-                    Track your delivery at{" "}
+                  <div className="flex-1">
+                    <h3 className="font-medium text-text-primary mb-2">
+                      Certified Mail with Tracking
+                    </h3>
+                    <p className="text-body-sm text-text-secondary mb-3">
+                      Tracking number:{" "}
+                      <span className="font-mono font-medium">
+                        {appealData.tracking_number}
+                      </span>
+                    </p>
+                    {appealData.expected_delivery && (
+                      <p className="text-body-sm text-text-secondary mb-3">
+                        Expected delivery:{" "}
+                        <span className="font-medium">
+                          {appealData.expected_delivery}
+                        </span>
+                      </p>
+                    )}
                     <a
                       href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${appealData.tracking_number}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-green-700 underline hover:text-green-900"
+                      className="text-primary hover:text-primary-hover text-body-sm font-medium"
                     >
-                      USPS.com
+                      Track on USPS.com →
                     </a>
-                  </p>
+                  </div>
                 </div>
-              </div>
+              </Card>
             )}
 
-            {/* Standard Mail - No Tracking */}
-            {!appealData.tracking_number &&
-              appealData.mailing_status === "mailed" && (
-                <div className="bg-gray-100 rounded-2xl border border-gray-300 p-8">
-                  <div className="flex items-center gap-2 mb-4">
-                    <svg
-                      className="w-6 h-6 text-gray-500"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
-                      <path
-                        fillRule="evenodd"
-                        d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <h3 className="text-xl font-bold text-gray-700">
-                      Standard Mail Sent
-                    </h3>
-                  </div>
-                  <p className="text-gray-600 mb-2">
-                    <strong>
-                      Mailed on {appealData.mailed_date || "recently"}
-                    </strong>
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Standard Mail does not include tracking. Your appeal has
-                    been sent via regular USPS mail.
-                  </p>
-                </div>
-              )}
-
-            {/* What This Means - Transformation Focus */}
-            <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
-              <h3 className="text-xl font-bold mb-4">
-                What This Means For You
+            {/* Timeline */}
+            <Card padding="lg">
+              <h3 className="text-heading-sm text-text-primary mb-4">
+                Timeline
               </h3>
-              <div className="space-y-3">
-                {appealData.payment_status === "paid" && (
-                  <p>
-                    ✅ <strong>Your payment was successful.</strong> Your appeal
-                    is being processed.
-                  </p>
-                )}
-                {appealData.mailing_status === "mailed" && (
-                  <p>
-                    📮 <strong>Your appeal has been mailed.</strong> The city
-                    will receive it within 3-5 business days.
-                  </p>
-                )}
-                {appealData.mailing_status === "pending" && (
-                  <p>
-                    ⏳ <strong>Your appeal is being prepared.</strong> It will
-                    be mailed within 1-2 business days.
-                  </p>
-                )}
-                <p className="mt-4">
-                  <strong>Next step:</strong> Wait for the city&apos;s response
-                  (typically 2-4 weeks). If your appeal is successful, you keep
-                  your money and maintain a clean record.
-                </p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${appealData.payment_status === "paid"
+                        ? "bg-success text-white"
+                        : "bg-bg-subtle text-text-muted"
+                      }`}
+                  >
+                    {appealData.payment_status === "paid" ? (
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      <span className="text-xs">1</span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-text-primary">
+                      Payment received
+                    </p>
+                    <p className="text-body-sm text-text-secondary">
+                      Your document preparation fee was processed.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${appealData.mailing_status === "mailed"
+                        ? "bg-success text-white"
+                        : appealData.mailing_status === "pending"
+                          ? "bg-warning text-white"
+                          : "bg-bg-subtle text-text-muted"
+                      }`}
+                  >
+                    {appealData.mailing_status === "mailed" ? (
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : appealData.mailing_status === "pending" ? (
+                      <svg
+                        className="w-4 h-4"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    ) : (
+                      <span className="text-xs">2</span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-text-primary">
+                      Appeal mailed
+                    </p>
+                    <p className="text-body-sm text-text-secondary">
+                      {appealData.mailing_status === "mailed"
+                        ? "Your appeal has been mailed to the city."
+                        : "Your appeal will be mailed within 1-2 business days."}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-bg-subtle text-text-muted">
+                    <span className="text-xs">3</span>
+                  </div>
+                  <div>
+                    <p className="font-medium text-text-primary">
+                      City response
+                    </p>
+                    <p className="text-body-sm text-text-secondary">
+                      The city will mail their response to you (typically 2-8
+                      weeks).
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
+            </Card>
+
+            {/* What This Means */}
+            <Alert variant="info">
+              <p className="font-medium text-text-primary mb-1">
+                What happens next
+              </p>
+              <p className="text-body-sm">
+                Wait for the city&apos;s response to be mailed to your address.
+                This is document preparation only—the outcome is determined by
+                the municipal authority.
+              </p>
+            </Alert>
           </div>
         )}
 
         {/* Support */}
-        <div className="bg-gray-50 rounded-2xl p-6 text-center mt-8">
-          <p className="text-gray-700 mb-4">
-            Can&apos;t find your appeal? Need help?
+        <Card padding="md" className="mt-8 text-center">
+          <p className="text-body text-text-secondary mb-3">
+            Can&apos;t find your appeal?
           </p>
           <a
             href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}`}
-            className="inline-block bg-gray-800 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-900 transition"
+            className="text-primary hover:text-primary-hover font-medium"
           >
-            Contact Support
+            Contact support
           </a>
-        </div>
+        </Card>
 
-        <LegalDisclaimer variant="compact" className="mt-8" />
+        <LegalDisclaimer variant="compact" className="mt-6" />
 
         <div className="text-center mt-8">
           <Link
             href="/"
-            className="text-green-600 hover:text-green-700 font-semibold"
+            className="text-primary hover:text-primary-hover font-medium"
           >
-            ← Return to Home
+            ← Return to home
           </Link>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

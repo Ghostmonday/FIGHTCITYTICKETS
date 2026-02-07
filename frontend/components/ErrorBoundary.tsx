@@ -76,7 +76,8 @@ export class ErrorBoundary extends Component<Props, State> {
               Something went wrong
             </h2>
             <p className="text-gray-600 mb-4 text-sm">
-              An error occurred while rendering this component. Please try again.
+              An error occurred while rendering this component. Please try
+              again.
             </p>
             <div className="flex gap-3 justify-center">
               <button
@@ -132,7 +133,9 @@ export class AsyncErrorBoundary extends React.Component<
 > {
   public state: AsyncErrorBoundaryState = { hasError: false };
 
-  public static getDerivedStateFromError(error: Error): AsyncErrorBoundaryState {
+  public static getDerivedStateFromError(
+    error: Error
+  ): AsyncErrorBoundaryState {
     return { hasError: true, error };
   }
 

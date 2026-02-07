@@ -202,4 +202,3 @@ export function getCitiesByState(): Record<string, City[]> {
 export function getSortedCities(): City[] {
   return [...CITIES].sort((a, b) => a.name.localeCompare(b.name));
 }
-

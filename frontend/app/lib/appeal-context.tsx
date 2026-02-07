@@ -26,15 +26,15 @@
  *       - Fallback to manual entry
  */
 
-import React, {
+import {
   createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
   ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from "react";
-import { debug, error as logError, info } from "@/lib/logger";
+import { debug, info, error as logError } from "../../lib/logger";
 
 export interface UserInfo {
   name: string;
@@ -184,33 +184,6 @@ export function AppealProvider({ children }: { children: ReactNode }) {
     state.draftId,
   ]);
 
-  // Auto-save to database when needed
-  // NOTE: saveToDatabase uses useCallback with proper dependencies, so we include it here
-  useEffect(() => {
-    if (needsDatabaseSync && state.intakeId && isInitialized) {
-      saveToDatabase();
-      setNeedsDatabaseSync(false);
-    }
-  }, [needsDatabaseSync, state.intakeId, isInitialized, saveToDatabase]);
-
-  const updateState = useCallback((updates: Partial<AppealState>) => {
-    setState((prev) => {
-      const newState = { ...prev, ...updates, lastSaved: undefined };
-      return newState;
-    });
-    setNeedsDatabaseSync(true);
-  }, []);
-
-  const resetState = useCallback(() => {
-    setState(defaultState);
-    setNeedsDatabaseSync(false);
-    try {
-      sessionStorage.removeItem(STORAGE_KEY);
-    } catch (e) {
-      logError("Failed to clear storage", e);
-    }
-  }, []);
-
   const saveToDatabase = useCallback(async (): Promise<boolean> => {
     // Only save if we have an intake_id
     if (!state.intakeId) {
@@ -220,8 +193,7 @@ export function AppealProvider({ children }: { children: ReactNode }) {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || ""}/api/appeals/${
-          state.intakeId
+        `${process.env.NEXT_PUBLIC_API_BASE || ""}/api/appeals/${state.intakeId
         }`,
         {
           method: "PUT",
@@ -264,6 +236,33 @@ export function AppealProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
+  // Auto-save to database when needed
+  // NOTE: saveToDatabase uses useCallback with proper dependencies, so we include it here
+  useEffect(() => {
+    if (needsDatabaseSync && state.intakeId && isInitialized) {
+      saveToDatabase();
+      setNeedsDatabaseSync(false);
+    }
+  }, [needsDatabaseSync, state.intakeId, isInitialized, saveToDatabase]);
+
+  const updateState = useCallback((updates: Partial<AppealState>) => {
+    setState((prev) => {
+      const newState = { ...prev, ...updates, lastSaved: undefined };
+      return newState;
+    });
+    setNeedsDatabaseSync(true);
+  }, []);
+
+  const resetState = useCallback(() => {
+    setState(defaultState);
+    setNeedsDatabaseSync(false);
+    try {
+      sessionStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+      logError("Failed to clear storage", e);
+    }
+  }, []);
+
   const loadFromDatabase = useCallback(
     async (intakeId: number): Promise<boolean> => {
       try {
@@ -282,9 +281,9 @@ export function AppealProvider({ children }: { children: ReactNode }) {
             vehicleInfo: data.vehicle_info || "",
             licensePlate: data.license_plate || "",
             cityId: data.city,
-            appealReason: data.appeal_reason,
-            selected_evidence: data.selected_evidence || [],
-            signature_data: data.signature_data,
+            draftLetter: data.appeal_reason || "",
+            photos: data.selected_evidence || [],
+            signature: data.signature_data || null,
           };
 
           // Update user info if available

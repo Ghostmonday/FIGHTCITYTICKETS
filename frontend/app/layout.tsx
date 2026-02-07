@@ -77,8 +77,7 @@ export default function RootLayout({
               url: config.baseUrl,
               potentialAction: {
                 "@type": "SearchAction",
-                target:
-                  `${config.baseUrl}/search?q={search_term_string}`,
+                target: `${config.baseUrl}/search?q={search_term_string}`,
                 "query-input": "required name=search_term_string",
               },
             }),

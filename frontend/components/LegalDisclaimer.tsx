@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 interface LegalDisclaimerProps {
@@ -15,61 +16,62 @@ export default function LegalDisclaimer({
 
   const disclaimerText = {
     full: (
-      <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
+      <div className="space-y-3 text-body-sm text-text-secondary leading-relaxed">
         <p>
-          <strong className="text-gray-800">
-            We aren't lawyers. We're paperwork experts.
+          <strong className="text-text-primary">
+            We aren&apos;t lawyers. We&apos;re paperwork experts.
           </strong>{" "}
           In a bureaucracy, paperwork is power. We help you articulate and
           refine your own reasons for appealing a parking ticket. We act as a
           scribe, helping you express what{" "}
-          <strong className="text-gray-800">you</strong> tell us is your reason
-          for appealing.
+          <strong className="text-text-primary">you</strong> tell us is your
+          reason for appealing.
         </p>
         <p>
-          FIGHTCITYTICKETS.com is a{" "}
-          <strong>procedural compliance service</strong>. We do not provide
-          legal advice, legal representation, or legal recommendations. We do
-          not interpret laws or guarantee outcomes. We ensure your appeal meets
-          the exacting clerical standards that municipalities use to reject
-          citizen submissions.
+          FightCityTickets.com is a{" "}
+          <strong>document preparation service</strong>. We do not provide legal
+          advice, legal representation, or legal recommendations. We do not
+          interpret laws or guarantee outcomes. We ensure your appeal meets the
+          clerical standards that municipalities use.
         </p>
-        <p className="text-xs text-gray-500 italic border-t border-gray-200 pt-3">
+        <p className="text-tiny text-text-muted italic border-t border-border pt-3">
           If you require legal advice, please consult with a licensed attorney.
         </p>
       </div>
     ),
     compact: (
-      <p className="text-xs text-gray-500 leading-relaxed">
-        <strong>We aren't lawyers. We're paperwork experts.</strong> We help you
-        articulate your own reasons for appealing. Our service is procedural
-        compliance—not legal advice.{" "}
-        <a
+      <p className="text-tiny text-text-muted leading-relaxed">
+        <strong className="text-text-secondary">
+          Document preparation only — not legal advice.
+        </strong>{" "}
+        We help you prepare appeal paperwork but don&apos;t provide legal advice
+        or representation.{" "}
+        <Link
           href="/terms"
-          className="text-gray-700 hover:text-gray-900 underline underline-offset-2"
+          className="text-text-secondary hover:text-text-primary underline underline-offset-2"
         >
-          Terms
-        </a>
+          Learn more
+        </Link>
       </p>
     ),
     inline: (
-      <span className="text-xs text-gray-400 italic">
-        Procedural compliance service. Not a law firm. Paperwork is power.
+      <span className="text-tiny text-text-muted italic">
+        Document preparation only — not legal advice
       </span>
     ),
     elegant: (
-      <div className="space-y-3 text-sm text-gray-600 leading-relaxed">
+      <div className="space-y-3 text-body-sm text-text-secondary leading-relaxed">
         <p>
-          <strong className="text-gray-800">
-            We aren't lawyers. We're paperwork experts.
+          <strong className="text-text-primary">
+            Document preparation only — not legal advice.
           </strong>{" "}
-          In a bureaucracy, paperwork is power. We help you articulate and
-          refine your own reasons for appealing a parking ticket.
+          We help you prepare appeal paperwork but don&apos;t provide legal
+          advice, legal representation, or recommendations.
         </p>
-        <p className="text-xs text-gray-500 border-t border-gray-200 pt-3">
-          FIGHTCITYTICKETS.com is a{" "}
-          <strong>procedural compliance service</strong>. We do not provide
-          legal advice. For legal guidance, consult a licensed attorney.
+        <p className="text-tiny text-text-muted border-t border-border pt-3">
+          FightCityTickets.com is a{" "}
+          <strong>document preparation service</strong>. Outcome determined by
+          the municipal authority.
         </p>
       </div>
     ),
@@ -81,7 +83,7 @@ export default function LegalDisclaimer({
 
   if (variant === "compact") {
     return (
-      <div className={`border-t border-gray-100 pt-4 ${className}`}>
+      <div className={`border-t border-border pt-4 ${className}`}>
         {disclaimerText.compact}
       </div>
     );
@@ -90,7 +92,7 @@ export default function LegalDisclaimer({
   if (variant === "elegant") {
     return (
       <div
-        className={`bg-gray-50 border border-gray-200 rounded-lg p-5 ${className}`}
+        className={`bg-bg-subtle border border-border rounded-lg p-5 ${className}`}
       >
         {disclaimerText.elegant}
       </div>
@@ -99,20 +101,20 @@ export default function LegalDisclaimer({
 
   return (
     <div
-      className={`bg-gray-50 border border-gray-200 rounded-lg p-5 ${className}`}
+      className={`bg-bg-subtle border border-border rounded-lg p-5 ${className}`}
     >
       {!isExpanded ? (
         <div>
-          <p className="text-sm text-gray-700 mb-2">
-            <strong>We aren't lawyers. We're paperwork experts.</strong> We help
-            you articulate your own reasons for appealing. Our service is
-            procedural compliance—not legal advice.
+          <p className="text-body-sm text-text-secondary mb-2">
+            <strong>Document preparation only — not legal advice.</strong> We
+            help you prepare appeal paperwork but don&apos;t provide legal
+            representation.
           </p>
           <button
             onClick={() => setIsExpanded(true)}
-            className="text-xs text-gray-600 hover:text-gray-800 underline underline-offset-2"
+            className="text-tiny text-text-secondary hover:text-text-primary underline underline-offset-2 transition-colors"
           >
-            Read more
+            Learn more
           </button>
         </div>
       ) : (
@@ -120,7 +122,7 @@ export default function LegalDisclaimer({
           {disclaimerText.full}
           <button
             onClick={() => setIsExpanded(false)}
-            className="mt-3 text-xs text-gray-600 hover:text-gray-800 underline underline-offset-2"
+            className="mt-3 text-tiny text-text-secondary hover:text-text-primary underline underline-offset-2 transition-colors"
           >
             Show less
           </button>

@@ -133,7 +133,10 @@ class OcrHelper {
   /**
    * Extract citation number from OCR text
    */
-  extractCitationNumber(text: string): { number: string | null; confidence: number } {
+  extractCitationNumber(text: string): {
+    number: string | null;
+    confidence: number;
+  } {
     const normalizedText = text.toUpperCase().replace(/\s+/g, " ");
 
     for (const pattern of CITATION_PATTERNS) {
@@ -183,7 +186,7 @@ class OcrHelper {
       const { number, confidence } = this.extractCitationNumber(rawText);
 
       return {
-        citationNumber: number,
+        citationNumber: number || undefined,
         confidence,
         rawText: rawText.trim(),
       };

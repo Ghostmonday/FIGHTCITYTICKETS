@@ -296,7 +296,8 @@ export default function PrivacyPage() {
             <p>For any privacy-related questions or requests:</p>
             <div className="bg-gray-100 rounded-lg p-4 my-4">
               <p className="text-gray-700">
-                <strong>Email:</strong> {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "privacy@example.com"}
+                <strong>Email:</strong>{" "}
+                {process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "privacy@example.com"}
               </p>
               <p className="text-gray-700">
                 <strong>Response Time:</strong> We respond to all inquiries

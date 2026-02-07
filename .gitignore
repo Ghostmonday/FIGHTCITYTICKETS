@@ -26,6 +26,9 @@ out/
 dist/
 build/
 
+# TypeScript build cache
+**/tsconfig.tsbuildinfo
+
 # IDE
 .vscode/
 .idea/

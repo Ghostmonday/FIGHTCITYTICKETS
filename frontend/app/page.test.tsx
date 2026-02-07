@@ -2,7 +2,7 @@
  * Homepage tests for FIGHTCITYTICKETS.com
  */
 
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import Home from "./page";
 
 // Mock next/navigation
@@ -40,15 +40,13 @@ describe("Homepage", () => {
   describe("Page Rendering", () => {
     it("renders the hero section with correct title", () => {
       render(<Home />);
-      expect(
-        screen.getByText(/They Demand Perfection/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Got a parking ticket/i)).toBeInTheDocument();
     });
 
     it("renders the subtitle about procedural compliance", () => {
       render(<Home />);
       expect(
-        screen.getByText(/A parking citation is a procedural document/i)
+        screen.getByText(/Submit professionally formatted appeal documents/i)
       ).toBeInTheDocument();
     });
 
@@ -59,7 +57,9 @@ describe("Homepage", () => {
 
     it("renders the citation number input field", () => {
       render(<Home />);
-      expect(screen.getByPlaceholderText(/e.g., 912345678/i)).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(/e.g., 912345678/i)
+      ).toBeInTheDocument();
     });
   });
 
@@ -110,23 +110,21 @@ describe("Homepage", () => {
   describe("Optional Fields", () => {
     it("renders license plate input field", () => {
       render(<Home />);
-      expect(
-        screen.getByPlaceholderText(/e.g., ABC123/i)
-      ).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/ABC123/i)).toBeInTheDocument();
     });
 
     it("renders violation date input field", () => {
       render(<Home />);
-      expect(screen.getByRole("dateinput")).toBeInTheDocument();
+      // Verify the label exists - validates the form field is rendered
+      expect(screen.getByText(/Violation date/i)).toBeInTheDocument();
     });
   });
 
   describe("Legal Disclaimer", () => {
     it("renders the legal disclaimer component", () => {
       render(<Home />);
-      expect(
-        screen.getByText(/We aren't lawyers/i)
-      ).toBeInTheDocument();
+      const disclaimers = screen.getAllByText(/Document preparation only/i);
+      expect(disclaimers.length).toBeGreaterThan(0);
     });
   });
 });

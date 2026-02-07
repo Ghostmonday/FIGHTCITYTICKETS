@@ -5,6 +5,10 @@ import { useAppeal } from "../../lib/appeal-context";
 import Link from "next/link";
 import AddressAutocomplete from "../../../components/AddressAutocomplete";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
+import { Button } from "../../../components/ui/Button";
+import { Card } from "../../../components/ui/Card";
+import { Input } from "../../../components/ui/Input";
+import { Alert } from "../../../components/ui/Alert";
 
 // Force dynamic rendering - this page uses client-side context
 export const dynamic = "force-dynamic";
@@ -59,8 +63,8 @@ export default function CheckoutPage() {
     );
   };
 
-  // CERTIFIED-ONLY MODEL: $19.95 flat rate
-  const totalFee = 1995; // $19.95 in cents
+  // CERTIFIED-ONLY MODEL: $39 flat rate
+  const totalFee = 3900; // $39.00 in cents
 
   const formatPrice = (cents: number) => {
     return `$${(cents / 100).toFixed(2)}`;
@@ -69,7 +73,7 @@ export default function CheckoutPage() {
   const handleCheckout = async () => {
     // Block payment unless terms are accepted
     if (!acceptedTerms) {
-      setError("Please acknowledge the service terms to proceed");
+      setError("Please acknowledge the terms to proceed");
       return;
     }
 
@@ -102,7 +106,6 @@ export default function CheckoutPage() {
     setError(null);
 
     try {
-      // Use NEXT_PUBLIC_API_BASE consistently (fallback to localhost for development)
       const apiBase =
         process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
       const response = await fetch(
@@ -142,92 +145,81 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-8">
-          <h1 className="text-2xl font-bold mb-2 text-stone-800">
+    <main className="min-h-screen bg-bg-page">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-heading-lg text-text-primary mb-2">
             Complete Your Submission
           </h1>
-          <p className="text-stone-600 mb-8">
-            Provide your information for procedural compliance processing.
+          <p className="text-body text-text-secondary">
+            Provide your information for document preparation.
           </p>
+        </div>
 
-          <div className="mb-8 space-y-5">
-            <div>
-              <label className="block mb-2 font-medium text-stone-700">
-                Full Name *
-              </label>
-              <input
-                type="text"
+        <div className="space-y-6">
+          {/* Contact Information */}
+          <Card padding="lg">
+            <h2 className="text-heading-md text-text-primary mb-6">
+              Your Information
+            </h2>
+
+            <div className="space-y-5">
+              <Input
+                label="Full name *"
                 value={state.userInfo.name}
                 onChange={(e) =>
                   updateState({
                     userInfo: { ...state.userInfo, name: e.target.value },
                   })
                 }
-                className="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-stone-500 transition-colors"
-                required
+                placeholder="John Doe"
               />
-            </div>
-            <div>
-              <label className="block mb-2 font-medium text-stone-700">
-                Street Address *
-                <span className="text-sm text-stone-500 ml-2 font-normal">
-                  (Choose verification method below)
-                </span>
-              </label>
-              <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-xs text-blue-800">
-                  <strong>Two ways to ensure accuracy:</strong> Use autocomplete for instant verification, or enter manually - both methods ensure your address is correct for mail delivery.
+
+              <div>
+                <label className="block text-body-sm font-medium text-text-secondary mb-2">
+                  Street address *
+                </label>
+                <AddressAutocomplete
+                  value={state.userInfo.addressLine1 || ""}
+                  onChange={(address) => {
+                    updateState({
+                      userInfo: {
+                        ...state.userInfo,
+                        addressLine1: address.addressLine1,
+                        addressLine2: address.addressLine2 || "",
+                        city: address.city,
+                        state: address.state,
+                        zip: address.zip,
+                      },
+                    });
+                    setAddressError(null);
+                  }}
+                  onInputChange={(value) => {
+                    updateState({
+                      userInfo: {
+                        ...state.userInfo,
+                        addressLine1: value,
+                      },
+                    });
+                  }}
+                  onError={(errorMsg) => {
+                    setAddressError(errorMsg);
+                  }}
+                  placeholder="123 Main St, San Francisco, CA 94102"
+                />
+                {addressError && (
+                  <p className="mt-1 text-caption text-error">{addressError}</p>
+                )}
+                <p className="mt-1 text-caption text-text-muted">
+                  The municipal authority will send their response to this
+                  address.
                 </p>
               </div>
-              <AddressAutocomplete
-                value={state.userInfo.addressLine1 || ""}
-                onChange={(address) => {
-                  // Called when autocomplete selection is made
-                  updateState({
-                    userInfo: {
-                      ...state.userInfo,
-                      addressLine1: address.addressLine1,
-                      addressLine2: address.addressLine2 || "",
-                      city: address.city,
-                      state: address.state,
-                      zip: address.zip,
-                    },
-                  });
-                  setAddressError(null);
-                }}
-                onInputChange={(value) => {
-                  // Called for manual input changes
-                  updateState({
-                    userInfo: {
-                      ...state.userInfo,
-                      addressLine1: value,
-                    },
-                  });
-                }}
-                onError={(errorMsg) => {
-                  setAddressError(errorMsg);
-                }}
-                placeholder="123 Main St, San Francisco, CA 94102"
-                required
-                className={addressError ? "border-red-500" : ""}
-              />
-              {addressError && (
-                <p className="mt-1 text-sm text-red-700">{addressError}</p>
-              )}
-              <p className="mt-1 text-xs text-stone-500">
-                ⚠️ This address must be accurate. The municipal authority will
-                send their response here.
-              </p>
-            </div>
-            {state.userInfo.addressLine2 !== undefined && (
-              <div>
-                <label className="block mb-2 font-medium text-stone-700">
-                  Address Line 2 (Apt, Suite, etc.)
-                </label>
-                <input
-                  type="text"
+
+              {state.userInfo.addressLine2 !== undefined && (
+                <Input
+                  label="Address line 2 (optional)"
                   value={state.userInfo.addressLine2 || ""}
                   onChange={(e) =>
                     updateState({
@@ -237,47 +229,26 @@ export default function CheckoutPage() {
                       },
                     })
                   }
-                  className="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-stone-500 transition-colors"
-                  placeholder="Apt 4B, Suite 200, etc."
+                  placeholder="Apt 4B, Suite 200"
                 />
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-5">
-              <div>
-                <label className="block mb-2 font-medium text-stone-700">
-                  City *
-                </label>
-                <input
-                  type="text"
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="City *"
                   value={state.userInfo.city}
                   onChange={(e) =>
                     updateState({
                       userInfo: { ...state.userInfo, city: e.target.value },
                     })
                   }
-                  className="w-full p-3 border border-stone-300 rounded-lg bg-stone-50 focus:ring-2 focus:ring-stone-500 focus:border-stone-500 transition-colors"
-                  required
                   readOnly={
                     !!state.userInfo.addressLine1 && !!state.userInfo.city
                   }
-                  title={
-                    state.userInfo.addressLine1 && state.userInfo.city
-                      ? "Auto-filled and locked - do not edit"
-                      : ""
-                  }
+                  placeholder="San Francisco"
                 />
-                {!!state.userInfo.addressLine1 && !!state.userInfo.city && (
-                  <p className="mt-1 text-xs text-stone-400">
-                    Auto-filled from address • Locked for accuracy
-                  </p>
-                )}
-              </div>
-              <div>
-                <label className="block mb-2 font-medium text-stone-700">
-                  State *
-                </label>
-                <input
-                  type="text"
+                <Input
+                  label="State *"
                   value={state.userInfo.state}
                   onChange={(e) =>
                     updateState({
@@ -287,54 +258,28 @@ export default function CheckoutPage() {
                       },
                     })
                   }
-                  className="w-full p-3 border border-stone-300 rounded-lg bg-stone-50 focus:ring-2 focus:ring-stone-500 focus:border-stone-500 transition-colors"
                   maxLength={2}
-                  required
                   placeholder="CA"
                   readOnly={
                     !!state.userInfo.addressLine1 && !!state.userInfo.state
                   }
-                  title={
-                    state.userInfo.addressLine1 && state.userInfo.state
-                      ? "Auto-filled and locked - do not edit"
-                      : ""
-                  }
                 />
-                {!!state.userInfo.addressLine1 && !!state.userInfo.state && (
-                  <p className="mt-1 text-xs text-stone-400">
-                    Auto-filled from address • Locked for accuracy
-                  </p>
-                )}
               </div>
-            </div>
-            <div>
-              <label className="block mb-2 font-medium text-stone-700">
-                ZIP Code *
-              </label>
-              <input
-                type="text"
+
+              <Input
+                label="ZIP code *"
                 value={state.userInfo.zip}
                 onChange={(e) =>
                   updateState({
                     userInfo: { ...state.userInfo, zip: e.target.value },
                   })
                 }
-                className="w-full p-3 border border-stone-300 rounded-lg bg-stone-50 focus:ring-2 focus:ring-stone-500 focus:border-stone-500 transition-colors"
-                required
                 placeholder="94102"
                 readOnly={!!state.userInfo.addressLine1 && !!state.userInfo.zip}
-                title={
-                  state.userInfo.addressLine1 && state.userInfo.zip
-                    ? "Auto-filled from address"
-                    : ""
-                }
               />
-            </div>
-            <div>
-              <label className="block mb-2 font-medium text-stone-700">
-                Email
-              </label>
-              <input
+
+              <Input
+                label="Email (optional)"
                 type="email"
                 value={state.userInfo.email}
                 onChange={(e) =>
@@ -342,115 +287,117 @@ export default function CheckoutPage() {
                     userInfo: { ...state.userInfo, email: e.target.value },
                   })
                 }
-                className="w-full p-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-stone-500 transition-colors"
+                placeholder="your@email.com"
               />
             </div>
-          </div>
+          </Card>
 
-          <LegalDisclaimer variant="elegant" className="mb-6" />
+          {/* Order Summary */}
+          <Card padding="lg">
+            <h2 className="text-heading-md text-text-primary mb-6">
+              Order Summary
+            </h2>
 
-          <div className="mb-6 p-5 bg-stone-50 border border-stone-200 rounded-lg">
-            <p className="font-semibold mb-3 text-stone-800">
-              Procedural Submission Summary
-            </p>
-            <div className="space-y-2 text-sm text-stone-600">
+            <div className="space-y-3 text-body">
               <div className="flex justify-between">
-                <span className="text-stone-500">City:</span>
-                <span className="text-stone-800 font-medium">
+                <span className="text-text-secondary">City</span>
+                <span className="text-text-primary font-medium">
                   {formatCityName(state.cityId)}
                 </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-stone-500">Citation:</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-stone-800">
-                    {state.citationNumber || "Pending"}
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Citation</span>
+                <span className="font-mono text-text-primary">
+                  {state.citationNumber || "Pending"}
+                </span>
+              </div>
+              {clericalId && (
+                <div className="flex justify-between">
+                  <span className="text-text-secondary">Reference ID</span>
+                  <span className="font-mono text-caption bg-bg-subtle px-2 py-0.5 rounded">
+                    {clericalId}
                   </span>
-                  {clericalId && (
-                    <span className="px-2 py-0.5 bg-stone-200 text-stone-600 text-xs font-mono rounded">
-                      {clericalId}
-                    </span>
-                  )}
                 </div>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stone-500">Submission Type:</span>
-                <span className="text-stone-800">
-                  Certified Mail with Tracking
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-stone-500">Service:</span>
-                <span className="text-stone-800">
-                  Procedural Compliance Document Preparation
-                </span>
+              )}
+              <div className="border-t border-border pt-3 mt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-text-primary font-medium">Total</span>
+                  <span className="text-2xl font-semibold text-text-primary">
+                    {formatPrice(totalFee)}
+                  </span>
+                </div>
+                <p className="text-caption text-text-muted mt-2">
+                  Includes appeal letter preparation and certified mailing.
+                </p>
               </div>
             </div>
-          </div>
+          </Card>
 
-          {/* Total Procedural Fee */}
-          <div className="mb-6 p-4 bg-stone-100 border border-stone-300 rounded-lg">
-            <div className="flex justify-between items-center">
-              <span className="font-semibold text-stone-800">
-                Total Procedural Fee
-              </span>
-              <span className="text-2xl font-light text-stone-800">
-                {formatPrice(totalFee)}
-              </span>
-            </div>
-            <p className="text-xs text-stone-500 mt-2">
-              Includes professional appeal letter, certified mailing with
-              tracking, and delivery proof.
+          {/* UPL Terms */}
+          <Alert variant="warning" title="Important">
+            <p className="mb-3">
+              This is a <strong>document preparation service only</strong>. We
+              do not provide legal advice, legal representation, or guarantees
+              about outcomes.
             </p>
-          </div>
+            <p>
+              The municipal authority will review your appeal and make the final
+              decision. This fee is non-refundable regardless of the outcome.
+            </p>
+          </Alert>
 
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <label className="flex items-start cursor-pointer">
-              <input
-                type="checkbox"
-                checked={acceptedTerms}
-                onChange={(e) => setAcceptedTerms(e.target.checked)}
-                className="mt-1 mr-3 h-5 w-5 text-stone-800 border-stone-300 rounded focus:ring-stone-500"
-              />
-              <span className="text-sm text-stone-800">
-                I understand I am purchasing{" "}
-                <strong>
-                  procedural compliance and document preparation services only
-                </strong>
-                . The outcome of my appeal is determined solely by the municipal
-                authority. This fee is non-refundable regardless of the citation
-                outcome. I have reviewed the{" "}
-                <Link href="/refund" className="underline hover:text-amber-900">
-                  Refund Policy
-                </Link>
-                .
-              </span>
-            </label>
-          </div>
+          {/* Terms Checkbox */}
+          <label className="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-1 mr-3 h-5 w-5 text-primary border-border rounded focus:ring-primary/50 cursor-pointer"
+            />
+            <span className="text-body-sm text-text-secondary">
+              I understand I am purchasing{" "}
+              <strong>document preparation services only</strong>. The outcome
+              of my appeal is determined solely by the municipal authority. This
+              fee is non-refundable regardless of the citation outcome.{" "}
+              <Link
+                href="/refund"
+                className="text-primary hover:text-primary-hover underline"
+              >
+                Read full terms
+              </Link>
+              .
+            </span>
+          </label>
 
+          {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
+            <Alert variant="error" dismissible onDismiss={() => setError(null)}>
+              {error}
+            </Alert>
           )}
 
-          <div className="flex justify-between items-center pt-4 border-t border-stone-200">
+          {/* Actions */}
+          <div className="flex justify-between items-center pt-4 border-t border-border">
             <Link
               href="/appeal/signature"
-              className="text-stone-600 hover:text-stone-800 transition-colors"
+              className="text-body text-text-secondary hover:text-text-primary transition-colors"
             >
               ← Back
             </Link>
-            <button
+            <Button
               onClick={handleCheckout}
+              loading={loading}
               disabled={loading || !acceptedTerms}
-              className="bg-stone-900 hover:bg-stone-800 text-white px-8 py-4 rounded-lg font-medium text-lg transition-colors disabled:bg-stone-400 disabled:cursor-not-allowed"
+              className="min-w-[200px]"
             >
-              {loading ? "Processing..." : "Complete Procedural Fee →"}
-            </button>
+              {loading ? "Processing..." : "Proceed to Payment →"}
+            </Button>
           </div>
+
+          {/* Full Disclaimer */}
+          <LegalDisclaimer variant="elegant" className="mt-6" />
         </div>
       </div>
-    </div>
+    </main>
   );
 }

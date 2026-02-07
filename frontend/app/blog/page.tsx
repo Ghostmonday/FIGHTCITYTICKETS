@@ -1,5 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { config } from "../lib/config";
 import { loadBlogPosts } from "../lib/seo-data";
 
 export const metadata: Metadata = {
@@ -21,7 +22,7 @@ export default function BlogIndexPage() {
   const postsByCity: Record<string, typeof posts> = {};
   posts.forEach((post) => {
     const cityMatch = post.title.match(
-      /(phoenix|san francisco|los angeles|new york|chicago|seattle|dallas|houston|denver|portland|philadelphia|miami|atlanta|boston|baltimore|detroit|minneapolis|charlotte|louisville|salt lake city|oakland|sacramento|san diego)/i,
+      /(phoenix|san francisco|los angeles|new york|chicago|seattle|dallas|houston|denver|portland|philadelphia|miami|atlanta|boston|baltimore|detroit|minneapolis|charlotte|louisville|salt lake city|oakland|sacramento|san diego)/i
     );
     const city = cityMatch ? cityMatch[0] : "Other";
     if (!postsByCity[city]) {
@@ -64,10 +65,10 @@ export default function BlogIndexPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {posts.map((post) => {
               const cityMatch = post.title.match(
-                /(phoenix|san francisco|los angeles|new york|chicago|seattle|dallas|houston|denver|portland|philadelphia|miami|atlanta|boston|baltimore|detroit|minneapolis|charlotte|louisville|salt lake city|oakland|sacramento|san diego)/i,
+                /(phoenix|san francisco|los angeles|new york|chicago|seattle|dallas|houston|denver|portland|philadelphia|miami|atlanta|boston|baltimore|detroit|minneapolis|charlotte|louisville|salt lake city|oakland|sacramento|san diego)/i
               );
               const violationMatch = post.title.match(
-                /(PCC \d+-\d+[a-z]?|Section \d+\.\d+\.\d+[\(a-z\)]?|Section \d+[a-z]?)/i,
+                /(PCC \d+-\d+[a-z]?|Section \d+\.\d+\.\d+[\(a-z\)]?|Section \d+[a-z]?)/i
               );
 
               return (

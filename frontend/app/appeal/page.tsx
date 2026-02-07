@@ -1,10 +1,12 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState, Suspense } from "react";
-import { useAppeal } from "../lib/appeal-context";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import LegalDisclaimer from "../../components/LegalDisclaimer";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { useAppeal } from "../lib/appeal-context";
 
 // Force dynamic rendering - this page uses client-side context
 export const dynamic = "force-dynamic";
@@ -65,61 +67,87 @@ function AppealPageContent() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-          <h1 className="text-2xl font-bold mb-2">
-            Get Your {formatCityName(state.cityId)} Ticket Dismissed
-          </h1>
-          <p className="text-gray-700 mb-2 font-medium">
-            You&apos;re about to save money and protect your record.
-          </p>
-          <p className="text-gray-600">Citation: {state.citationNumber}</p>
-        </div>
-
-        <div className="flex justify-between mb-8">
-          {steps.map((s) => (
-            <div key={s.num} className="flex-1 text-center">
-              <div
-                className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${
-                  step >= s.num
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-200 text-gray-600"
-                }`}
-              >
-                {s.num}
+    <main className="min-h-screen bg-bg-page">
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        {/* Progress Steps */}
+        <div className="mb-8">
+          <div className="flex justify-between">
+            {steps.map((s) => (
+              <div key={s.num} className="flex-1 text-center">
+                <div
+                  className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${step >= s.num
+                      ? "bg-primary text-white"
+                      : "bg-bg-subtle text-text-muted"
+                    }`}
+                >
+                  {s.num}
+                </div>
+                <p
+                  className={`text-body-sm ${step >= s.num
+                      ? "text-text-primary font-medium"
+                      : "text-text-muted"
+                    }`}
+                >
+                  {s.name}
+                </p>
               </div>
-              <p className="text-sm font-medium">{s.name}</p>
-            </div>
-          ))}
+            ))}
+          </div>
+          <div className="relative mt-2">
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-border" />
+            <div
+              className="absolute top-0 left-0 h-0.5 bg-primary transition-all duration-300"
+              style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
+            />
+          </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-xl font-bold mb-4">Step 1: Upload Photos</h2>
-          <p className="text-gray-600 mb-6">
-            Upload photos of your parking situation, meter, signs, or other
-            evidence.
+        {/* Header Card */}
+        <Card padding="lg" className="mb-6">
+          <h1 className="text-heading-lg text-text-primary mb-2">
+            Appeal Your {formatCityName(state.cityId)} Ticket
+          </h1>
+          <p className="text-body text-text-secondary mb-4">
+            You&apos;re almost done. Add evidence and review your appeal before
+            submitting.
           </p>
-          <LegalDisclaimer variant="compact" className="mb-6" />
-
-          <div className="mb-6">
-            <Link
-              href="/appeal/pricing"
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 inline-block"
-            >
-              Choose Mailing Option →
-            </Link>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-bg-subtle rounded-lg">
+            <span className="text-caption text-text-muted">Citation:</span>
+            <span className="font-mono text-body-sm text-text-primary">
+              {state.citationNumber || "Not provided"}
+            </span>
           </div>
+        </Card>
 
+        {/* Next Step */}
+        <Card padding="lg" className="mb-6">
+          <h2 className="text-heading-md text-text-primary mb-4">
+            Step 1: Upload Evidence
+          </h2>
+          <p className="text-body text-text-secondary mb-6">
+            Add photos of parking signs, meters, or anything that supports your
+            appeal.
+          </p>
+
+          <Link href="/appeal/camera">
+            <Button>Upload Photos →</Button>
+          </Link>
+        </Card>
+
+        {/* Quick Links */}
+        <div className="flex flex-wrap gap-4 mb-6">
           <Link
-            href="/appeal/camera"
-            className="text-blue-600 hover:text-blue-800"
+            href="/appeal/review"
+            className="text-body text-primary hover:text-primary-hover font-medium"
           >
-            Or skip to photos →
+            Skip to review →
           </Link>
         </div>
+
+        {/* Legal Disclaimer */}
+        <LegalDisclaimer variant="compact" />
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -127,10 +155,10 @@ export default function AppealPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="min-h-screen bg-bg-page flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading...</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mx-auto mb-4" />
+            <p className="text-body text-text-secondary">Loading...</p>
           </div>
         </div>
       }

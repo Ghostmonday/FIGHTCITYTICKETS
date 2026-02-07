@@ -71,7 +71,7 @@ export function loadBlogPosts(): BlogPost[] {
     }) as BlogPost[];
 
     blogPostsCache = records.filter(
-      (post) => post.title && post.slug && post.content,
+      (post) => post.title && post.slug && post.content
     );
     return blogPostsCache;
   } catch (error) {
@@ -121,7 +121,7 @@ export function loadSearchPhrases(): SearchPhrase[] {
     }) as SearchPhrase[];
 
     searchPhrasesCache = records.filter(
-      (phrase) => phrase.city_slug && phrase.violation_code,
+      (phrase) => phrase.city_slug && phrase.violation_code
     );
     return searchPhrasesCache;
   } catch (error) {
@@ -158,7 +158,7 @@ export function getSearchPhrasesByCity(citySlug: string): SearchPhrase[] {
  * Get search phrases for a specific violation code
  */
 export function getSearchPhrasesByViolation(
-  violationCode: string,
+  violationCode: string
 ): SearchPhrase[] {
   const phrases = loadSearchPhrases();
   return phrases.filter((phrase) => phrase.violation_code === violationCode);
@@ -170,7 +170,7 @@ export function getSearchPhrasesByViolation(
 export function getSearchPhrase(
   citySlug: string,
   violationCode: string,
-  location: string,
+  location: string
 ): SearchPhrase | null {
   const phrases = loadSearchPhrases();
   return (
@@ -178,7 +178,7 @@ export function getSearchPhrase(
       (phrase) =>
         phrase.city_slug === citySlug &&
         phrase.violation_code === violationCode &&
-        phrase.hot_location.toLowerCase() === location.toLowerCase(),
+        phrase.hot_location.toLowerCase() === location.toLowerCase()
     ) || null
   );
 }
