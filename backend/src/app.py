@@ -25,6 +25,7 @@ from .middleware.errors import (
     error_response,
     unhandled_exception_handler,
 )
+from .middleware.resilience import CircuitOpenError
 from .middleware.rate_limit import (
     get_rate_limiter,
     _rate_limit_exceeded_handler,
@@ -372,6 +373,26 @@ async def internal_error_handler(request: Request, exc):
 
 # Register APIError exception handler
 app.add_exception_handler(APIError, api_error_handler)
+
+
+@app.exception_handler(CircuitOpenError)
+async def circuit_open_handler(request: Request, exc: CircuitOpenError):
+    """Handle circuit breaker open errors."""
+    from fastapi.responses import JSONResponse
+
+    logger.warning(f"Circuit Open Error [request_id={get_request_id(request)}]: {exc}")
+
+    return JSONResponse(
+        status_code=503,
+        content=error_response(
+            error_code=ErrorCode.EXTERNAL_SERVICE_UNAVAILABLE,
+            message=str(exc),
+            status_code=503,
+            request=request,
+            details={"circuit": "open"},
+            suggestion="Please try again later.",
+        ),
+    )
 
 
 if __name__ == "__main__":

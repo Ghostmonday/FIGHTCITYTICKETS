@@ -2,10 +2,11 @@
 Stripe Payment Service for Fight City Tickets
 
 Handles Stripe checkout session creation, webhook verification, and payment status.
-Integrates with citation validation and mail fulfillment.
+Integrates with citation validation.
 """
 
-from dataclasses import dataclass, field
+import asyncio
+from dataclasses import dataclass
 from typing import Any, Optional
 import time
 import logging
@@ -14,9 +15,7 @@ import stripe
 
 from ..config import settings
 from ..middleware.resilience import CircuitBreaker, create_stripe_circuit
-from .appeal_storage import get_appeal_storage
 from .citation import CitationValidator
-from .mail import AppealLetterRequest, send_appeal_letter
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +30,10 @@ STRIPE_CIRCUIT_TIMEOUT = 300  # 5 minutes
 
 @dataclass
 class CheckoutRequest:
-    """Complete checkout request data."""
+    """
+    Complete checkout request data.
+    DEPRECATED: Use individual parameters in create_session instead.
+    """
 
     # Required fields (no defaults) must come first
     citation_number: str
@@ -39,8 +41,6 @@ class CheckoutRequest:
     user_address_line1: str
     
     # Optional fields with defaults
-    # CERTIFIED-ONLY MODEL: All appeals use Certified Mail with tracking
-    # No subscription, no standard option - single $19.95 transaction
     appeal_type: str = "certified"
     user_address_line2: str | None = None
     user_city: str = ""
@@ -51,15 +51,12 @@ class CheckoutRequest:
     appeal_reason: str = ""
     email: str | None = None
     license_plate: str | None = None
-    city_id: str | None = None  # BACKLOG PRIORITY 3: Multi-city support
-    section_id: str | None = None  # BACKLOG PRIORITY 3: Multi-city support
-    # AUDIT FIX: Database-first - IDs from pre-created records
+    city_id: str | None = None
+    section_id: str | None = None
     payment_id: int | None = None
     intake_id: int | None = None
     draft_id: int | None = None
-    # CYCLE 3: Chargeback prevention - user acknowledgment of service terms
     user_attestation: bool = False
-
 
 
 @dataclass
@@ -98,10 +95,6 @@ class StripeService:
     CIRCUIT_FAILURE_THRESHOLD = 5
     CIRCUIT_TIMEOUT = 300  # 5 minutes
 
-    # Webhook retry configuration
-    MAX_WEBHOOK_RETRIES = 10
-    WEBHOOK_RETRY_DELAY = 5  # seconds
-
     def __init__(self) -> None:
         """Initialize Stripe with API key from settings."""
         stripe.api_key = settings.stripe_secret_key
@@ -122,10 +115,6 @@ class StripeService:
         # Circuit breaker for Stripe API resilience
         self._circuit_breaker = create_stripe_circuit(fallback=self._stripe_fallback)
 
-        # Webhook storage for failed events
-        self._failed_webhooks: list[dict] = []
-        self._webhook_retry_count: dict[str, int] = {}
-
     def _stripe_fallback(self) -> dict[str, Any]:
         """Fallback when Stripe circuit is open."""
         return {
@@ -134,124 +123,71 @@ class StripeService:
             "fallback": True,
         }
 
-    def _store_failed_webhook(self, event: dict[str, Any], error: str) -> None:
-        """Store failed webhook event for later retry."""
-        event_id = event.get("id", "unknown")
-        webhook_data = {
-            "event_id": event_id,
-            "event_type": event.get("type"),
-            "event": event,
-            "error": error,
-            "timestamp": time.time(),
-            "retry_count": 0,
-        }
-        self._failed_webhooks.append(webhook_data)
-        self._webhook_retry_count[event_id] = self._webhook_retry_count.get(event_id, 0) + 1
-
-        # Alert admin after 3 failures
-        if self._webhook_retry_count[event_id] >= 3:
-            logger.error(f"ALERT: Webhook {event_id} failed 3 times. Event stored for manual review.")
-
-    def _get_failed_webhooks(self) -> list[dict]:
-        """Get all failed webhooks awaiting retry."""
-        return [w for w in self._failed_webhooks if w["retry_count"] < self.MAX_WEBHOOK_RETRIES]
-
-    def _retry_failed_webhooks(self) -> int:
-        """
-        Retry failed webhooks. Returns number of successfully processed webhooks.
-        
-        NOTE: This is a placeholder implementation. Actual retry should call the webhook
-        processing endpoint with the stored event data. For now, webhooks are retried
-        manually via the /webhook/retry admin endpoint.
-        """
-        retry_count = 0
-        remaining = []
-
-        for webhook in self._failed_webhooks:
-            if webhook["retry_count"] >= self.MAX_WEBHOOK_RETRIES:
-                logger.error(
-                    f"Webhook {webhook['event_id']} exceeded max retries ({self.MAX_WEBHOOK_RETRIES}), "
-                    "needs manual review via /webhook/retry endpoint"
-                )
-                continue
-
-            try:
-                # Log retry attempt
-                logger.info(
-                    f"Retrying webhook {webhook['event_id']} (attempt {webhook['retry_count'] + 1}/{self.MAX_WEBHOOK_RETRIES})"
-                )
-                
-                # TODO: Implement actual retry by calling webhook processing logic
-                # For now, increment retry count and log
-                webhook["retry_count"] += 1
-                webhook["last_retry"] = time.time()
-                retry_count += 1
-                remaining.append(webhook)
-                
-                # Note: Actual retry should be done via /webhook/retry admin endpoint
-                # which calls handle_checkout_session_completed with the stored event
-            except Exception as e:
-                logger.error(f"Error during retry for webhook {webhook['event_id']}: {e}")
-                remaining.append(webhook)
-
-        self._failed_webhooks = remaining
-        return retry_count
-
     def _with_retry(self, func, *args, **kwargs):
         """
-        Execute a function with retry logic for transient failures.
-
-        Args:
-            func: Function to execute
-            *args: Positional arguments
-            **kwargs: Keyword arguments
-
-        Returns:
-            Result of the function
-
-        Raises:
-            Exception: After all retries are exhausted
+        Execute a function with retry logic for transient failures (Synchronous).
         """
         last_exception = None
         for attempt in range(self.RETRY_COUNT):
             try:
                 return func(*args, **kwargs)
             except stripe.error.RateLimitError as e:
-                # Retry on rate limits
                 last_exception = e
                 if attempt < self.RETRY_COUNT - 1:
-                    delay = self.RETRY_DELAY * (2 ** attempt)  # Exponential backoff
+                    delay = self.RETRY_DELAY * (2 ** attempt)
                     time.sleep(delay)
             except stripe.error.APIConnectionError as e:
-                # Retry on network issues
                 last_exception = e
                 if attempt < self.RETRY_COUNT - 1:
                     delay = self.RETRY_DELAY * (2 ** attempt)
                     time.sleep(delay)
             except stripe.error.APIError as e:
-                # Retry on Stripe API errors (500-503)
                 last_exception = e
                 if attempt < self.RETRY_COUNT - 1:
                     delay = self.RETRY_DELAY * (2 ** attempt)
                     time.sleep(delay)
             except Exception as e:
-                # Don't retry other errors
                 raise e
 
-        # All retries exhausted
+        raise last_exception
+
+    async def _with_retry_async(self, func, *args, **kwargs):
+        """
+        Execute a function with retry logic for transient failures (Asynchronous).
+        """
+        last_exception = None
+        for attempt in range(self.RETRY_COUNT):
+            try:
+                # If func is async, await it. If sync, just call it?
+                # Usually we pass a sync function to run, or async coroutine?
+                # create_session passes a sync function `_create`.
+                # So we call it, but if it fails, we await sleep.
+                if asyncio.iscoroutinefunction(func):
+                    return await func(*args, **kwargs)
+                else:
+                    return func(*args, **kwargs)
+            except stripe.error.RateLimitError as e:
+                last_exception = e
+                if attempt < self.RETRY_COUNT - 1:
+                    delay = self.RETRY_DELAY * (2 ** attempt)
+                    await asyncio.sleep(delay)
+            except stripe.error.APIConnectionError as e:
+                last_exception = e
+                if attempt < self.RETRY_COUNT - 1:
+                    delay = self.RETRY_DELAY * (2 ** attempt)
+                    await asyncio.sleep(delay)
+            except stripe.error.APIError as e:
+                last_exception = e
+                if attempt < self.RETRY_COUNT - 1:
+                    delay = self.RETRY_DELAY * (2 ** attempt)
+                    await asyncio.sleep(delay)
+            except Exception as e:
+                raise e
+
         raise last_exception
 
     def get_price_id(self, appeal_type: str = "certified") -> str:
-        """
-        Get Stripe price ID for certified appeals only.
-
-        Args:
-            appeal_type: Ignored - only certified is supported
-
-        Returns:
-            Stripe price ID for certified service
-        """
-        # CERTIFIED-ONLY: Always return certified price
+        """Get Stripe price ID for certified appeals only."""
         return self.price_ids.get("certified")
 
     def validate_checkout_request(
@@ -259,14 +195,8 @@ class StripeService:
     ) -> tuple[bool, str | None]:
         """
         Validate checkout request data.
-
-        Args:
-            request: CheckoutRequest object
-
-        Returns:
-            Tuple of (is_valid, error_message)
+        DEPRECATED: Use explicit validation in route handlers.
         """
-        # Validate citation number
         validator = CitationValidator()
         validation = validator.validate_citation(
             request.citation_number, request.violation_date, request.license_plate
@@ -275,14 +205,9 @@ class StripeService:
         if not validation.is_valid:
             return False, validation.error_message
 
-        # Check if past deadline
         if validation.is_past_deadline:
             return False, "Appeal deadline has passed"
 
-        # CERTIFIED-ONLY: No validation needed - always certified
-        # All appeals use Certified Mail with Electronic Return Receipt
-
-        # Validate required user fields
         if not request.user_name.strip():
             return False, "Name is required"
 
@@ -298,12 +223,10 @@ class StripeService:
         if not request.user_zip.strip():
             return False, "ZIP code is required"
 
-        # Validate state format (2 letters)
         state_clean = request.user_state.strip()
         if len(state_clean) != STATE_CODE_LENGTH:
             return False, "State must be 2-letter code (e.g., CA)"
 
-        # Validate ZIP code format (5 digits, optionally +4)
         zip_clean = request.user_zip.strip().replace("-", "").replace(" ", "")
         if len(zip_clean) == 5:
             if not zip_clean.isdigit():
@@ -316,47 +239,82 @@ class StripeService:
 
         return True, None
 
-    def create_checkout_session(self, request: CheckoutRequest) -> CheckoutResponse:
+    async def create_session(
+        self,
+        amount: int,
+        currency: str,
+        success_url: str,
+        cancel_url: str,
+        metadata: dict[str, str],
+        customer_email: Optional[str] = None,
+        payment_description: Optional[str] = None,
+        line_items: Optional[list[dict]] = None,
+    ) -> dict[str, Any]:
+        """
+        Create a Stripe checkout session with explicit parameters.
+        Uses circuit breaker and retry logic.
+        """
+        def _create():
+            args = {
+                "mode": "payment",
+                "payment_method_types": ["card"],
+                "success_url": success_url,
+                "cancel_url": cancel_url,
+                "metadata": metadata,
+                "billing_address_collection": "required",
+                "shipping_address_collection": {"allowed_countries": ["US"]},
+            }
+            if customer_email:
+                args["customer_email"] = customer_email
+
+            if line_items:
+                args["line_items"] = line_items
+            else:
+                args["line_items"] = [{
+                    "price_data": {
+                        "currency": currency,
+                        "product_data": {
+                            "name": payment_description or "Legal Service Fee",
+                        },
+                        "unit_amount": amount,
+                    },
+                    "quantity": 1,
+                }]
+
+            return stripe.checkout.Session.create(**args)
+
+        async def _create_with_retry():
+            return await self._with_retry_async(_create)
+
+        # Use call (async) because _create_with_retry is async
+        return await self._circuit_breaker.call(_create_with_retry)
+
+    def create_checkout_session_legacy(self, request: CheckoutRequest) -> CheckoutResponse:
         """
         Create a Stripe checkout session for appeal payment.
-
-        Args:
-            request: Complete checkout request data
-
-        Returns:
-            CheckoutResponse with session details
+        DEPRECATED: Use create_session instead.
         """
-        # Validate request
         is_valid, error_msg = self.validate_checkout_request(request)
         if not is_valid:
             msg = f"Invalid checkout request: {error_msg}"
             raise ValueError(msg)
 
-        # CERTIFIED-ONLY: Always use certified price
         price_id = self.get_price_id()
 
-        # Prepare metadata for webhook
-        # AUDIT FIX: Database-first - store only IDs in metadata, not full data
-        # CYCLE 3: Chargeback prevention - add dispute armor metadata
         metadata: dict[str, str] = {
-            # Only store IDs for webhook lookup (database-first approach)
             "payment_id": str(request.payment_id) if request.payment_id else "",
             "intake_id": str(request.intake_id) if request.intake_id else "",
             "draft_id": str(request.draft_id) if request.draft_id else "",
-            # Minimal citation info for logging/debugging
             "citation_number": request.citation_number[:100],
             "appeal_type": request.appeal_type,
-            # BACKLOG PRIORITY 3: Multi-city support - store city_id in metadata
             "city_id": (request.city_id or "")[:50],
             "section_id": (request.section_id or "")[:50],
-            # CYCLE 3: DISPUTE ARMOR - Evidence for chargeback defense
             "service_type": "clerical_document_preparation",
             "user_attestation": "true" if request.user_attestation else "false",
             "delivery_method": "physical_mail_via_lob",
         }
 
         try:
-            # Create Stripe checkout session with retry logic
             def create_session():
                 return stripe.checkout.Session.create(
                     mode="payment",
@@ -396,15 +354,8 @@ class StripeService:
     def get_session_status(self, session_id: str) -> SessionStatus:
         """
         Get status of a checkout session.
-
-        Args:
-            session_id: Stripe checkout session ID
-
-        Returns:
-            SessionStatus object
         """
         try:
-            # Retrieve session with retry logic
             def retrieve_session():
                 return stripe.checkout.Session.retrieve(session_id)
 
@@ -418,7 +369,6 @@ class StripeService:
                 citation_number=session.metadata.get("citation_number")
                 if session.metadata
                 else None,
-                # CERTIFIED-ONLY: appeal_type is always "certified"
                 appeal_type="certified",
                 user_email=session.customer_email,
             )
@@ -430,13 +380,6 @@ class StripeService:
     def verify_webhook_signature(self, payload: bytes, signature: str) -> bool:
         """
         Verify Stripe webhook signature.
-
-        Args:
-            payload: Raw request body
-            signature: Stripe signature header
-
-        Returns:
-            True if signature is valid
         """
         try:
             stripe.Webhook.construct_event(
@@ -447,185 +390,3 @@ class StripeService:
             return False
         except Exception:
             return False
-
-    async def handle_webhook_event(self, event: dict[str, Any]) -> dict[str, Any]:
-        """
-        Handle Stripe webhook event.
-
-        Args:
-            event: Stripe event object
-
-        Returns:
-            Dictionary with processing result
-        """
-        event_type = event.get("type")
-        data = event.get("data", {})
-        object_data = data.get("object", {})
-
-        result: dict[str, Any] = {
-            "event_type": event_type,
-            "processed": False,
-            "message": "",
-            "metadata": {},
-        }
-
-        # Handle checkout.session.completed event
-        if event_type == "checkout.session.completed":
-            session = object_data
-            session_id = session.get("id")
-
-            # Extract metadata for fulfillment
-            metadata = session.get("metadata", {})
-            payment_status = session.get("payment_status")
-            intake_id = metadata.get("intake_id")
-
-            if payment_status == "paid":
-                # IDEMPOTENCY CHECK: Prevent duplicate processing if Stripe retries webhook
-                storage = get_appeal_storage()
-                existing_appeal = None
-                if intake_id:
-                    existing_appeal = storage.get_appeal(intake_id)
-                    if existing_appeal and existing_appeal.payment_status in [
-                        "paid",
-                        "processing",
-                        "mailed",
-                    ]:
-                        result["processed"] = True
-                        result["message"] = (
-                            f"Duplicate webhook: Appeal {intake_id} already {existing_appeal.payment_status}"
-                        )
-                        return result
-
-                result["processed"] = True
-                result["message"] = "Payment successful, triggering mail fulfillment"
-                result["metadata"] = metadata
-
-                # Update payment status in storage
-                if intake_id:
-                    storage.update_payment_status(intake_id, session_id, "paid")
-
-                # TRIGGER MAIL SERVICE: Send appeal letter after successful payment
-                if intake_id and existing_appeal:
-                    try:
-                        print(f"Triggering mail service for intake {intake_id}...")
-
-                        # Build AppealLetterRequest from stored appeal data
-                        mail_request = AppealLetterRequest(
-                            citation_number=existing_appeal.citation_number,
-                            appeal_type=existing_appeal.appeal_type,
-                            user_name=existing_appeal.user_name,
-                            user_address=existing_appeal.user_address,
-                            user_city=existing_appeal.user_city,
-                            user_state=existing_appeal.user_state,
-                            user_zip=existing_appeal.user_zip,
-                            letter_text=existing_appeal.appeal_letter_text,
-                        )
-
-                        # Send to Lob
-                        mail_result = await send_appeal_letter(mail_request)
-                        print(
-                            f"SUCCESS: Letter queued for intake {intake_id}, Lob ID: {mail_result.letter_id}"
-                        )
-
-                        # Update status to processing
-                        storage.update_payment_status(
-                            intake_id, session_id, "processing"
-                        )
-
-                    except Exception as e:
-                        # CRITICAL FAILURE: Money taken, letter failed
-                        error_msg = f"CRITICAL: Payment received but letter failed for {intake_id}: {str(e)}"
-                        print(error_msg)
-                        result["message"] = error_msg
-                        # TODO: Alert via Sentry/PagerDuty
-
-            else:
-                result["message"] = f"Payment not completed: {payment_status}"
-
-        # Handle payment_intent.succeeded (backup)
-        elif event_type == "payment_intent.succeeded":
-            result["processed"] = True
-            result["message"] = "Payment intent succeeded"
-
-        # Handle payment_intent.payment_failed
-        elif event_type == "payment_intent.payment_failed":
-            result["message"] = "Payment failed"
-
-        return result
-
-
-# Helper function for quick checkout
-def create_checkout_link(
-    citation_number: str,
-    user_name: str = "",
-    user_address: str = "",
-    user_city: str = "",
-    user_state: str = "",
-    user_zip: str = "",
-    violation_date: str = "",
-    vehicle_info: str = "",
-    appeal_reason: str = "",
-    email: str | None = None,
-) -> str | None:
-    """
-    Quick helper function to create checkout link.
-
-    Args:
-        citation_number: The citation number to appeal
-        user_*: User address and personal info
-        violation_date, vehicle_info, appeal_reason: Appeal details
-        email: User email for receipts
-
-    Returns:
-        Stripe checkout URL or None on error
-    """
-    try:
-        service = StripeService()
-
-        request = CheckoutRequest(
-            citation_number=citation_number,
-            appeal_type="certified",
-            user_name=user_name,
-            user_address_line1=user_address,
-            user_city=user_city,
-            user_state=user_state,
-            user_zip=user_zip,
-            violation_date=violation_date,
-            vehicle_info=vehicle_info,
-            appeal_reason=appeal_reason,
-            email=email,
-        )
-
-        response = service.create_checkout_session(request)
-        return response.checkout_url
-
-    except Exception as e:
-        print(f"Error creating checkout link: {e}")
-        return None
-
-
-# Test function
-if __name__ == "__main__":
-    print("Testing Stripe Service")
-    print("=" * 50)
-
-    # Note: This requires Stripe API keys to be set
-    try:
-        service = StripeService()
-        print(f"Stripe service initialized (mode: {service.mode})")
-
-        # CERTIFIED-ONLY: Only test certified price
-        certified_price = service.get_price_id()
-        print(
-            f"Price ID loaded - Certified: {certified_price[:20] if certified_price else 'NOT SET'}..."
-        )
-
-        print("\nNote: Full testing requires valid Stripe API keys")
-        print("   Set STRIPE_SECRET_KEY in .env file to test checkout creation")
-
-    except Exception as e:
-        print(f"Error initializing Stripe service: {e}")
-        print("   Make sure stripe package is installed: pip install stripe")
-
-    print("\n" + "=" * 50)
-    print("Stripe Service Test Complete")

@@ -13,9 +13,9 @@ psycopg[binary]==3.2.3
 PyJWT==2.10.1
 httpx==0.28.1
 requests==2.32.3
-stripe==17.3.0
+stripe==14.3.0
 reportlab==4.2.5
-lob==2023-08-01  # Physical mail delivery via Lob.com API
+lob==4.5.4  # Physical mail delivery via Lob.com API
 
 # tests
 pytest==8.3.4

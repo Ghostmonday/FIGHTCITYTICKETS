@@ -7,6 +7,7 @@ Lob.com for certified and standard mail delivery.
 Author: Neural Draft LLC
 """
 
+import asyncio
 import base64
 import hashlib
 import io
@@ -14,6 +15,7 @@ import logging
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from functools import partial
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -110,6 +112,9 @@ class AppealLetterRequest:
         appeal_type: str = "certified",
         violation_date: Optional[str] = None,
         vehicle_info: Optional[str] = None,
+        signature_data: Optional[str] = None,
+        city_id: Optional[str] = None,
+        section_id: Optional[str] = None,
     ):
         self.citation_number = citation_number
         self.user_name = user_name
@@ -125,6 +130,9 @@ class AppealLetterRequest:
         self.appeal_type = appeal_type
         self.violation_date = violation_date
         self.vehicle_info = vehicle_info
+        self.signature_data = signature_data
+        self.city_id = city_id
+        self.section_id = section_id
         # Generate unique Clerical ID for tracking
         self.clerical_id = self._generate_clerical_id()
 
@@ -144,12 +152,16 @@ class MailResult:
         lob_id: Optional[str] = None,
         error_message: Optional[str] = None,
         delivery_date: Optional[str] = None,
+        letter_id: Optional[str] = None,
+        expected_delivery: Optional[str] = None,
     ):
         self.success = success
         self.tracking_number = tracking_number
         self.lob_id = lob_id
         self.error_message = error_message
         self.delivery_date = delivery_date
+        self.letter_id = letter_id or lob_id
+        self.expected_delivery = expected_delivery or delivery_date
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
@@ -159,6 +171,8 @@ class MailResult:
             "lob_id": self.lob_id,
             "error_message": self.error_message,
             "delivery_date": self.delivery_date,
+            "letter_id": self.letter_id,
+            "expected_delivery": self.expected_delivery,
         }
 
 
@@ -286,7 +300,8 @@ class LobMailService:
         else:
             logger.warning("LobMailService initialized but no API key configured")
 
-    def _generate_appeal_pdf(self, request: AppealLetterRequest) -> str:
+    @staticmethod
+    def _generate_appeal_pdf(request: AppealLetterRequest) -> str:
         """
         Generate a professional PDF for the procedural compliance submission.
 
@@ -515,8 +530,11 @@ class LobMailService:
             agency_info = self._get_agency_address(request.agency_name)
             agency_address = agency_info["address"]
 
-            # Generate PDF
-            pdf_base64 = self._generate_appeal_pdf(request)
+            # Generate PDF (run in executor to avoid blocking event loop)
+            loop = asyncio.get_event_loop()
+            pdf_base64 = await loop.run_in_executor(
+                None, self._generate_appeal_pdf, request
+            )
             pdf_bytes = base64.b64decode(pdf_base64)
 
             if self._use_lob and self._lob_client:
@@ -586,14 +604,19 @@ class LobMailService:
                 country="US",
             )
 
-            # Create the letter
-            letter_obj = self._lob_client.letters.create(
-                from_address=from_address.to_dict(),
-                to_address=to_address.to_dict(),
-                file=pdf_bytes,
-                file_type="pdf",
-                tracking=True if request.appeal_type == "certified" else False,
-            )
+            # Define the blocking function
+            def _create_letter():
+                return self._lob_client.letters.create(
+                    from_address=from_address.to_dict(),
+                    to_address=to_address.to_dict(),
+                    file=pdf_bytes,
+                    file_type="pdf",
+                    tracking=True if request.appeal_type == "certified" else False,
+                )
+
+            # Run blocking call in executor
+            loop = asyncio.get_event_loop()
+            letter_obj = await loop.run_in_executor(None, _create_letter)
 
             logger.info(f"Created Lob letter: {letter_obj.id}")
 
@@ -630,13 +653,19 @@ class LobMailService:
         try:
             import lob
 
-            verification = self._lob_client.us_verifications.create(
-                primary_line=address.address_line_1,
-                secondary_line=address.address_line_2 or "",
-                city=address.city,
-                state=address.state,
-                zip_code=address.zip_code,
-            )
+            # Run blocking call in executor
+            loop = asyncio.get_event_loop()
+
+            def _verify():
+                return self._lob_client.us_verifications.create(
+                    primary_line=address.address_line_1,
+                    secondary_line=address.address_line_2 or "",
+                    city=address.city,
+                    state=address.state,
+                    zip_code=address.zip_code,
+                )
+
+            verification = await loop.run_in_executor(None, _verify)
 
             return {
                 "verified": True,

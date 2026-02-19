@@ -156,8 +156,12 @@ class TestStripeWebhookIntegration:
             sig_header = "t={timestamp},v1={signature}"
 
             # Send webhook to endpoint
+            # Note: TestClient talks to app directly, so we use the internal path /webhook
+            # Nginx would map /api/webhook/stripe -> /webhook (if configured that way)
+            # But based on app.py, webhook router is mounted at /webhook
+            # and handle_stripe_webhook is at "" (root of router)
             response = client.post(
-                "/api/webhook/stripe",
+                "/webhook",
                 content=payload_str,
                 headers={"stripe-signature": sig_header},
             )
@@ -357,7 +361,7 @@ class TestFullIntegrationFlow:
 
         # Step 4: Simulate Stripe webhook
         webhook_payload = {
-            "id": "evt_e2e_{int(time.time())}",
+            "id": f"evt_e2e_{int(time.time())}",
             "type": "checkout.session.completed",
             "data": {
                 "object": {
@@ -388,7 +392,7 @@ class TestFullIntegrationFlow:
 
             # Send webhook
             response = client.post(
-                "/api/webhook/stripe",
+                "/webhook",
                 content=payload_str,
                 headers={"stripe-signature": sig_header},
             )
@@ -422,7 +426,7 @@ class TestFullIntegrationFlow:
         print("✅ Main service health check passed")
 
         # Test webhook health endpoint
-        response = client.get("/api/webhook/health")
+        response = client.get("/webhook/health")
         assert response.status_code == 200, "Webhook health should return 200"
         webhook_health = response.json()
         assert "status" in webhook_health, "Webhook health should contain status"

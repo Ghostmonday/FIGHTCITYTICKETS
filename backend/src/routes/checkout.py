@@ -347,7 +347,7 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
         # Create checkout session with comprehensive metadata
         # Use frontend_url if configured, otherwise derive from app_url
         frontend_base = getattr(settings, 'frontend_url', None) or f"{settings.app_url}"
-        checkout_session = stripe_svc.create_checkout_session(
+        checkout_session = await stripe_svc.create_session(
             amount=settings.fightcity_service_fee,
             currency="usd",
             success_url=f"{frontend_base}/success?session_id={{CHECKOUT_SESSION_ID}}",
