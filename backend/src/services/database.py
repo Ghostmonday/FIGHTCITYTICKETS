@@ -6,6 +6,7 @@ Uses SQLAlchemy with PostgreSQL for production-ready data persistence.
 """
 
 import logging
+import os
 import time
 from contextlib import contextmanager
 from typing import Any, Generator, Optional
