@@ -5,12 +5,7 @@ import { useAppeal } from "../../lib/appeal-context";
 import Link from "next/link";
 import AddressAutocomplete from "../../../components/AddressAutocomplete";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
-import { Button } from "../../../components/ui/Button";
-import { Card } from "../../../components/ui/Card";
-import { Input } from "../../../components/ui/Input";
-import { Alert } from "../../../components/ui/Alert";
 
-// Force dynamic rendering - this page uses client-side context
 export const dynamic = "force-dynamic";
 
 export default function CheckoutPage() {
@@ -21,7 +16,6 @@ export default function CheckoutPage() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [clericalId, setClericalId] = useState<string>("");
 
-  // Generate Clerical ID on component mount
   useEffect(() => {
     const generateClericalId = () => {
       const timestamp = Date.now().toString(36).toUpperCase();
@@ -54,51 +48,29 @@ export default function CheckoutPage() {
     if (!cityId) return "Your City";
     return (
       cityNames[cityId] ||
-      cityId
-        .replace(/us-|-/g, " ")
-        .replace(/_/g, " ")
-        .split(" ")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ")
+      cityId.replace(/us-|-/g, " ").replace(/_/g, " ").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
     );
   };
 
-  // CERTIFIED-ONLY MODEL: $39 flat rate
-  const totalFee = 3900; // $39.00 in cents
+  const totalFee = 3900;
 
-  const formatPrice = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
-  };
+  const formatPrice = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
   const handleCheckout = async () => {
-    // Block payment unless terms are accepted
     if (!acceptedTerms) {
       setError("Please acknowledge the terms to proceed");
       return;
     }
-
     if (!state.userInfo.name || !state.userInfo.addressLine1) {
       setError("Please complete your information");
       return;
     }
-
-    // Validate address components
     if (!state.userInfo.city || !state.userInfo.state || !state.userInfo.zip) {
-      setError(
-        "Please ensure your address is complete. Use the autocomplete for best results."
-      );
+      setError("Please ensure your address is complete");
       return;
     }
-
-    // Validate ZIP code format (basic check)
     if (!/^\d{5}(-\d{4})?$/.test(state.userInfo.zip)) {
-      setError("Please enter a valid ZIP code (e.g., 94102 or 94102-1234)");
-      return;
-    }
-
-    // Validate state format (2 letters)
-    if (!/^[A-Z]{2}$/.test(state.userInfo.state)) {
-      setError("Please enter a valid 2-letter state code (e.g., CA, NY)");
+      setError("Please enter a valid ZIP code");
       return;
     }
 
@@ -106,37 +78,25 @@ export default function CheckoutPage() {
     setError(null);
 
     try {
-      const apiBase =
-        process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
-      const response = await fetch(
-        `${apiBase}/checkout/create-appeal-checkout`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            citation_number: state.citationNumber,
-            city_id: state.cityId,
-            section_id: state.sectionId,
-            user_attestation: acceptedTerms,
-          }),
-        }
-      );
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+      const response = await fetch(`${apiBase}/checkout/create-appeal-checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          citation_number: state.citationNumber,
+          city_id: state.cityId,
+          section_id: state.sectionId,
+          user_attestation: acceptedTerms,
+        }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.detail || "Failed to create checkout session"
-        );
+        throw new Error(errorData.detail || "Failed to create checkout session");
       }
 
       const data = await response.json();
-
-      // Store Clerical ID from response if available
-      if (data.clerical_id) {
-        setClericalId(data.clerical_id);
-      }
-
-      // Redirect to Stripe checkout
+      if (data.clerical_id) setClericalId(data.clerical_id);
       window.location.href = data.checkout_url;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Checkout failed");
@@ -145,258 +105,204 @@ export default function CheckoutPage() {
   };
 
   return (
-    <main className="min-h-screen bg-bg-page">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <main className="min-h-[calc(100vh-5rem)] px-4 py-8 theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
+      <div className="max-w-lg mx-auto step-content">
+        
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-heading-lg text-text-primary mb-2">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2 theme-transition" style={{ color: "var(--text-primary)" }}>
             Complete Your Submission
           </h1>
-          <p className="text-body text-text-secondary">
-            Provide your information for document preparation.
+          <p className="theme-transition" style={{ color: "var(--text-secondary)" }}>
+            Provide your information for document preparation
           </p>
         </div>
 
-        <div className="space-y-6">
-          {/* Contact Information */}
-          <Card padding="lg">
-            <h2 className="text-heading-md text-text-primary mb-6">
-              Your Information
-            </h2>
+        {/* Contact Info Card */}
+        <div className="card-step p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 theme-transition" style={{ color: "var(--text-primary)" }}>
+            Your Information
+          </h2>
 
-            <div className="space-y-5">
-              <Input
-                label="Full name *"
+          <div className="space-y-4">
+            {/* Name */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
+                Full name *
+              </label>
+              <input
+                type="text"
                 value={state.userInfo.name}
-                onChange={(e) =>
-                  updateState({
-                    userInfo: { ...state.userInfo, name: e.target.value },
-                  })
-                }
+                onChange={(e) => updateState({ userInfo: { ...state.userInfo, name: e.target.value } })}
+                className="input-strike"
                 placeholder="John Doe"
               />
+            </div>
 
-              <div>
-                <label className="block text-body-sm font-medium text-text-secondary mb-2">
-                  Street address *
-                </label>
-                <AddressAutocomplete
-                  value={state.userInfo.addressLine1 || ""}
-                  onChange={(address) => {
-                    updateState({
-                      userInfo: {
-                        ...state.userInfo,
-                        addressLine1: address.addressLine1,
-                        addressLine2: address.addressLine2 || "",
-                        city: address.city,
-                        state: address.state,
-                        zip: address.zip,
-                      },
-                    });
-                    setAddressError(null);
-                  }}
-                  onInputChange={(value) => {
-                    updateState({
-                      userInfo: {
-                        ...state.userInfo,
-                        addressLine1: value,
-                      },
-                    });
-                  }}
-                  onError={(errorMsg) => {
-                    setAddressError(errorMsg);
-                  }}
-                  placeholder="123 Main St, San Francisco, CA 94102"
-                />
-                {addressError && (
-                  <p className="mt-1 text-caption text-error">{addressError}</p>
-                )}
-                <p className="mt-1 text-caption text-text-muted">
-                  The municipal authority will send their response to this
-                  address.
-                </p>
-              </div>
-
-              {state.userInfo.addressLine2 !== undefined && (
-                <Input
-                  label="Address line 2 (optional)"
-                  value={state.userInfo.addressLine2 || ""}
-                  onChange={(e) =>
-                    updateState({
-                      userInfo: {
-                        ...state.userInfo,
-                        addressLine2: e.target.value,
-                      },
-                    })
-                  }
-                  placeholder="Apt 4B, Suite 200"
-                />
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="City *"
-                  value={state.userInfo.city}
-                  onChange={(e) =>
-                    updateState({
-                      userInfo: { ...state.userInfo, city: e.target.value },
-                    })
-                  }
-                  readOnly={
-                    !!state.userInfo.addressLine1 && !!state.userInfo.city
-                  }
-                  placeholder="San Francisco"
-                />
-                <Input
-                  label="State *"
-                  value={state.userInfo.state}
-                  onChange={(e) =>
-                    updateState({
-                      userInfo: {
-                        ...state.userInfo,
-                        state: e.target.value.toUpperCase(),
-                      },
-                    })
-                  }
-                  maxLength={2}
-                  placeholder="CA"
-                  readOnly={
-                    !!state.userInfo.addressLine1 && !!state.userInfo.state
-                  }
-                />
-              </div>
-
-              <Input
-                label="ZIP code *"
-                value={state.userInfo.zip}
-                onChange={(e) =>
+            {/* Address */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>
+                Street address *
+              </label>
+              <AddressAutocomplete
+                value={state.userInfo.addressLine1 || ""}
+                onChange={(address) => {
                   updateState({
-                    userInfo: { ...state.userInfo, zip: e.target.value },
-                  })
-                }
-                placeholder="94102"
-                readOnly={!!state.userInfo.addressLine1 && !!state.userInfo.zip}
+                    userInfo: {
+                      ...state.userInfo,
+                      addressLine1: address.addressLine1,
+                      addressLine2: address.addressLine2 || "",
+                      city: address.city,
+                      state: address.state,
+                      zip: address.zip,
+                    },
+                  });
+                  setAddressError(null);
+                }}
+                onInputChange={(value) => updateState({ userInfo: { ...state.userInfo, addressLine1: value } })}
+                onError={setAddressError}
+                className="input-strike"
+                placeholder="123 Main St"
               />
+              {addressError && <p style={{ color: "#DC2626", fontSize: "0.875rem", marginTop: "rem" }}>{addressError}0.25</p>}
+              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
+                The municipal authority will send their response here.
+              </p>
+            </div>
 
-              <Input
-                label="Email (optional)"
+            {/* City/State/ZIP */}
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>City *</label>
+                <input
+                  type="text"
+                  value={state.userInfo.city}
+                  onChange={(e) => updateState({ userInfo: { ...state.userInfo, city: e.target.value } } })}
+                  className="input-strike text-center"
+                  placeholder="City"
+                  readOnly={!!state.userInfo.addressLine1 && !!state.userInfo.city}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>State *</label>
+                <input
+                  type="text"
+                  value={state.userInfo.state}
+                  onChange={(e) => updateState({ userInfo: { ...state.userInfo, state: e.target.value.toUpperCase() } })}
+                  className="input-strike text-center"
+                  placeholder="CA"
+                  maxLength={2}
+                  readOnly={!!state.userInfo.addressLine1 && !!state.userInfo.state}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>ZIP *</label>
+                <input
+                  type="text"
+                  value={state.userInfo.zip}
+                  onChange={(e) => updateState({ userInfo: { ...state.userInfo, zip: e.target.value } })}
+                  className="input-strike text-center"
+                  placeholder="94102"
+                  readOnly={!!state.userInfo.addressLine1 && !!state.userInfo.zip}
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: "var(--text-secondary)" }}>Email (optional)</label>
+              <input
                 type="email"
                 value={state.userInfo.email}
-                onChange={(e) =>
-                  updateState({
-                    userInfo: { ...state.userInfo, email: e.target.value },
-                  })
-                }
+                onChange={(e) => updateState({ userInfo: { ...state.userInfo, email: e.target.value } })}
+                className="input-strike"
                 placeholder="your@email.com"
               />
             </div>
-          </Card>
-
-          {/* Order Summary */}
-          <Card padding="lg">
-            <h2 className="text-heading-md text-text-primary mb-6">
-              Order Summary
-            </h2>
-
-            <div className="space-y-3 text-body">
-              <div className="flex justify-between">
-                <span className="text-text-secondary">City</span>
-                <span className="text-text-primary font-medium">
-                  {formatCityName(state.cityId)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-text-secondary">Citation</span>
-                <span className="font-mono text-text-primary">
-                  {state.citationNumber || "Pending"}
-                </span>
-              </div>
-              {clericalId && (
-                <div className="flex justify-between">
-                  <span className="text-text-secondary">Reference ID</span>
-                  <span className="font-mono text-caption bg-bg-subtle px-2 py-0.5 rounded">
-                    {clericalId}
-                  </span>
-                </div>
-              )}
-              <div className="border-t border-border pt-3 mt-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-text-primary font-medium">Total</span>
-                  <span className="text-2xl font-semibold text-text-primary">
-                    {formatPrice(totalFee)}
-                  </span>
-                </div>
-                <p className="text-caption text-text-muted mt-2">
-                  Includes appeal letter preparation and certified mailing.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          {/* UPL Terms */}
-          <Alert variant="warning" title="Important">
-            <p className="mb-3">
-              This is a <strong>document preparation service only</strong>. We
-              do not provide legal advice, legal representation, or guarantees
-              about outcomes.
-            </p>
-            <p>
-              The municipal authority will review your appeal and make the final
-              decision. This fee is non-refundable regardless of the outcome.
-            </p>
-          </Alert>
-
-          {/* Terms Checkbox */}
-          <label className="flex items-start cursor-pointer">
-            <input
-              type="checkbox"
-              checked={acceptedTerms}
-              onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="mt-1 mr-3 h-5 w-5 text-primary border-border rounded focus:ring-primary/50 cursor-pointer"
-            />
-            <span className="text-body-sm text-text-secondary">
-              I understand I am purchasing{" "}
-              <strong>document preparation services only</strong>. The outcome
-              of my appeal is determined solely by the municipal authority. This
-              fee is non-refundable regardless of the citation outcome.{" "}
-              <Link
-                href="/refund"
-                className="text-primary hover:text-primary-hover underline"
-              >
-                Read full terms
-              </Link>
-              .
-            </span>
-          </label>
-
-          {/* Error Message */}
-          {error && (
-            <Alert variant="error" dismissible onDismiss={() => setError(null)}>
-              {error}
-            </Alert>
-          )}
-
-          {/* Actions */}
-          <div className="flex justify-between items-center pt-4 border-t border-border">
-            <Link
-              href="/appeal/signature"
-              className="text-body text-text-secondary hover:text-text-primary transition-colors"
-            >
-              ← Back
-            </Link>
-            <Button
-              onClick={handleCheckout}
-              loading={loading}
-              disabled={loading || !acceptedTerms}
-              className="min-w-[200px]"
-            >
-              {loading ? "Processing..." : "Proceed to Payment →"}
-            </Button>
           </div>
-
-          {/* Full Disclaimer */}
-          <LegalDisclaimer variant="elegant" className="mt-6" />
         </div>
+
+        {/* Order Summary */}
+        <div className="card-step p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-4 theme-transition" style={{ color: "var(--text-primary)" }}>
+            Order Summary
+          </h2>
+
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span style={{ color: "var(--text-secondary)" }}>City</span>
+              <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{formatCityName(state.cityId)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span style={{ color: "var(--text-secondary)" }}>Citation</span>
+              <span style={{ color: "var(--text-primary)", fontFamily: "monospace" }}>{state.citationNumber || "Pending"}</span>
+            </div>
+            {clericalId && (
+              <div className="flex justify-between">
+                <span style={{ color: "var(--text-secondary)" }}>Reference</span>
+                <span style={{ color: "var(--text-muted)", fontFamily: "monospace", fontSize: "0.875rem" }}>{clericalId}</span>
+              </div>
+            )}
+            <div className="border-t pt-3 mt-3" style={{ borderColor: "var(--border)" }}>
+              <div className="flex justify-between items-center">
+                <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>Total</span>
+                <span className="text-3xl font-bold" style={{ color: "var(--accent)" }}>{formatPrice(totalFee)}</span>
+              </div>
+              <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginTop: "0.5rem" }}>
+                Includes appeal letter preparation and certified mailing
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Warning */}
+        <div 
+          className="p-4 rounded-lg mb-6"
+          style={{ backgroundColor: "#FEF3C7", border: "1px solid #FDE68A" }}
+        >
+          <h3 className="font-semibold mb-2" style={{ color: "#92400E" }}>Important</h3>
+          <p style={{ color: "#92400E", fontSize: "0.875rem" }}>
+            This is a <strong>document preparation service only</strong>. We do not provide legal advice or guarantees about outcomes. The municipal authority will review your appeal and make the final decision. This fee is non-refundable.
+          </p>
+        </div>
+
+        {/* Terms Checkbox */}
+        <label className="flex items-start cursor-pointer mb-6">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            className="mt-1 mr-3"
+            style={{ accentColor: "var(--accent)" }}
+          />
+          <span style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>
+            I understand I am purchasing <strong>document preparation services only</strong>. The outcome is determined solely by the municipal authority. This fee is non-refundable.{" "}
+            <Link href="/refund" style={{ color: "var(--accent)", textDecoration: "underline" }}>Read full terms</Link>.
+          </span>
+        </label>
+
+        {/* Error */}
+        {error && (
+          <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: "#FEF2F2", border: "1px solid #FECACA" }}>
+            <p style={{ color: "#DC2626" }}>{error}</p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-4">
+          <Link href="/appeal/signature" className="btn-secondary flex-1">
+            ← Back
+          </Link>
+          <button
+            onClick={handleCheckout}
+            disabled={loading || !acceptedTerms}
+            className="btn-strike flex-1"
+          >
+            {loading ? "Processing..." : "Proceed to Payment →"}
+          </button>
+        </div>
+
+        <LegalDisclaimer variant="compact" />
       </div>
     </main>
   );

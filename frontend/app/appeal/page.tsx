@@ -4,11 +4,8 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import LegalDisclaimer from "../../components/LegalDisclaimer";
-import { Button } from "../../components/ui/Button";
-import { Card } from "../../components/ui/Card";
 import { useAppeal } from "../lib/appeal-context";
 
-// Force dynamic rendering - this page uses client-side context
 export const dynamic = "force-dynamic";
 
 function AppealPageContent() {
@@ -67,84 +64,69 @@ function AppealPageContent() {
   ];
 
   return (
-    <main className="min-h-screen bg-bg-page">
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex justify-between">
-            {steps.map((s) => (
-              <div key={s.num} className="flex-1 text-center">
-                <div
-                  className={`w-10 h-10 rounded-full mx-auto mb-2 flex items-center justify-center ${step >= s.num
-                      ? "bg-primary text-white"
-                      : "bg-bg-subtle text-text-muted"
-                    }`}
-                >
-                  {s.num}
-                </div>
-                <p
-                  className={`text-body-sm ${step >= s.num
-                      ? "text-text-primary font-medium"
-                      : "text-text-muted"
-                    }`}
-                >
-                  {s.name}
-                </p>
-              </div>
-            ))}
-          </div>
-          <div className="relative mt-2">
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-border" />
-            <div
-              className="absolute top-0 left-0 h-0.5 bg-primary transition-all duration-300"
+    <main className="min-h-[calc(100vh-5rem)] flex flex-col items-center justify-center px-4 py-8 theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
+      <div className="w-full max-w-lg step-content">
+        
+        {/* Progress Bar */}
+        <div className="mb-12">
+          <div className="progress-bar">
+            <div 
+              className="progress-bar-fill" 
               style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
             />
           </div>
+          <div className="flex justify-between mt-2 text-sm" style={{ color: "var(--text-muted)" }}>
+            {steps.map((s) => (
+              <span key={s.num}>{s.name}</span>
+            ))}
+          </div>
         </div>
 
-        {/* Header Card */}
-        <Card padding="lg" className="mb-6">
-          <h1 className="text-heading-lg text-text-primary mb-2">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold mb-3 theme-transition" style={{ color: "var(--text-primary)" }}>
             Appeal Your {formatCityName(state.cityId)} Ticket
           </h1>
-          <p className="text-body text-text-secondary mb-4">
-            You&apos;re almost done. Add evidence and review your appeal before
-            submitting.
+          <p className="theme-transition" style={{ color: "var(--text-secondary)" }}>
+            You're almost done. Add evidence and review your appeal.
           </p>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-bg-subtle rounded-lg">
-            <span className="text-caption text-text-muted">Citation:</span>
-            <span className="font-mono text-body-sm text-text-primary">
+          <div 
+            className="inline-flex items-center gap-2 px-4 py-2 mt-4 rounded-lg"
+            style={{ backgroundColor: "var(--bg-subtle)" }}
+          >
+            <span style={{ color: "var(--text-muted)", fontSize: "0.875rem" }}>Citation:</span>
+            <span style={{ color: "var(--text-primary)", fontFamily: "monospace" }}>
               {state.citationNumber || "Not provided"}
             </span>
           </div>
-        </Card>
+        </div>
 
-        {/* Next Step */}
-        <Card padding="lg" className="mb-6">
-          <h2 className="text-heading-md text-text-primary mb-4">
+        {/* Next Step Card */}
+        <div className="card-step p-8 mb-8">
+          <h2 className="text-xl font-semibold mb-4 theme-transition" style={{ color: "var(--text-primary)" }}>
             Step 1: Upload Evidence
           </h2>
-          <p className="text-body text-text-secondary mb-6">
-            Add photos of parking signs, meters, or anything that supports your
-            appeal.
+          <p className="mb-6 theme-transition" style={{ color: "var(--text-secondary)" }}>
+            Add photos of parking signs, meters, or anything that supports your appeal.
           </p>
 
-          <Link href="/appeal/camera">
-            <Button>Upload Photos →</Button>
+          <Link href="/appeal/camera" className="btn-strike w-full">
+            Upload Photos →
           </Link>
-        </Card>
+        </div>
 
-        {/* Quick Links */}
-        <div className="flex flex-wrap gap-4 mb-6">
+        {/* Skip Link */}
+        <div className="text-center mb-8">
           <Link
             href="/appeal/review"
-            className="text-body text-primary hover:text-primary-hover font-medium"
+            className="font-medium"
+            style={{ color: "var(--accent)" }}
           >
             Skip to review →
           </Link>
         </div>
 
-        {/* Legal Disclaimer */}
+        {/* Disclaimer */}
         <LegalDisclaimer variant="compact" />
       </div>
     </main>
@@ -155,10 +137,16 @@ export default function AppealPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-bg-page flex items-center justify-center">
+        <div 
+          className="min-h-screen flex items-center justify-center theme-transition" 
+          style={{ backgroundColor: "var(--bg-page)" }}
+        >
           <div className="text-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent mx-auto mb-4" />
-            <p className="text-body text-text-secondary">Loading...</p>
+            <div 
+              className="animate-spin rounded-full h-10 w-10 mx-auto mb-4"
+              style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
+            />
+            <p style={{ color: "var(--text-secondary)" }}>Loading...</p>
           </div>
         </div>
       }
