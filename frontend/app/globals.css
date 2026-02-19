@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,17 +12,62 @@
     scroll-behavior: smooth;
   }
 
+  /* CSS Variables for Theme - Light Mode (Default) */
+  :root {
+    --bg-page: #FAFAFA;
+    --bg-surface: #FFFFFF;
+    --bg-subtle: #F5F5F5;
+    
+    --text-primary: #171717;
+    --text-secondary: #525252;
+    --text-muted: #A3A3A3;
+    
+    --accent: #0891B2;
+    --accent-hover: #06B6D4;
+    --accent-glow: #0891B240;
+    
+    --border: #E5E5E5;
+    --border-subtle: #F5F5F5;
+    
+    --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.08);
+    --shadow-glow: 0 0 40px -10px #0891B240;
+  }
+
+  /* Dark Mode */
+  .dark {
+    --bg-page: #0A0A0A;
+    --bg-surface: #141414;
+    --bg-subtle: #1F1F1F;
+    
+    --text-primary: #FFFFFF;
+    --text-secondary: #A3A3A3;
+    --text-muted: #525252;
+    
+    --accent: #FF5722;
+    --accent-hover: #FF7043;
+    --accent-glow: #FF572240;
+    
+    --border: #262626;
+    --border-subtle: #1F1F1F;
+    
+    --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 0 40px -10px #FF572240;
+  }
+
   body {
-    @apply bg-bg-page text-text-primary font-sans;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-family: "Inter", "SF Pro Display", system-ui, sans-serif;
     line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   /* Focus styles for accessibility */
   *:focus-visible {
     outline: none;
     box-shadow:
-      0 0 0 2px var(--color-bg-page),
-      0 0 0 4px var(--color-primary);
+      0 0 0 2px var(--bg-page),
+      0 0 0 4px var(--accent);
   }
 
   /* Remove default button styles */
@@ -32,71 +79,154 @@
 @layer components {
   /* Fade-in animation utility */
   .animate-fade-in {
-    animation: fadeIn 0.3s ease-out forwards;
+    animation: fadeIn 0.4s ease-out forwards;
   }
 
   .animate-fade-in-delay {
-    animation: fadeIn 0.3s ease-out 0.1s forwards;
+    animation: fadeIn 0.4s ease-out 0.15s forwards;
     opacity: 0;
   }
 
   .animate-fade-in-delay-2 {
-    animation: fadeIn 0.3s ease-out 0.2s forwards;
+    animation: fadeIn 0.4s ease-out 0.3s forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-delay-3 {
+    animation: fadeIn 0.4s ease-out 0.45s forwards;
     opacity: 0;
   }
 
   /* Slide-up animation for cards and sections */
   .animate-slide-up {
-    animation: slideUp 0.4s ease-out forwards;
+    animation: slideUp 0.5s ease-out forwards;
   }
 
-  /* Hover lift effect */
-  .hover-lift {
-    @apply transition-transform duration-200 ease-out;
+  /* Progress bar animation */
+  .animate-progress {
+    animation: progress 1s ease-out forwards;
   }
 
-  .hover-lift:hover {
-    @apply -translate-y-0.5;
+  /* Glow pulse */
+  .animate-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
   }
 
-  /* Card base styles */
-  .card {
-    @apply bg-bg-surface rounded-card shadow-soft border border-border;
+  /* One-Step Strike Button - The primary CTA */
+  .btn-strike {
+    @apply inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-button;
+    background-color: var(--accent);
+    color: white;
+    box-shadow: var(--shadow-glow);
+    transition: all 0.3s ease;
+    min-height: 56px;
   }
 
-  .card-hover {
-    @apply card;
-    transition:
-      box-shadow 0.2s,
-      border-color 0.2s;
+  .btn-strike:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow), 0 8px 24px rgba(0, 0, 0, 0.2);
   }
 
-  .card-hover:hover {
-    box-shadow: var(--shadow-elevation);
-    border-color: var(--color-border-subtle);
+  .btn-strike:active {
+    transform: translateY(0);
   }
 
-  /* Input base styles */
-  .input-base {
-    @apply w-full px-4 py-3 bg-bg-surface border border-border rounded-input text-text-primary placeholder-text-muted focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-bg-surface transition-all duration-200;
-    min-height: 48px;
-    /* Touch-friendly */
+  .btn-strike:disabled {
+    background-color: var(--text-muted);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
   }
 
-  /* Button variants */
-  .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 bg-primary text-white font-medium rounded-button hover:bg-primary-hover active:bg-primary-hover focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 disabled:bg-text-muted disabled:cursor-not-allowed transition-all duration-200;
-    min-height: 48px;
-  }
-
+  /* Secondary button */
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-6 py-3 bg-bg-surface text-text-primary font-medium rounded-button border border-border hover:bg-bg-subtle focus:ring-2 focus:ring-border focus:ring-offset-2 disabled:bg-bg-subtle disabled:text-text-muted disabled:cursor-not-allowed transition-all duration-200;
+    @apply inline-flex items-center justify-center px-6 py-3 font-medium rounded-button;
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
     min-height: 48px;
   }
 
+  .btn-secondary:hover {
+    background-color: var(--bg-subtle);
+    border-color: var(--text-muted);
+  }
+
+  /* Ghost button */
   .btn-ghost {
-    @apply inline-flex items-center justify-center px-4 py-2 text-text-secondary font-medium rounded-button hover:text-text-primary hover:bg-bg-subtle focus:ring-2 focus:ring-border focus:ring-offset-2 transition-all duration-200;
+    @apply inline-flex items-center justify-center px-4 py-2 font-medium rounded-button;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
     min-height: 44px;
+  }
+
+  .btn-ghost:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-subtle);
+  }
+
+  /* Card - One Step Card */
+  .card-step {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s ease;
+  }
+
+  .card-step:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-card), var(--shadow-glow);
+  }
+
+  /* Input - Massive and clean */
+  .input-strike {
+    @apply w-full px-6 py-4 text-xl font-medium rounded-input;
+    background-color: var(--bg-surface);
+    border: 2px solid var(--border);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    min-height: 64px;
+  }
+
+  .input-strike::placeholder {
+    color: var(--text-muted);
+  }
+
+  .input-strike:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+
+  /* Drop zone for file upload */
+  .drop-zone {
+    @apply w-full p-12 text-center rounded-2xl;
+    border: 2px dashed var(--border);
+    background-color: var(--bg-subtle);
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .drop-zone:hover,
+  .drop-zone.active {
+    border-color: var(--accent);
+    background-color: var(--accent-glow);
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-1 rounded-full;
+    background-color: var(--bg-subtle);
+    overflow: hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full rounded-full;
+    background-color: var(--accent);
+    transition: width 0.5s ease-out;
+    box-shadow: 0 0 12px var(--accent);
   }
 
   /* Touch-friendly tap target */
@@ -111,17 +241,17 @@
   }
 
   ::-webkit-scrollbar-track {
-    background-color: var(--color-bg-subtle);
+    background-color: var(--bg-subtle);
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: var(--color-text-muted);
+    background-color: var(--text-muted);
     border-radius: 9999px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--color-text-secondary);
+    background-color: var(--text-secondary);
   }
 }
 
@@ -143,7 +273,12 @@
 
   /* Smooth transitions */
   .transition-smooth {
-    @apply transition-all duration-200 ease-out;
+    transition: all 0.2s ease-out;
+  }
+
+  /* Theme transition */
+  .theme-transition {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   }
 
   /* Line clamp utilities */
@@ -162,6 +297,23 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Gradient text */
+  .text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-image: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  }
+
+  /* Center content for One-Step UI */
+  .step-center {
+    @apply flex flex-col items-center justify-center min-h-[80vh];
+  }
+
+  .step-content {
+    @apply w-full max-w-xl;
+  }
 }
 
 /* Animation keyframes */
@@ -169,7 +321,6 @@
   from {
     opacity: 0;
   }
-
   to {
     opacity: 1;
   }
@@ -178,9 +329,8 @@
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -190,12 +340,29 @@
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-12px);
+    transform: translateY(-20px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: var(--progress-width, 100%);
   }
 }
 

@@ -2,7 +2,12 @@
 
 import { ReactNode } from "react";
 import { AppealProvider } from "./lib/appeal-context";
+import { ThemeProvider } from "./lib/theme-context";
 
 export function Providers({ children }: { children: ReactNode }) {
-  return <AppealProvider>{children}</AppealProvider>;
+  return (
+    <ThemeProvider>
+      <AppealProvider>{children}</AppealProvider>
+    </ThemeProvider>
+  );
 }
