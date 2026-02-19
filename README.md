@@ -160,7 +160,7 @@ LOB_MODE=live
 DEEPSEEK_API_KEY=sk-...
 
 # Database
-DATABASE_URL=postgresql+psycopg://postgres:password@db:5432/fightsf
+DATABASE_URL=postgresql+psycopg://postgres:password@db:5432/fightcitytickets
 ```
 
 ---
@@ -225,10 +225,10 @@ docker compose restart web
 docker compose up -d --build
 
 # Database backup
-docker compose exec db pg_dump -U postgres fightsf > backup_$(date +%Y%m%d).sql
+docker compose exec db pg_dump -U postgres fightcitytickets > backup_$(date +%Y%m%d).sql
 
 # Database restore
-docker compose exec -T db psql -U postgres fightsf < backup.sql
+docker compose exec -T db psql -U postgres fightcitytickets < backup.sql
 ```
 
 ### Health Checks

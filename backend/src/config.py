@@ -24,7 +24,7 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:3000"
 
-    database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/fightsf"
+    database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/fightcitytickets"
 
     # Stripe Configuration
     stripe_secret_key: str = "sk_live_dummy"

@@ -76,7 +76,7 @@ if [ ! -f .env ]; then
 # Database
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=secure_password_change_this
-POSTGRES_DB=fightsf
+POSTGRES_DB=fightcitytickets
 
 # Stripe (USE TEST KEYS FOR TESTING)
 STRIPE_SECRET_KEY=sk_test_your_test_key

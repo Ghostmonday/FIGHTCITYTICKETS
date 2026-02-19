@@ -44,13 +44,13 @@ fi
 
 # Determine backup method
 if command -v docker &> /dev/null && docker ps &> /dev/null; then
-    BACKUP_CMD="docker compose exec -T db pg_dump -U ${POSTGRES_USER:-postgres} ${POSTGRES_DB:-fightsf}"
+    BACKUP_CMD="docker compose exec -T db pg_dump -U ${POSTGRES_USER:-postgres} ${POSTGRES_DB:-fightcitytickets}"
     log_info "Using Docker Compose backup method"
 else
     if command -v pg_dump &> /dev/null; then
         # Extract connection info from DATABASE_URL
         DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|.*@([^:]+):([0-9]+).*|\1 \2|')
-        BACKUP_CMD="pg_dump -h ${DB_HOST%% *} -U ${POSTGRES_USER:-postgres} ${POSTGRES_DB:-fightsf}"
+        BACKUP_CMD="pg_dump -h ${DB_HOST%% *} -U ${POSTGRES_USER:-postgres} ${POSTGRES_DB:-fightcitytickets}"
         log_info "Using local pg_dump backup method"
     else
         log_error "Neither Docker nor pg_dump available!"

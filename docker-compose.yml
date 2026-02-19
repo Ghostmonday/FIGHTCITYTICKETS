@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-fightsf}
+      - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-fightcitytickets}
     expose:
       - "8000"
     depends_on:
@@ -95,7 +95,7 @@ services:
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-fightsf}
+      POSTGRES_DB: ${POSTGRES_DB:-fightcitytickets}
       # PostgreSQL performance tuning (conservative values - adjust based on available RAM)
       POSTGRES_SHARED_BUFFERS: 128MB # 25% of RAM, conservative
       POSTGRES_EFFECTIVE_CACHE_SIZE: 256MB # 50% of RAM
@@ -104,7 +104,7 @@ services:
       POSTGRES_RANDOM_PAGE_COST: 1.1 # SSD optimization
       POSTGRES_MAX_CONNECTIONS: 100
     volumes:
-      - fightsf_db:/var/lib/postgresql/data
+      - fightcitytickets_db:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
       interval: 10s
@@ -122,4 +122,4 @@ services:
           memory: 128M
 
 volumes:
-  fightsf_db:
+  fightcitytickets_db:
