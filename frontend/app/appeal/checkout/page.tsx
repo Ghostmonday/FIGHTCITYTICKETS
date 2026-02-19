@@ -177,7 +177,7 @@ export default function CheckoutPage() {
                 <input
                   type="text"
                   value={state.userInfo.city}
-                  onChange={(e) => updateState({ userInfo: { ...state.userInfo, city: e.target.value } } })}
+                  onChange={(e) => updateState({ userInfo: { ...state.userInfo, city: e.target.value } })}
                   className="input-strike text-center"
                   placeholder="City"
                   readOnly={!!state.userInfo.addressLine1 && !!state.userInfo.city}

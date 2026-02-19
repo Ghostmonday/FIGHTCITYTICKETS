@@ -4,7 +4,7 @@ import "./globals.css";
 import FooterDisclaimer from "../components/FooterDisclaimer";
 import { Providers } from "./providers";
 import { config } from "./lib/config";
-import ThemeToggle from "@/components/ThemeToggle";
+import ThemeToggle from "../components/ThemeToggle";
 import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"] });
