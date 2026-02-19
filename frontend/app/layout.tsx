@@ -4,27 +4,29 @@ import "./globals.css";
 import FooterDisclaimer from "../components/FooterDisclaimer";
 import { Providers } from "./providers";
 import { config } from "./lib/config";
+import ThemeToggle from "@/components/ThemeToggle";
+import Link from "next/link";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FIGHTCITYTICKETS.com - Procedural Parking Ticket Assistance",
+  title: "FightCityTickets - Beat Your Parking Ticket",
   description:
-    "Document preparation service for parking ticket appeals in 23 cities across the US. We help you generate the exact paperwork required by municipal code.",
+    "One-step parking ticket appeals. Upload your ticket, generate your defense, fight back.",
   keywords:
     "parking ticket appeal, contest parking ticket, fight parking citation, appeal parking violation, parking ticket help",
-  authors: [{ name: "FIGHTCITYTICKETS.com" }],
+  authors: [{ name: "FightCityTickets" }],
   openGraph: {
-    title: "FIGHTCITYTICKETS.com - Procedural Parking Ticket Assistance",
-    description: "Document preparation service for parking ticket appeals",
+    title: "FightCityTickets - Beat Your Parking Ticket",
+    description: "One-step parking ticket appeals",
     type: "website",
     url: config.baseUrl,
-    siteName: "FIGHTCITYTICKETS.com",
+    siteName: "FightCityTickets",
   },
   twitter: {
     card: "summary_large_image",
-    title: "FIGHTCITYTICKETS.com - Procedural Parking Ticket Assistance",
-    description: "Document preparation service for parking ticket appeals",
+    title: "FightCityTickets - Beat Your Parking Ticket",
+    description: "One-step parking ticket appeals",
   },
   robots: {
     index: true,
@@ -48,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         {/* Structured Data for Organization */}
         <script
@@ -57,11 +59,11 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Organization",
-              name: "FIGHTCITYTICKETS.com",
+              name: "FightCityTickets",
               url: config.baseUrl,
               logo: `${config.baseUrl}/logo.png`,
               description:
-                "Document preparation service for parking ticket appeals",
+                "One-step parking ticket appeals",
               sameAs: [],
             }),
           }}
@@ -73,7 +75,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              name: "FIGHTCITYTICKETS.com",
+              name: "FightCityTickets",
               url: config.baseUrl,
               potentialAction: {
                 "@type": "SearchAction",
@@ -85,8 +87,29 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <Providers>{children}</Providers>
-        <FooterDisclaimer />
+        <Providers>
+          {/* Header */}
+          <header className="fixed top-0 left-0 right-0 z-50 theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+              <Link href="/" className="flex items-center gap-2">
+                <span 
+                  className="text-xl font-bold"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  FightCity<span style={{ color: "var(--accent)" }}>Tickets</span>
+                </span>
+              </Link>
+              <ThemeToggle />
+            </div>
+          </header>
+          
+          {/* Main Content */}
+          <main className="pt-20">
+            {children}
+          </main>
+          
+          <FooterDisclaimer />
+        </Providers>
       </body>
     </html>
   );

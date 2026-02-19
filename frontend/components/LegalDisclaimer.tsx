@@ -14,62 +14,74 @@ export default function LegalDisclaimer({
 }: LegalDisclaimerProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  const baseText = {
+    color: "var(--text-secondary)",
+    fontSize: "0.875rem",
+    lineHeight: "1.6",
+  };
+
+  const mutedText = {
+    color: "var(--text-muted)",
+    fontSize: "0.75rem",
+  };
+
   const disclaimerText = {
     full: (
-      <div className="space-y-3 text-body-sm text-text-secondary leading-relaxed">
+      <div style={{ ...baseText, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         <p>
-          <strong className="text-text-primary">
-            We aren&apos;t lawyers. We&apos;re paperwork experts.
+          <strong style={{ color: "var(--text-primary)" }}>
+            We aren't lawyers. We're paperwork experts.
           </strong>{" "}
           In a bureaucracy, paperwork is power. We help you articulate and
           refine your own reasons for appealing a parking ticket. We act as a
           scribe, helping you express what{" "}
-          <strong className="text-text-primary">you</strong> tell us is your
+          <strong style={{ color: "var(--text-primary)" }}>you</strong> tell us is your
           reason for appealing.
         </p>
         <p>
-          FightCityTickets.com is a{" "}
+          FightCityTickets is a{" "}
           <strong>document preparation service</strong>. We do not provide legal
           advice, legal representation, or legal recommendations. We do not
           interpret laws or guarantee outcomes. We ensure your appeal meets the
           clerical standards that municipalities use.
         </p>
-        <p className="text-tiny text-text-muted italic border-t border-border pt-3">
+        <p style={{ ...mutedText, fontStyle: "italic", borderTop: "1px solid var(--border)", paddingTop: "0.75rem" }}>
           If you require legal advice, please consult with a licensed attorney.
         </p>
       </div>
     ),
     compact: (
-      <p className="text-tiny text-text-muted leading-relaxed">
-        <strong className="text-text-secondary">
+      <p style={{ ...mutedText, lineHeight: "1.6" }}>
+        <strong style={{ color: "var(--text-secondary)" }}>
           Document preparation only — not legal advice.
         </strong>{" "}
-        We help you prepare appeal paperwork but don&apos;t provide legal advice
+        We help you prepare appeal paperwork but don't provide legal advice
         or representation.{" "}
         <Link
           href="/terms"
-          className="text-text-secondary hover:text-text-primary underline underline-offset-2"
+          style={{ color: "var(--text-secondary)", textDecoration: "underline", textUnderlineOffset: "2px" }}
+          className="hover:opacity-80 transition-opacity"
         >
           Learn more
         </Link>
       </p>
     ),
     inline: (
-      <span className="text-tiny text-text-muted italic">
+      <span style={{ ...mutedText, fontStyle: "italic" }}>
         Document preparation only — not legal advice
       </span>
     ),
     elegant: (
-      <div className="space-y-3 text-body-sm text-text-secondary leading-relaxed">
+      <div style={{ ...baseText, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         <p>
-          <strong className="text-text-primary">
+          <strong style={{ color: "var(--text-primary)" }}>
             Document preparation only — not legal advice.
           </strong>{" "}
-          We help you prepare appeal paperwork but don&apos;t provide legal
+          We help you prepare appeal paperwork but don't provide legal
           advice, legal representation, or recommendations.
         </p>
-        <p className="text-tiny text-text-muted border-t border-border pt-3">
-          FightCityTickets.com is a{" "}
+        <p style={{ ...mutedText, borderTop: "1px solid var(--border)", paddingTop: "0.75rem" }}>
+          FightCityTickets is a{" "}
           <strong>document preparation service</strong>. Outcome determined by
           the municipal authority.
         </p>
@@ -83,7 +95,13 @@ export default function LegalDisclaimer({
 
   if (variant === "compact") {
     return (
-      <div className={`border-t border-border pt-4 ${className}`}>
+      <div 
+        className={`theme-transition ${className}`}
+        style={{ 
+          borderTop: "1px solid var(--border)", 
+          paddingTop: "1rem",
+        }}
+      >
         {disclaimerText.compact}
       </div>
     );
@@ -92,7 +110,13 @@ export default function LegalDisclaimer({
   if (variant === "elegant") {
     return (
       <div
-        className={`bg-bg-subtle border border-border rounded-lg p-5 ${className}`}
+        className={`theme-transition ${className}`}
+        style={{ 
+          backgroundColor: "var(--bg-subtle)", 
+          border: "1px solid var(--border)", 
+          borderRadius: "8px", 
+          padding: "1.25rem" 
+        }}
       >
         {disclaimerText.elegant}
       </div>
@@ -101,18 +125,30 @@ export default function LegalDisclaimer({
 
   return (
     <div
-      className={`bg-bg-subtle border border-border rounded-lg p-5 ${className}`}
+      className={`theme-transition ${className}`}
+      style={{ 
+        backgroundColor: "var(--bg-subtle)", 
+        border: "1px solid var(--border)", 
+        borderRadius: "8px", 
+        padding: "1.25rem" 
+      }}
     >
       {!isExpanded ? (
         <div>
-          <p className="text-body-sm text-text-secondary mb-2">
+          <p style={{ ...baseText, marginBottom: "0.5rem" }}>
             <strong>Document preparation only — not legal advice.</strong> We
-            help you prepare appeal paperwork but don&apos;t provide legal
+            help you prepare appeal paperwork but don't provide legal
             representation.
           </p>
           <button
             onClick={() => setIsExpanded(true)}
-            className="text-tiny text-text-secondary hover:text-text-primary underline underline-offset-2 transition-colors"
+            style={{ 
+              ...mutedText, 
+              textDecoration: "underline", 
+              textUnderlineOffset: "2px",
+              cursor: "pointer",
+            }}
+            className="hover:opacity-80 transition-opacity"
           >
             Learn more
           </button>
@@ -122,7 +158,14 @@ export default function LegalDisclaimer({
           {disclaimerText.full}
           <button
             onClick={() => setIsExpanded(false)}
-            className="mt-3 text-tiny text-text-secondary hover:text-text-primary underline underline-offset-2 transition-colors"
+            style={{ 
+              ...mutedText, 
+              marginTop: "0.75rem",
+              textDecoration: "underline", 
+              textUnderlineOffset: "2px",
+              cursor: "pointer",
+            }}
+            className="hover:opacity-80 transition-opacity"
           >
             Show less
           </button>
