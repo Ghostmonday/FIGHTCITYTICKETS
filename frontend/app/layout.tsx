@@ -91,18 +91,12 @@ export default function RootLayout({
           {/* Header */}
           <header className="fixed top-0 left-0 right-0 z-50 theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-              <Link href="/" className="flex items-center gap-3">
+              <Link href="/" className="flex items-center">
                 <img 
                   src="/logo.png" 
                   alt="FightCityTickets" 
-                  className="h-10 w-auto"
+                  className="h-16 w-auto"
                 />
-                <span 
-                  className="text-xl font-bold hidden sm:inline"
-                  style={{ color: "var(--text-primary)" }}
-                >
-                  FightCity<span style={{ color: "var(--accent)" }}>Tickets</span>
-                </span>
               </Link>
               <ThemeToggle />
             </div>
