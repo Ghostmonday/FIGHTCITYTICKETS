@@ -10,6 +10,7 @@ Provides:
 import asyncio
 import functools
 import logging
+import random
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -285,7 +286,7 @@ def retry_async(
                         # Calculate delay with exponential backoff and jitter
                         delay = min(base_delay * (exponential_base ** attempt), max_delay)
                         jitter_range = delay * jitter
-                        actual_delay = delay + (time.time() % (2 * jitter_range) - jitter_range)
+                        actual_delay = delay + random.uniform(-jitter_range, jitter_range)
                         
                         logger.warning(
                             f"Retry {attempt + 1}/{max_attempts - 1} for {func.__name__}: "
@@ -343,7 +344,7 @@ def retry_sync(
                     if attempt < max_attempts - 1:
                         delay = min(base_delay * (exponential_base ** attempt), max_delay)
                         jitter_range = delay * jitter
-                        actual_delay = delay + (time.time() % (2 * jitter_range) - jitter_range)
+                        actual_delay = delay + random.uniform(-jitter_range, jitter_range)
                         
                         logger.warning(
                             f"Retry {attempt + 1}/{max_attempts - 1} for {func.__name__}: "

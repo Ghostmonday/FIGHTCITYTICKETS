@@ -408,7 +408,7 @@ async def handle_payment_intent_failed(
     }
 
 
-@router.post("/webhook")
+@router.post("")
 async def handle_stripe_webhook(request: Request) -> dict[str, Any]:
     """
     Main webhook endpoint for Stripe events.
@@ -455,7 +455,7 @@ async def handle_stripe_webhook(request: Request) -> dict[str, Any]:
         raise HTTPException(status_code=500, detail="Webhook processing failed")
 
 
-@router.post("/webhook/retry")
+@router.post("/retry")
 @limiter.limit("100/day;20/hour")
 async def retry_fulfillment(
     request: Request,
@@ -502,7 +502,7 @@ async def retry_fulfillment(
         return {"success": False, "message": str(e)}
 
 
-@router.get("/webhook/health")
+@router.get("/health")
 async def webhook_health() -> dict[str, Any]:
     """Health check endpoint for webhook service."""
     # Clean up expired entries occasionally
@@ -521,7 +521,7 @@ async def webhook_health() -> dict[str, Any]:
     }
 
 
-@router.get("/webhook/cache/stats")
+@router.get("/cache/stats")
 async def webhook_cache_stats() -> dict[str, Any]:
     """Get webhook idempotency cache statistics."""
     return {
