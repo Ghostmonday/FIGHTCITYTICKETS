@@ -23,13 +23,12 @@ class TestSFSchemaAdapter:
     @classmethod
     def setup_class(cls):
         """Load SF configuration and setup test data."""
-        # Path to SF JSON file - use sanfrancisco.json (old format) for adapter testing
-        # us-ca-san_francisco.json is already in Schema 4.3.0 format
-        project_root = Path(__file__).parent.parent.parent
-        cls.sf_json_path = project_root / "cities" / "sanfrancisco.json"
+        # Path to SF JSON file - use the correct filename
+        project_root = Path(__file__).parent.parent
+        cls.sf_json_path = project_root / "cities" / "us-ca-san_francisco.json"
 
         if not cls.sf_json_path.exists():
-            raise FileNotFoundError("SF JSON file not found at {cls.sf_json_path}")
+            raise FileNotFoundError(f"SF JSON file not found at {cls.sf_json_path}")
 
         # Load original SF data
         with open(cls.sf_json_path, "r", encoding="utf-8") as f:

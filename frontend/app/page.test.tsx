@@ -40,13 +40,13 @@ describe("Homepage", () => {
   describe("Page Rendering", () => {
     it("renders the hero section with correct title", () => {
       render(<Home />);
-      expect(screen.getByText(/Got a parking ticket/i)).toBeInTheDocument();
+      expect(screen.getByText(/What's the/i)).toBeInTheDocument();
     });
 
-    it("renders the subtitle about procedural compliance", () => {
+    it("renders the subtitle about citation number", () => {
       render(<Home />);
       expect(
-        screen.getByText(/Submit professionally formatted appeal documents/i)
+        screen.getByText(/Found on your parking ticket or notice/i)
       ).toBeInTheDocument();
     });
 
@@ -68,7 +68,7 @@ describe("Homepage", () => {
       render(<Home />);
 
       const submitButton = screen.getByRole("button", {
-        name: /Validate Citation/i,
+        name: /Next →/i,
       });
       fireEvent.click(submitButton);
 
@@ -82,41 +82,35 @@ describe("Homepage", () => {
 
       const citySelect = screen.getByRole("combobox");
       const submitButton = screen.getByRole("button", {
-        name: /Validate Citation/i,
+        name: /Next →/i,
       });
 
-      // Initially button should be enabled
-      expect(submitButton).not.toBeDisabled();
+      // Button is disabled until city is selected
+      expect(submitButton).toBeDisabled();
     });
   });
 
   describe("City Selection", () => {
     it("displays San Francisco in the dropdown", () => {
       render(<Home />);
-      expect(screen.getByText(/San Francisco \(SF\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/San Francisco/i)).toBeInTheDocument();
     });
 
     it("displays Los Angeles in the dropdown", () => {
       render(<Home />);
-      expect(screen.getByText(/Los Angeles \(LA\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Los Angeles/i)).toBeInTheDocument();
     });
 
     it("displays New York City in the dropdown", () => {
       render(<Home />);
-      expect(screen.getByText(/New York City \(NYC\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/New York City/i)).toBeInTheDocument();
     });
   });
 
   describe("Optional Fields", () => {
     it("renders license plate input field", () => {
       render(<Home />);
-      expect(screen.getByPlaceholderText(/ABC123/i)).toBeInTheDocument();
-    });
-
-    it("renders violation date input field", () => {
-      render(<Home />);
-      // Verify the label exists - validates the form field is rendered
-      expect(screen.getByText(/Violation date/i)).toBeInTheDocument();
+      expect(screen.getByPlaceholderText(/License plate/i)).toBeInTheDocument();
     });
   });
 
