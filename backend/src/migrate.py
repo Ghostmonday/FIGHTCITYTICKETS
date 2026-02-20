@@ -47,6 +47,13 @@ def create_database_if_not_exists(database_url: str) -> bool:
             return False
 
         db_name = parts[-1]
+        
+        # Validate database name to prevent SQL injection
+        # Database names from config should only contain safe characters
+        if not db_name.replace('_', '').replace('-', '').isalnum():
+            logger.error(f"Invalid database name format: {db_name}")
+            return False
+        
         # Create base URL without database name
         base_url = "/".join(parts[:-1])
 
