@@ -238,7 +238,7 @@ export default function AppealStatusPage() {
 
         {/* Support */}
         <div className="card-step p-6 mt-8 text-center">
-          <p style={{ color: "var(--text-secondary)", marginBottom: "0.75rem" }}>Can't find your appeal?</p>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "0.75rem" }}>Can&apos;t find your appeal?</p>
           <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "support@example.com"}`} style={{ color: "var(--accent)" }}>
             Contact support
           </a>

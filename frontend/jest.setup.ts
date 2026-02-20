@@ -1,7 +1,8 @@
 import "@testing-library/jest-dom";
 
 // Mock fetch globally for API tests
-global.fetch = jest.fn();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+global.fetch = (globalThis as any).fetch || (async () => { throw new Error("Fetch not implemented"); });
 
 // Mock Response for API tests
 global.Response = class Response {

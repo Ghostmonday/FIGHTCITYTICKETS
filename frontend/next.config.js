@@ -4,6 +4,21 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Exclude test files from production build
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      };
+    }
+    return config;
+  },
+  // Ignore test files during build
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
   // Disable static export for pages that use client-side context
   output: "standalone",
   // Enable subdomain routing

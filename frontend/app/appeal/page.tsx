@@ -88,7 +88,7 @@ function AppealPageContent() {
             Appeal Your {formatCityName(state.cityId)} Ticket
           </h1>
           <p className="theme-transition" style={{ color: "var(--text-secondary)" }}>
-            You're almost done. Add evidence and review your appeal.
+            You&apos;re almost done. Add evidence and review your appeal.
           </p>
           <div 
             className="inline-flex items-center gap-2 px-4 py-2 mt-4 rounded-lg"

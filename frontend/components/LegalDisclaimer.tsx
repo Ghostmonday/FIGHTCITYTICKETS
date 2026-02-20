@@ -30,7 +30,7 @@ export default function LegalDisclaimer({
       <div style={{ ...baseText, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         <p>
           <strong style={{ color: "var(--text-primary)" }}>
-            We aren't lawyers. We're paperwork experts.
+            We aren&apos;t lawyers. We&apos;re paperwork experts.
           </strong>{" "}
           In a bureaucracy, paperwork is power. We help you articulate and
           refine your own reasons for appealing a parking ticket. We act as a
@@ -55,7 +55,7 @@ export default function LegalDisclaimer({
         <strong style={{ color: "var(--text-secondary)" }}>
           Document preparation only — not legal advice.
         </strong>{" "}
-        We help you prepare appeal paperwork but don't provide legal advice
+        We help you prepare appeal paperwork but don&apos;t provide legal advice
         or representation.{" "}
         <Link
           href="/terms"
@@ -77,7 +77,7 @@ export default function LegalDisclaimer({
           <strong style={{ color: "var(--text-primary)" }}>
             Document preparation only — not legal advice.
           </strong>{" "}
-          We help you prepare appeal paperwork but don't provide legal
+          We help you prepare appeal paperwork but don&apos;t provide legal
           advice, legal representation, or recommendations.
         </p>
         <p style={{ ...mutedText, borderTop: "1px solid var(--border)", paddingTop: "0.75rem" }}>
@@ -137,7 +137,7 @@ export default function LegalDisclaimer({
         <div>
           <p style={{ ...baseText, marginBottom: "0.5rem" }}>
             <strong>Document preparation only — not legal advice.</strong> We
-            help you prepare appeal paperwork but don't provide legal
+            help you prepare appeal paperwork but don&apos;t provide legal
             representation.
           </p>
           <button
