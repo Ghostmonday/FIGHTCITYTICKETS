@@ -20,7 +20,7 @@ class TestCitationValidator:
 
     def setup_method(self):
         """Set up test environment."""
-        self.cities_dir = Path(__file__).parent.parent.parent / "cities"
+        self.cities_dir = Path(__file__).parent.parent / "cities"
         self.validator = CitationValidator(self.cities_dir)
 
     def test_basic_format_validation(self):

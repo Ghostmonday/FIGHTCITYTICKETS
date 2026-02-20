@@ -237,7 +237,7 @@ class CitationValidator:
     DEFAULT_APPEAL_DEADLINE_DAYS = 21
 
     # Default cities directory relative to this file
-    DEFAULT_CITIES_DIR = Path(__file__).parent.parent.parent.parent / "cities"
+    DEFAULT_CITIES_DIR = Path(__file__).parent.parent.parent / "cities"
 
     # Singleton instance for class method compatibility
     _default_validator = None
