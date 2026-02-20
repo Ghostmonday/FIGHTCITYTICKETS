@@ -1108,23 +1108,23 @@ if __name__ == "__main__":
         )
 
         if args.verbose:
-            print("\nTransformation {'SUCCESS' if result.success else 'FAILED'}")
+            print(f"\nTransformation {'SUCCESS' if result.success else 'FAILED'}")
             if result.warnings:
-                print("\nWarnings ({len(result.warnings)}):")
+                print(f"\nWarnings ({len(result.warnings)}):")
                 for warning in result.warnings:
-                    print("  ⚠️  {warning}")
+                    print(f"  ⚠️  {warning}")
             if result.errors:
-                print("\nErrors ({len(result.errors)}):")
+                print(f"\nErrors ({len(result.errors)}):")
                 for error in result.errors:
-                    print("  ❌ {error}")
+                    print(f"  ❌ {error}")
             if result.success:
-                print("\nOutput saved to: {args.output or '(not saved)'}")
+                print(f"\nOutput saved to: {args.output or '(not saved)'}")
         else:
-            print("Success: {result.success}")
+            print(f"Success: {result.success}")
             if result.errors:
-                print("Errors: {len(result.errors)}")
+                print(f"Errors: {len(result.errors)}")
             if result.warnings:
-                print("Warnings: {len(result.warnings)}")
+                print(f"Warnings: {len(result.warnings)}")
 
     elif input_path.is_dir():
         # Directory batch adaptation
@@ -1143,12 +1143,12 @@ if __name__ == "__main__":
         if args.verbose:
             for filename, result in results.items():
                 status = "✅" if result.success else "❌"
-                print("\n{status} {filename}")
+                print(f"\n{status} {filename}")
                 if result.warnings:
-                    print("  Warnings: {len(result.warnings)}")
+                    print(f"  Warnings: {len(result.warnings)}")
                 if result.errors:
-                    print("  Errors: {len(result.errors)}")
+                    print(f"  Errors: {len(result.errors)}")
 
     else:
-        print("Error: Input path does not exist: {args.input}")
+        print(f"Error: Input path does not exist: {args.input}")
         exit(1)
