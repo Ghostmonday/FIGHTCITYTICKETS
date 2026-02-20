@@ -5,6 +5,7 @@ Provides endpoints for monitoring server status, viewing logs, and accessing rec
 Protected by admin secret key header.
 """
 
+import hashlib
 import json
 import logging
 import os
@@ -40,13 +41,15 @@ def log_admin_action(action: str, admin_id: str, request: Request, details: dict
         request: The original request
         details: Additional details to log
     """
-    import json
     from datetime import datetime
+
+    # Securely hash the admin_id so we don't log secrets
+    hashed_id = hashlib.sha256(admin_id.encode()).hexdigest()[:8]
 
     log_entry = {
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "action": action,
-        "admin_id": admin_id,
+        "admin_id": f"admin-{hashed_id}",
         "ip": request.client.host if request.client else "unknown",
         "path": request.url.path,
         "method": request.method,
