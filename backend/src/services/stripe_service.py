@@ -158,14 +158,12 @@ class StripeService:
         last_exception = None
         for attempt in range(self.RETRY_COUNT):
             try:
-                # If func is async, await it. If sync, just call it?
-                # Usually we pass a sync function to run, or async coroutine?
-                # create_session passes a sync function `_create`.
-                # So we call it, but if it fails, we await sleep.
                 if asyncio.iscoroutinefunction(func):
                     return await func(*args, **kwargs)
                 else:
-                    return func(*args, **kwargs)
+                    # Offload blocking synchronous calls to a thread pool
+                    loop = asyncio.get_running_loop()
+                    return await loop.run_in_executor(None, lambda: func(*args, **kwargs))
             except stripe.error.RateLimitError as e:
                 last_exception = e
                 if attempt < self.RETRY_COUNT - 1:
