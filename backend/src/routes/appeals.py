@@ -6,10 +6,12 @@ Enables persistence across sessions and devices.
 """
 
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, status
+import jwt
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel, EmailStr, validator
 
 from ..config import settings
@@ -19,6 +21,52 @@ from ..services.database import get_db_service
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def create_access_token(intake_id: int) -> str:
+    """Create a stateless access token for an intake."""
+    now = int(time.time())
+    payload = {
+        "sub": str(intake_id),
+        "iat": now,
+        "exp": now + 86400,  # 24 hours expiration
+        "type": "appeal_access",
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm="HS256")
+
+
+def verify_appeal_token(
+    intake_id: int,
+    x_appeal_token: Optional[str] = Header(None, alias="X-Appeal-Token"),
+    token: Optional[str] = Query(None),
+) -> None:
+    """
+    Verify the appeal access token.
+    Accepts token in header (X-Appeal-Token) or query param (token).
+    """
+    access_token = x_appeal_token or token
+
+    if not access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication token",
+        )
+
+    try:
+        payload = jwt.decode(access_token, settings.secret_key, algorithms=["HS256"])
+        token_intake_id = int(payload.get("sub"))
+
+        if token_intake_id != intake_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Token invalid for this intake",
+            )
+
+    except jwt.PyJWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication token",
+        )
 
 
 class AppealUpdateRequest(BaseModel):
@@ -72,7 +120,11 @@ class AppealResponse(BaseModel):
 
 
 @router.put("/appeals/{intake_id}")
-async def update_appeal(intake_id: int, data: AppealUpdateRequest):
+async def update_appeal(
+    intake_id: int,
+    data: AppealUpdateRequest,
+    _auth: None = Depends(verify_appeal_token),
+):
     """
     Update an existing appeal/intake record.
 
@@ -172,7 +224,10 @@ async def update_appeal(intake_id: int, data: AppealUpdateRequest):
 
 
 @router.get("/appeals/{intake_id}", response_model=AppealResponse)
-async def get_appeal(intake_id: int):
+async def get_appeal(
+    intake_id: int,
+    _auth: None = Depends(verify_appeal_token),
+):
     """
     Get an appeal/intake record by ID.
 
@@ -252,10 +307,14 @@ async def create_appeal(data: AppealUpdateRequest):
 
         logger.info(f"Created new intake {intake.id}")
 
+        # Generate access token
+        token = create_access_token(intake.id)
+
         return {
             "message": "Intake created successfully",
             "intake_id": intake.id,
             "citation_number": intake.citation_number,
+            "token": token,
         }
 
     except Exception as e:
