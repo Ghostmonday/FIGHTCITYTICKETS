@@ -1,0 +1,453 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Fight City Tickets API",
+    "description": "Database-first parking ticket appeal system for San Francisco and other cities. Handles citation validation, AI-assisted appeal letter writing (UPL-compliant), checkout, and webhook processing.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Fight City Tickets Support",
+      "url": "https://fightcitytickets.com",
+      "email": "support@fightcitytickets.com"
+    },
+    "license": {
+      "name": "Proprietary"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.fightcitytickets.com",
+      "description": "Production server"
+    },
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development server"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Root endpoint",
+        "description": "Returns basic API information and links to documentation",
+        "tags": ["root"],
+        "responses": {
+          "200": {
+            "description": "API information",
+            "content": {
+              "application/json": {
+                "example": {
+                  "name": "Fight City Tickets API",
+                  "version": "1.0.0",
+                  "documentation": "/docs",
+                  "health_check": "/health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Basic health check endpoint",
+        "tags": ["health"],
+        "responses": {
+          "200": {
+            "description": "Service is healthy"
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "summary": "Comprehensive status",
+        "description": "Returns detailed status information including database, Stripe, Lob, and AI services",
+        "tags": ["status"],
+        "responses": {
+          "200": {
+            "description": "Status information",
+            "content": {
+              "application/json": {
+                "example": {
+                  "status": "operational",
+                  "timestamp": "2026-02-22T00:00:00Z",
+                  "services": {
+                    "database": {"status": "connected", "type": "PostgreSQL"},
+                    "stripe": {"status": "configured", "mode": "test"},
+                    "lob": {"status": "configured", "mode": "test"},
+                    "ai_services": {"deepseek": "configured"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tickets/validate": {
+      "post": {
+        "summary": "Validate citation",
+        "description": "Validate a parking citation number and check against selected city. Performs format checking, agency identification, city detection, appeal deadline calculation, and deadline status (urgent/past due).",
+        "tags": ["tickets"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "citation_number": {"type": "string", "description": "The citation/ticket number"},
+                  "license_plate": {"type": "string", "description": "Optional license plate"},
+                  "violation_date": {"type": "string", "description": "Optional violation date (ISO format)"},
+                  "city_id": {"type": "string", "description": "Optional city ID for mismatch detection"}
+                },
+                "required": ["citation_number"]
+              },
+              "example": {
+                "citation_number": "12345678",
+                "license_plate": "ABC1234",
+                "city_id": "san_francisco"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Citation validation result",
+            "content": {
+              "application/json": {
+                "example": {
+                  "is_valid": true,
+                  "citation_number": "12345678",
+                  "agency": "San Francisco Municipal Transportation Agency",
+                  "deadline_date": "2026-03-15",
+                  "days_remaining": 21,
+                  "is_past_deadline": false,
+                  "is_urgent": false,
+                  "city_id": "san_francisco",
+                  "appeal_deadline_days": 21
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/statement/refine": {
+      "post": {
+        "summary": "Refine appeal statement",
+        "description": "AI-assisted appeal letter refinement. UPL-compliant - never provides legal advice. Helps users articulate their appeal while maintaining compliance.",
+        "tags": ["statement"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "statement": {"type": "string", "description": "User's original statement"},
+                  "city": {"type": "string", "description": "City code (e.g., 'san_francisco')"}
+                },
+                "required": ["statement", "city"]
+              },
+              "example": {
+                "statement": "I was parked legally. The sign was obscured by a tree branch.",
+                "city": "san_francisco"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refined statement",
+            "content": {
+              "application/json": {
+                "example": {
+                  "refined_statement": "Dear Sir or Madam,\n\nI am writing to formally contest the citation...",
+                  "word_count": 245,
+                  "compliance_verified": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/checkout/create-session": {
+      "post": {
+        "summary": "Create checkout session",
+        "description": "Create a Stripe checkout session using database-first approach. All data is persisted in PostgreSQL before payment.",
+        "tags": ["checkout"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "citation_id": {"type": "string", "description": "UUID of the citation"},
+                  "service_type": {"type": "string", "enum": ["standard", "certified"], "description": "Service level"},
+                  "success_url": {"type": "string", "description": "Redirect URL on success"},
+                  "cancel_url": {"type": "string", "description": "Redirect URL on cancel"}
+                },
+                "required": ["citation_id", "service_type", "success_url", "cancel_url"]
+              },
+              "example": {
+                "citation_id": "550e8400-e29b-41d4-a716-446655440000",
+                "service_type": "standard",
+                "success_url": "https://fightcitytickets.com/success?session_id={CHECKOUT_SESSION_ID}",
+                "cancel_url": "https://fightcitytickets.com/cancel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout session created",
+            "content": {
+              "application/json": {
+                "example": {
+                  "session_id": "cs_test_abc123",
+                  "checkout_url": "https://checkout.stripe.com/c/abcd1234",
+                  "clerical_id": "ND-A1B2-C3D4"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/appeals": {
+      "post": {
+        "summary": "Submit appeal",
+        "description": "Submit a parking ticket appeal with statement and payment confirmation",
+        "tags": ["appeals"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "citation_id": {"type": "string"},
+                  "statement": {"type": "string"},
+                  "payment_session_id": {"type": "string"},
+                  "service_type": {"type": "string"}
+                },
+                "required": ["citation_id", "statement", "payment_session_id"]
+              },
+              "example": {
+                "citation_id": "550e8400-e29b-41d4-a716-446655440000",
+                "statement": "I am writing to contest the citation...",
+                "payment_session_id": "cs_test_abc123",
+                "service_type": "standard"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Appeal submitted"
+          }
+        }
+      },
+      "get": {
+        "summary": "List appeals",
+        "description": "List all appeals (admin or user specific)",
+        "tags": ["appeals"],
+        "parameters": [
+          {"name": "status", "in": "query", "schema": {"type": "string"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "List of appeals"
+          }
+        }
+      }
+    },
+    "/api/appeals/{appeal_id}": {
+      "get": {
+        "summary": "Get appeal by ID",
+        "description": "Retrieve a specific appeal by its unique identifier",
+        "tags": ["appeals"],
+        "parameters": [
+          {
+            "name": "appeal_id",
+            "in": "path",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "UUID of the appeal"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Appeal details"
+          }
+        }
+      }
+    },
+    "/webhook/stripe": {
+      "post": {
+        "summary": "Stripe webhook",
+        "description": "Handle Stripe webhook events (checkout.session.completed, etc.). Uses idempotent processing for safe retries.",
+        "tags": ["webhooks"],
+        "security": [{"stripeSignature": []}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {"type": "string"},
+                  "data": {"type": "object", "properties": {"object": {"type": "object"}}}
+                }
+              },
+              "example": {
+                "type": "checkout.session.completed",
+                "data": {
+                  "object": {
+                    "id": "cs_test_abc123",
+                    "payment_status": "paid",
+                    "metadata": {"appeal_id": "550e8400-e29b-41d4-a716-446655440000"}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed"
+          },
+          "400": {
+            "description": "Invalid signature"
+          }
+        }
+      }
+    },
+    "/places/search": {
+      "get": {
+        "summary": "Search places",
+        "description": "Search for supported cities/locations",
+        "tags": ["places"],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {"type": "string"},
+            "description": "Search query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "example": [
+                  {"id": "san_francisco", "name": "San Francisco", "state": "CA"}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/appeals": {
+      "get": {
+        "summary": "List all appeals (admin)",
+        "description": "Admin endpoint to list all appeals with filtering",
+        "tags": ["admin"],
+        "security": [{"adminAuth": []}],
+        "parameters": [
+          {"name": "status", "in": "query", "schema": {"type": "string"}},
+          {"name": "limit", "in": "query", "schema": {"type": "integer"}},
+          {"name": "offset", "in": "query", "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "List of appeals"
+          }
+        }
+      }
+    },
+    "/admin/analytics": {
+      "get": {
+        "summary": "Get analytics (admin)",
+        "description": "Admin endpoint for analytics and reporting",
+        "tags": ["admin"],
+        "security": [{"adminAuth": []}],
+        "responses": {
+          "200": {
+            "description": "Analytics data"
+          }
+        }
+      }
+    },
+    "/telemetry/ocr": {
+      "post": {
+        "summary": "Submit OCR telemetry",
+        "description": "Submit OCR performance telemetry (opt-in). Helps improve citation recognition.",
+        "tags": ["telemetry"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "image_hash": {"type": "string"},
+                  "extracted_text": {"type": "string"},
+                  "confidence": {"type": "number"},
+                  "processing_time_ms": {"type": "integer"}
+                },
+                "required": ["image_hash", "extracted_text", "confidence"]
+              },
+              "example": {
+                "image_hash": "abc123def456",
+                "extracted_text": "12345678",
+                "confidence": 0.95,
+                "processing_time_ms": 250
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Telemetry recorded"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "stripeSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Stripe-Signature",
+        "description": "Stripe webhook signature for verification"
+      },
+      "adminAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Admin authentication token"
+      }
+    }
+  },
+  "tags": [
+    {"name": "root", "description": "Root endpoints"},
+    {"name": "health", "description": "Health check endpoints"},
+    {"name": "status", "description": "Status and service information"},
+    {"name": "tickets", "description": "Citation and ticket validation"},
+    {"name": "statement", "description": "AI statement refinement"},
+    {"name": "checkout", "description": "Payment checkout sessions"},
+    {"name": "appeals", "description": "Appeal submission and retrieval"},
+    {"name": "webhooks", "description": "Webhook handlers"},
+    {"name": "places", "description": "Location/city search"},
+    {"name": "admin", "description": "Admin-only endpoints"},
+    {"name": "telemetry", "description": "Telemetry and analytics"}
+  ]
+}
