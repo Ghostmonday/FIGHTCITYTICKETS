@@ -7,14 +7,19 @@ Allows users to check the status of their appeal using email and citation number
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..services.database import get_db_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 
 class StatusLookupRequest(BaseModel):
@@ -41,7 +46,8 @@ class StatusLookupResponse(BaseModel):
 
 
 @router.post("/lookup", response_model=StatusLookupResponse)
-def lookup_appeal_status(request: StatusLookupRequest):
+@limiter.limit("5/minute")
+def lookup_appeal_status(request: Request, lookup_data: StatusLookupRequest):
     """
     Look up appeal status by email and citation number.
 
@@ -56,7 +62,7 @@ def lookup_appeal_status(request: StatusLookupRequest):
 
         # Find intake by email and citation number
         intake = db_service.get_intake_by_email_and_citation(
-            email=request.email, citation_number=request.citation_number
+            email=lookup_data.email, citation_number=lookup_data.citation_number
         )
 
         if not intake:
