@@ -184,12 +184,13 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Note: This must be called after routers are included
 def _share_limiter():
     """Share limiter instance with route modules."""
-    from .routes import checkout, webhooks, admin, tickets, statement
+    from .routes import checkout, webhooks, admin, tickets, statement, status
     checkout.limiter = limiter_instance
     webhooks.limiter = limiter_instance
     admin.limiter = limiter_instance
     tickets.limiter = limiter_instance
     statement.limiter = limiter_instance
+    status.limiter = limiter_instance
 
 # Configure CORS
 app.add_middleware(
