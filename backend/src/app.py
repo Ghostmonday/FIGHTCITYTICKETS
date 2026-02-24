@@ -359,11 +359,15 @@ async def not_found_handler(request: Request, exc):
     request_id = get_request_id(request)
     logger.warning(f"404 Not Found [request_id={request_id}]: {request.url.path}")
 
+    message = "The requested resource was not found"
+    if hasattr(exc, "detail"):
+        message = exc.detail
+
     return JSONResponse(
         status_code=404,
         content=error_response(
             error_code=ErrorCode.NOT_FOUND,
-            message="The requested resource was not found",
+            message=message,
             status_code=404,
             request=request,
             details={"path": request.url.path},
