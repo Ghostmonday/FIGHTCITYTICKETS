@@ -69,6 +69,17 @@ def verify_appeal_token(
         )
 
 
+def validate_appeal_access(
+    intake_id: int,
+    _auth: None = Depends(verify_appeal_token),
+) -> int:
+    """
+    Dependency to validate access to an intake.
+    Returns the intake_id if valid.
+    """
+    return intake_id
+
+
 class AppealUpdateRequest(BaseModel):
     """Request model for updating appeal/intake state."""
 
@@ -225,12 +236,12 @@ async def update_appeal(
 
 @router.get("/appeals/{intake_id}", response_model=AppealResponse)
 async def get_appeal(
-    intake_id: int,
-    _auth: None = Depends(verify_appeal_token),
+    intake_id: int = Depends(validate_appeal_access),
 ):
     """
     Get an appeal/intake record by ID.
 
+    Requires a valid appeal token for the specific intake ID.
     Used to restore user progress from the database.
     """
     db_service = get_db_service()
