@@ -95,6 +95,7 @@ class SchemaAdapter:
     DEFAULT_APPEAL_DEADLINE_DAYS = 21
     DEFAULT_JURISDICTION = "city"
     DEFAULT_ROUTING_RULE = "direct"
+    DEFAULT_STATUS = "active"
 
     # Field mappings for normalization (legacy -> Schema 4.3.0)
     FIELD_MAPPINGS = {
@@ -146,6 +147,9 @@ class SchemaAdapter:
         "online_available": "online_appeal_available",
         "appeal_url": "online_appeal_url",
         "website": "online_appeal_url",
+        # Status
+        "eligibility": "status",
+        "city_status": "status",
     }
 
     def __init__(self, strict_mode: bool = True):
@@ -698,6 +702,7 @@ class SchemaAdapter:
             ("appeal_mail_address", {"status": "missing"}),
             ("phone_confirmation_policy", {"required": False}),
             ("routing_rule", self.DEFAULT_ROUTING_RULE),
+            ("status", self.DEFAULT_STATUS),
             ("sections", {}),
             (
                 "verification_metadata",
@@ -737,6 +742,13 @@ class SchemaAdapter:
         # Check required fields are not empty
         if not data.get("city_id") or str(data["city_id"]).strip() == "":
             errors.append("city_id is required and cannot be empty")
+
+        # Validate status
+        valid_statuses = ["active", "beta", "blocked", "coming_soon"]
+        if "status" in data and data["status"] not in valid_statuses:
+            errors.append(
+                f"Invalid status '{data['status']}'. Must be one of: {', '.join(valid_statuses)}"
+            )
 
         if not data.get("name") or str(data["name"]).strip() == "":
             errors.append("name is required and cannot be empty")

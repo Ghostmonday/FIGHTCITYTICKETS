@@ -25,10 +25,6 @@ TIER 3 - BLOCKED (Do not enter):
 SCRIVENER DEFENSE:
   This service is a "document preparation service" only.
   We transcribe user facts onto municipal forms - NO legal advice.
-
-TODO: Add Boston (us-ma-boston)
-TODO: Add eligibility filter to get_all_cities()
-TODO: Add is_eligible_for_appeals(city_id) method
 """
 
 import json
@@ -45,6 +41,15 @@ logger = logging.getLogger(__name__)
 
 # Cache TTL for city configs (1 hour)
 CITY_CONFIG_CACHE_TTL = 3600
+
+
+class CityStatus(str, Enum):
+    """Status of city support."""
+
+    ACTIVE = "active"
+    BETA = "beta"
+    BLOCKED = "blocked"
+    COMING_SOON = "coming_soon"
 
 
 class AppealMailStatus(str, Enum):
@@ -319,6 +324,7 @@ class CityConfiguration:
     routing_rule: RoutingRule
     sections: Dict[str, CitySection]
     verification_metadata: VerificationMetadata
+    status: CityStatus = CityStatus.ACTIVE
     timezone: str = "America/Los_Angeles"
     appeal_deadline_days: int = 21
     online_appeal_available: bool = False
@@ -330,6 +336,7 @@ class CityConfiguration:
             "city_id": self.city_id,
             "name": self.name,
             "jurisdiction": self.jurisdiction.value,
+            "status": self.status.value,
             "citation_patterns": [p.to_dict() for p in self.citation_patterns],
             "appeal_mail_address": self.appeal_mail_address.to_dict(),
             "phone_confirmation_policy": self.phone_confirmation_policy.to_dict(),
@@ -550,6 +557,7 @@ class CityRegistry:
             routing_rule=RoutingRule(data["routing_rule"]),
             sections=sections,
             verification_metadata=VerificationMetadata(**data["verification_metadata"]),
+            status=CityStatus(data.get("status", "active")),
             timezone=data.get("timezone", "America/Los_Angeles"),
             appeal_deadline_days=data.get("appeal_deadline_days", 21),
             online_appeal_available=data.get("online_appeal_available", False),
@@ -790,18 +798,50 @@ class CityRegistry:
 
         return config.routing_rule
 
-    def get_all_cities(self) -> List[Dict[str, Any]]:
-        """Get list of all loaded cities with basic info."""
-        return [
-            {
-                "city_id": city_id,
-                "name": config.name,
-                "jurisdiction": config.jurisdiction.value,
-                "citation_pattern_count": len(config.citation_patterns),
-                "section_count": len(config.sections),
-            }
-            for city_id, config in self.city_configs.items()
-        ]
+    def is_eligible_for_appeals(self, city_id: str) -> bool:
+        """
+        Check if city is eligible for appeals.
+
+        Args:
+            city_id: City identifier
+
+        Returns:
+            True if city is ACTIVE or BETA, False otherwise
+        """
+        config = self.get_city_config(city_id)
+        if not config:
+            return False
+
+        return config.status in [CityStatus.ACTIVE, CityStatus.BETA]
+
+    def get_all_cities(
+        self, status: Optional[CityStatus] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get list of all loaded cities with basic info, optionally filtered by status.
+
+        Args:
+            status: Optional status to filter by
+
+        Returns:
+            List of city summaries
+        """
+        cities = []
+        for city_id, config in self.city_configs.items():
+            if status and config.status != status:
+                continue
+
+            cities.append(
+                {
+                    "city_id": city_id,
+                    "name": config.name,
+                    "jurisdiction": config.jurisdiction.value,
+                    "status": config.status.value,
+                    "citation_pattern_count": len(config.citation_patterns),
+                    "section_count": len(config.sections),
+                }
+            )
+        return cities
 
     def validate_phone_for_city(
         self, city_id: str, phone_number: str, section_id: Optional[str] = None
