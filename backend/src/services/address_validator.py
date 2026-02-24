@@ -29,6 +29,7 @@ import httpx
 
 from ..config import settings
 from .city_registry import get_city_registry
+from .email_service import get_email_service
 
 # Set up logger
 logger = logging.getLogger(__name__)
@@ -112,6 +113,9 @@ class AddressValidator:
         # Cache for scraped addresses: {cache_key: (scraped_text, scrape_date)}
         # Cache key is based on (city_id + current date) to limit scraping to once per day per address
         self._scrape_cache: Dict[str, Tuple[str, date]] = {}
+
+        # Track consecutive failures for monitoring
+        self._failure_counts: Dict[str, int] = {}
 
     def _get_cache_key(self, city_id: str) -> str:
         """
@@ -501,6 +505,44 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
 
         return parts
 
+    async def _handle_scrape_success(self, city_id: str) -> None:
+        """
+        Handle successful scrape event.
+        Resets failure count for the city.
+        """
+        if city_id in self._failure_counts:
+            # Reset count on success
+            del self._failure_counts[city_id]
+
+    async def _handle_scrape_failure(self, city_id: str, url: str) -> None:
+        """
+        Handle scrape failure event.
+        Increments failure count and sends alert if threshold reached.
+        """
+        self._failure_counts[city_id] = self._failure_counts.get(city_id, 0) + 1
+        count = self._failure_counts[city_id]
+
+        logger.warning(f"Scrape failure #{count} for {city_id} ({url})")
+
+        if count == 3:
+            # Trigger alert on 3rd failure
+            try:
+                email_service = get_email_service()
+                subject = f"Urgent: Address Scraping Failed for {city_id}"
+                message = (
+                    f"Address scraping has failed 3 times in a row for {city_id}.\n"
+                    f"URL: {url}\n\n"
+                    f"This may indicate the city website has changed or blocked our bot.\n"
+                    f"Please investigate immediately."
+                )
+                await email_service.send_admin_alert(subject, message)
+
+                # Reset count to allow future alerts if problem persists
+                self._failure_counts[city_id] = 0
+
+            except Exception as e:
+                logger.error(f"Failed to send admin alert for {city_id}: {e}")
+
     async def validate_address(self, city_id: str, section_id: Optional[str] = None) -> AddressValidationResult:
         """
         Validate the address for a city by scraping the website and comparing.
@@ -537,12 +579,17 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
             logger.info(f"Cache miss for {city_id} - scraping URL")
             scraped_text = await self._scrape_url(url)
             if not scraped_text:
+                await self._handle_scrape_failure(city_id, url)
                 return AddressValidationResult(
                     is_valid=False,
                     city_id=city_id,
                     stored_address=stored_address,
                     error_message=f"Failed to scrape URL: {url}"
                 )
+
+            # Scrape successful
+            await self._handle_scrape_success(city_id)
+
             # Store in cache for future requests today
             self._set_cached_scrape(city_id, scraped_text)
 

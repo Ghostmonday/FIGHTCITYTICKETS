@@ -341,6 +341,34 @@ class EmailService:
 
         return True
 
+    async def send_admin_alert(self, subject: str, message: str) -> bool:
+        """
+        Send an admin alert email.
+
+        Args:
+            subject: Email subject
+            message: Email body
+
+        Returns:
+            True if sent successfully or logged in fallback
+        """
+        if not self.support_email:
+            logger.warning("No support email configured for admin alerts")
+            return False
+
+        full_subject = f"[ADMIN ALERT] {subject}"
+
+        # Always log critical alerts
+        logger.error(f"ADMIN ALERT: {subject} - {message}")
+
+        if self.is_available:
+            success = await self._send_via_sendgrid(self.support_email, full_subject, message)
+            if success:
+                return True
+            logger.warning("Failed to send admin alert via SendGrid")
+
+        return True
+
 
 # Singleton instance
 _email_service: Optional[EmailService] = None
