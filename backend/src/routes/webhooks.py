@@ -18,7 +18,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from ..config import settings
-from ..models import AppealType, PaymentStatus
+from ..models import AppealType, PaymentStatus, WebhookEvent
 from ..services.database import get_db_service
 from ..services.email_service import get_email_service
 from ..services.mail import AppealLetterRequest, get_mail_service
@@ -49,10 +49,68 @@ def _generate_event_id(event_type: str, object_id: str) -> str:
 
 def _is_event_processed(event_id: str) -> tuple[bool, Optional[dict]]:
     """
-    Check if an event has already been processed.
+    Check if an event has already been processed (database-backed).
     
     Returns:
         (is_processed, cached_result)
+    """
+    try:
+        db_service = get_db_service()
+        db = db_service.db
+        
+        # Check database for processed event
+        event = db.query(WebhookEvent).filter(
+            WebhookEvent.stripe_event_id == event_id,
+            WebhookEvent.processed == True
+        ).first()
+        
+        if event:
+            return True, {"message": event.result_message}
+        
+        return False, None
+    except Exception as e:
+        logger.warning("Database idempotency check failed: %s, falling back to memory", e)
+        # Fall back to memory cache on database errors
+        return _is_event_processed_memory(event_id)
+
+
+def _mark_event_processed(event_id: str, event_type: str, result: dict) -> None:
+    """Mark an event as processed in the database."""
+    try:
+        db_service = get_db_service()
+        db = db_service.db
+        
+        # Check if already exists
+        existing = db.query(WebhookEvent).filter(
+            WebhookEvent.stripe_event_id == event_id
+        ).first()
+        
+        if existing:
+            # Update existing record
+            existing.processed = True
+            existing.result_message = result.get("message", "")[:500]
+            existing.updated_at = datetime.now(timezone.utc)
+        else:
+            # Create new record
+            webhook_event = WebhookEvent(
+                stripe_event_id=event_id,
+                event_type=event_type,
+                processed=True,
+                result_message=result.get("message", "")[:500],
+            )
+            db.add(webhook_event)
+        
+        db.commit()
+    except Exception as e:
+        logger.warning("Failed to mark event processed in database: %s", e)
+        # Fall back to memory cache
+        _mark_event_processed_memory(event_id, result)
+
+
+# Legacy in-memory functions (fallback)
+def _is_event_processed_memory(event_id: str) -> tuple[bool, Optional[dict]]:
+    """
+    Check if an event has already been processed (in-memory fallback).
     """
     now = time.time()
     
@@ -68,15 +126,14 @@ def _is_event_processed(event_id: str) -> tuple[bool, Optional[dict]]:
     return False, None
 
 
-def _mark_event_processed(event_id: str, result: dict) -> None:
-    """Mark an event as processed and cache the result."""
+def _mark_event_processed_memory(event_id: str, result: dict) -> None:
+    """Mark an event as processed in memory (fallback)."""
     # Proactively clean up expired entries if cache is getting large
-    if len(_WEBHOOK_CACHE) >= _WEBHOOK_CACHE_MAX_SIZE * 0.8:  # Clean at 80% capacity
+    if len(_WEBHOOK_CACHE) >= _WEBHOOK_CACHE_MAX_SIZE * 0.8:
         _cleanup_expired_entries()
     
     # Clean up old entries if cache is still too large after cleanup
     if len(_WEBHOOK_CACHE) >= _WEBHOOK_CACHE_MAX_SIZE:
-        # Remove oldest 20% of entries
         sorted_items = sorted(_WEBHOOK_CACHE.items(), key=lambda x: x[1].get("timestamp", 0))
         for old_event_id in list(sorted_items)[:_WEBHOOK_CACHE_MAX_SIZE // 5]:
             if isinstance(old_event_id, tuple):
@@ -185,7 +242,7 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
                 result["message"] = "Already fulfilled (idempotent)"
                 logger.info("Webhook already processed for payment %s", payment.id)
                 # Cache the result for future quick lookups
-                _mark_event_processed(event_id, result)
+                _mark_event_processed(event_id, "checkout.session.completed", result)
                 return result
         
         # Check cache only after database check to avoid race conditions
@@ -199,7 +256,7 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
             logger.warning("Payment not found for session %s", session_id)
             result["message"] = f"Payment not found for session {session_id}"
             # Cache the result to prevent retries
-            _mark_event_processed(event_id, result)
+            _mark_event_processed(event_id, "checkout.session.completed", result)
             return result
 
         # Update payment status to PAID
@@ -344,18 +401,13 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
                 error_msg,
             )
 
-            # Suspend droplet on critical failure in production
-            if settings.app_env in ("prod", "production"):
-                try:
-                    from ..services.hetzner import get_hetzner_service
-
-                    hetzier = get_hetzner_service()
-                    if hetzier.is_available:
-                        droplet_name = getattr(settings, "hetzner_droplet_name", None)
-                        if droplet_name:
-                            await hetzier.suspend_droplet_by_name(droplet_name)
-                except Exception as suspend_err:
-                    logger.error("Error suspending droplet: %s", suspend_err)
+            # Mark payment as failed_fulfillment for retry
+            payment.status = "failed_fulfillment"
+            db_service.db.commit()
+            
+            # Alert admin via Sentry (already configured in app.py)
+            # The /admin/retry endpoint can be used to retry failed mailings
+            # DO NOT suspend the droplet - that would take the entire service offline
 
     except ValueError as e:
         # Specific error for missing data
@@ -378,7 +430,7 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
         result["message"] = f"Error processing payment: {error_type}: {error_msg}"
 
     # Always cache the result for idempotency
-    _mark_event_processed(event_id, result)
+    _mark_event_processed(event_id, "checkout.session.completed", result)
     
     return result
 

@@ -213,6 +213,50 @@ class Payment(Base):
     )
 
 
+class WebhookEvent(Base):
+    """
+    Tracks processed webhook events for idempotency.
+    
+    This replaces the in-memory cache which doesn't work across
+    multiple workers or after server restarts.
+    """
+
+    __tablename__ = "webhook_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Stripe event ID (e.g., "evt_abc123")
+    stripe_event_id = Column(String(100), nullable=False, unique=True, index=True)
+    
+    # Event type (e.g., "checkout.session.completed")
+    event_type = Column(String(100), nullable=False, index=True)
+    
+    # Whether processing was successful
+    processed = Column(Boolean, default=True, nullable=False)
+    
+    # Result message (success or error)
+    result_message = Column(Text, nullable=True)
+    
+    # When the event was first processed
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    
+    # When the event was last updated (for retries)
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index("ix_webhook_events_type_created", "event_type", "created_at"),
+    )
+
+
 # Helper function to create all tables
 def create_all_tables(engine):
     """Create all database tables."""

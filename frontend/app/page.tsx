@@ -111,13 +111,52 @@ export default function Home() {
     }
   };
 
-  const handleGenerateDefense = () => {
+  const handleGenerateDefense = async () => {
     if (selectedCity && citationNumber) {
-      updateState({
-        citationNumber,
-        licensePlate,
-        cityId: selectedCity,
-      });
+      // Upload file first if it exists
+      if (uploadedFile) {
+        try {
+          setIsValidating(true);
+          const uploadData = await apiClient.upload<{
+            photo_id: string;
+            filename: string;
+            size: number;
+          }>(
+            "/api/photos/upload",
+            uploadedFile,
+            {
+              citation_number: citationNumber,
+              city_id: selectedCity,
+            }
+          );
+          
+          // Store photo ID in context for the appeal page
+          updateState({
+            citationNumber,
+            licensePlate,
+            cityId: selectedCity,
+            // Store photo ID reference (photos will be loaded from backend)
+            photos: [uploadData.photo_id],
+          });
+        } catch (err) {
+          console.error("Failed to upload photo:", err);
+          // Continue anyway - user can re-upload in appeal flow
+          updateState({
+            citationNumber,
+            licensePlate,
+            cityId: selectedCity,
+          });
+        } finally {
+          setIsValidating(false);
+        }
+      } else {
+        updateState({
+          citationNumber,
+          licensePlate,
+          cityId: selectedCity,
+        });
+      }
+      
       router.push("/appeal");
     }
   };
@@ -320,9 +359,20 @@ export default function Home() {
               </button>
               <button
                 onClick={handleGenerateDefense}
+                disabled={isValidating}
                 className="btn-strike flex-1"
               >
-                Generate Defense →
+                {isValidating ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Uploading...
+                  </span>
+                ) : (
+                  "Generate Defense →"
+                )}
               </button>
             </div>
           </div>

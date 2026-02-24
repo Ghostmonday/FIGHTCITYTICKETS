@@ -40,6 +40,7 @@ from .routes.statement import router as statement_router
 from .routes.status import router as status_router
 from .routes.telemetry import router as telemetry_router
 from .routes.tickets import router as tickets_router
+from .routes.photos import router as photos_router
 from .routes.webhooks import router as webhooks_router
 from .services.database import get_db_service
 
@@ -216,6 +217,7 @@ app.add_middleware(
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(tickets_router, prefix="/tickets", tags=["tickets"])
 app.include_router(statement_router, prefix="/statement", tags=["statement"])
+app.include_router(photos_router, prefix="/api", tags=["photos"])
 
 
 # Updated routes with database-first approach

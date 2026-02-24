@@ -66,12 +66,17 @@ def log_admin_action(action: str, admin_id: str, request: Request, details: dict
 ADMIN_SECRET_HEADER = "X-Admin-Secret"
 
 
-def verify_admin_secret(x_admin_secret: str = Header(...)):
+def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
     """
-    Verify the admin secret header.
+    Verify the admin secret header and optionally check IP allowlist.
     Requires explicit ADMIN_SECRET environment variable.
-
+    
     Also logs all admin access attempts for security auditing.
+    
+    Security enhancements:
+    - Timing-safe secret comparison
+    - Optional IP allowlist (ADMIN_ALLOWED_IPS env var)
+    - Failed attempt logging
     """
     admin_secret = os.getenv("ADMIN_SECRET")
 
@@ -86,11 +91,31 @@ def verify_admin_secret(x_admin_secret: str = Header(...)):
 
     import secrets
     if not secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
-        client_ip = os.getenv('REMOTE_ADDR', 'unknown')
+        client_ip = request.client.host if request else os.getenv('REMOTE_ADDR', 'unknown')
         logger.warning(
             f"Failed admin access attempt - Invalid admin secret provided. "
             f"IP: {client_ip}"
         )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid admin secret",
+        )
+    
+    # IP allowlist check (comma-separated IPs in ADMIN_ALLOWED_IPS env var)
+    allowed_ips = os.getenv("ADMIN_ALLOWED_IPS", "").strip()
+    if allowed_ips:
+        client_ip = request.client.host if request else None
+        if client_ip and client_ip not in allowed_ips.split(","):
+            logger.warning(
+                f"Failed admin access attempt - IP not in allowlist. "
+                f"IP: {client_ip}, Allowed: {allowed_ips}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="IP not authorized for admin access",
+            )
+    
+    return x_admin_secret
         # Log failed attempt
         try:
             with open(ADMIN_AUDIT_LOG, "a") as f:

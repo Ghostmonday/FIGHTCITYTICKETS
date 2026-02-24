@@ -270,6 +270,34 @@ class ApiClient {
       clientOptions
     );
   }
+
+  /**
+   * Upload file with multipart form data
+   */
+  async upload<T = any>(
+    endpoint: string,
+    file: File,
+    additionalFields?: Record<string, string>,
+    clientOptions?: ApiClientOptions
+  ): Promise<T> {
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    if (additionalFields) {
+      for (const [key, value] of Object.entries(additionalFields)) {
+        formData.append(key, value);
+      }
+    }
+
+    return this.request<T>(
+      endpoint,
+      {
+        method: "POST",
+        body: formData,
+      },
+      { ...clientOptions, timeout: clientOptions?.timeout || 60000 } // 60s timeout for uploads
+    );
+  }
 }
 
 // Export singleton instance
