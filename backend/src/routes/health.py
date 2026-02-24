@@ -319,6 +319,34 @@ _ERROR_COUNT = 0
 _START_TIME = time.time()
 
 
+def _get_business_metrics_sync() -> dict:
+    """Fetch business metrics synchronously."""
+    try:
+        from ..services.database import get_db_service
+        db = get_db_service()
+        if db.health_check():
+            with db.get_session() as session:
+                from sqlalchemy import func
+                from ..models import Intake, Payment, PaymentStatus
+
+                total_intakes = session.query(func.count(Intake.id)).scalar() or 0
+                total_payments = session.query(func.count(Payment.id)).scalar() or 0
+                successful_payments = (
+                    session.query(func.count(Payment.id))
+                    .filter(Payment.status == PaymentStatus.PAID)
+                    .scalar()
+                    or 0
+                )
+                return {
+                    "total_intakes": total_intakes,
+                    "total_payments": total_payments,
+                    "successful_payments": successful_payments,
+                }
+    except Exception as e:
+        logger.warning(f"Could not fetch business metrics: {e}")
+    return {}
+
+
 @router.get("/metrics")
 async def metrics():
     """
@@ -336,28 +364,12 @@ async def metrics():
     uptime_seconds = time.time() - _START_TIME
 
     # Get business metrics from database if available
-    business_metrics = {}
+    # Run in thread pool to avoid blocking the event loop
     try:
-        from ..services.database import get_db_service
-        db = get_db_service()
-        if db.health_check():
-            with db.get_session() as session:
-                from ..models import Intake, Payment, PaymentStatus
-                total_intakes = session.query(func.count(Intake.id)).scalar() or 0
-                total_payments = session.query(func.count(Payment.id)).scalar() or 0
-                successful_payments = (
-                    session.query(func.count(Payment.id))
-                    .filter(Payment.status == PaymentStatus.PAID)
-                    .scalar()
-                    or 0
-                )
-                business_metrics = {
-                    "total_intakes": total_intakes,
-                    "total_payments": total_payments,
-                    "successful_payments": successful_payments,
-                }
+        business_metrics = await asyncio.to_thread(_get_business_metrics_sync)
     except Exception as e:
         logger.warning(f"Could not fetch business metrics: {e}")
+        business_metrics = {}
 
     # Return Prometheus-format metrics
     return {
