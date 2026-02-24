@@ -2,18 +2,23 @@
   "city_id": "us-il-chicago",
   "name": "Chicago",
   "jurisdiction": "city",
+  "status": "blocked",
   "citation_patterns": [
     {
       "regex": "^CH\\d{8}$",
       "section_id": "finance",
       "description": "Chicago Department of Finance parking citation",
-      "example_numbers": ["CH12345678"]
+      "example_numbers": [
+        "CH12345678"
+      ]
     },
     {
       "regex": "^CDOT\\d{7,9}$",
       "section_id": "cdot",
       "description": "Chicago DOT parking citation",
-      "example_numbers": ["CDOT1234567"]
+      "example_numbers": [
+        "CDOT1234567"
+      ]
     }
   ],
   "appeal_mail_address": {

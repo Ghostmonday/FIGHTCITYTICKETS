@@ -2,24 +2,33 @@
   "city_id": "us-ny-new_york",
   "name": "New York City",
   "jurisdiction": "city",
+  "status": "active",
   "citation_patterns": [
     {
       "regex": "^NYC\\d{8}$",
       "section_id": "nyc",
       "description": "NYC Department of Finance parking citation",
-      "example_numbers": ["NYC12345678", "NYC98765432"]
+      "example_numbers": [
+        "NYC12345678",
+        "NYC98765432"
+      ]
     },
     {
       "regex": "^NYPD\\d{7,9}$",
       "section_id": "nypd",
       "description": "NYC Police Department traffic citation",
-      "example_numbers": ["NYPD1234567", "NYPD98765432"]
+      "example_numbers": [
+        "NYPD1234567",
+        "NYPD98765432"
+      ]
     },
     {
       "regex": "^NYC\\d{6,8}$",
       "section_id": "nyc",
       "description": "NYC Finance short-format citation",
-      "example_numbers": ["NYC123456"]
+      "example_numbers": [
+        "NYC123456"
+      ]
     }
   ],
   "appeal_mail_address": {

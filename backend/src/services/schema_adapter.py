@@ -283,6 +283,17 @@ class SchemaAdapter:
             elif jurisdiction in ["federal", "national"]:
                 result["jurisdiction"] = "federal"
 
+        # Transform status
+        if "status" in result and isinstance(result["status"], str):
+            status = result["status"].lower()
+            if status not in ["active", "caution", "blocked"]:
+                warnings.append(
+                    f"Status: Invalid status '{status}', defaulting to 'active'"
+                )
+                result["status"] = "active"
+            else:
+                result["status"] = status
+
         # Handle old format: authority field -> convert to section and extract section_id for citation patterns
         authority_section_id = None
         if "authority" in result and isinstance(result["authority"], dict):
@@ -694,6 +705,7 @@ class SchemaAdapter:
             ("city_id", "unknown_city"),
             ("name", ""),
             ("jurisdiction", self.DEFAULT_JURISDICTION),
+            ("status", "active"),
             ("citation_patterns", []),
             ("appeal_mail_address", {"status": "missing"}),
             ("phone_confirmation_policy", {"required": False}),
@@ -740,6 +752,12 @@ class SchemaAdapter:
 
         if not data.get("name") or str(data["name"]).strip() == "":
             errors.append("name is required and cannot be empty")
+
+        # Validate status
+        if data.get("status") not in ["active", "caution", "blocked"]:
+            errors.append(
+                f"Invalid status '{data.get('status')}'. Must be active, caution, or blocked."
+            )
 
         # Validate citation patterns
         patterns = data.get("citation_patterns", [])
@@ -829,6 +847,10 @@ class SchemaAdapter:
         # Fix empty name
         if not result.get("name") or str(result["name"]).strip() == "":
             result["name"] = ""
+
+        # Fix invalid status
+        if result.get("status") not in ["active", "caution", "blocked"]:
+            result["status"] = "active"
 
         # Fix missing citation patterns
         if not result.get("citation_patterns"):

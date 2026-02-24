@@ -2,18 +2,25 @@
   "city_id": "us-ca-los_angeles",
   "name": "Los Angeles",
   "jurisdiction": "city",
+  "status": "caution",
   "citation_patterns": [
     {
       "regex": "^LA\\d{6,8}$",
       "section_id": "ladot",
       "description": "Los Angeles Department of Transportation citation",
-      "example_numbers": ["LA12345678", "LA9876543"]
+      "example_numbers": [
+        "LA12345678",
+        "LA9876543"
+      ]
     },
     {
       "regex": "^LAPD\\d{6,8}$",
       "section_id": "lapd",
       "description": "Los Angeles Police Department parking citation",
-      "example_numbers": ["LAPD123456", "LAPD9876543"]
+      "example_numbers": [
+        "LAPD123456",
+        "LAPD9876543"
+      ]
     }
   ],
   "appeal_mail_address": {
