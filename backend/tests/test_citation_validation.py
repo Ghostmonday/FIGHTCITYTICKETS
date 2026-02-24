@@ -115,6 +115,28 @@ class TestCitationValidator:
                 "Expected agency {expected_agency} for {citation}"
             )
 
+    def test_boston_citation_matching(self):
+        """Test Boston citation matching."""
+        test_cases = [
+            # Boston pattern is ^BO\d{7,9}$ and ^BPD\d{6,8}$
+            ("BO1234567", "us-ma-boston", "parking", CitationAgency.UNKNOWN),  # Parking Commission
+            ("BO9876543", "us-ma-boston", "parking", CitationAgency.UNKNOWN),  # Parking Commission
+            ("BPD123456", "us-ma-boston", "police", CitationAgency.UNKNOWN),   # Police Department
+        ]
+
+        for citation, expected_city, expected_section, expected_agency in test_cases:
+            validation = self.validator.validate_citation(citation)
+            assert validation.is_valid, f"Citation {citation} should be valid"
+            assert validation.city_id == expected_city, (
+                f"Expected city {expected_city} for {citation}"
+            )
+            assert validation.section_id == expected_section, (
+                f"Expected section {expected_section} for {citation}"
+            )
+            assert validation.agency == expected_agency, (
+                f"Expected agency {expected_agency} for {citation}"
+            )
+
     def test_city_specific_appeal_deadlines(self):
         """Test city-specific appeal deadline days."""
         test_cases = [
@@ -296,6 +318,10 @@ def run_citation_tests():
         ("SF Citation Matching", TestCitationValidator().test_sf_citation_matching),
         ("LA Citation Matching", TestCitationValidator().test_la_citation_matching),
         ("NYC Citation Matching", TestCitationValidator().test_nyc_citation_matching),
+        (
+            "Boston Citation Matching",
+            TestCitationValidator().test_boston_citation_matching,
+        ),
         (
             "City-Specific Deadlines",
             TestCitationValidator().test_city_specific_appeal_deadlines,

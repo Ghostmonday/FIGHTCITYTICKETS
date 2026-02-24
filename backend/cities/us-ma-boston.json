@@ -18,12 +18,12 @@
   ],
   "appeal_mail_address": {
     "status": "complete",
-    "department": "Parking Clerk - Administrative Appeals",
-    "address1": "2300 Washington Street",
-    "address2": "Room 115",
-    "city": "Roxbury",
+    "department": "Parking Clerk",
+    "address1": "P.O. Box 55800",
+    "address2": null,
+    "city": "Boston",
     "state": "MA",
-    "zip": "02119",
+    "zip": "02205",
     "country": "US"
   },
   "phone_confirmation_policy": {
@@ -40,12 +40,12 @@
       "name": "Boston Parking Commission",
       "appeal_mail_address": {
         "status": "complete",
-        "department": "Parking Clerk - Administrative Appeals",
-        "address1": "2300 Washington Street",
-        "address2": "Room 115",
-        "city": "Roxbury",
+        "department": "Parking Clerk",
+        "address1": "P.O. Box 55800",
+        "address2": null,
+        "city": "Boston",
         "state": "MA",
-        "zip": "02119",
+        "zip": "02205",
         "country": "US"
       },
       "routing_rule": "direct",
@@ -68,12 +68,12 @@
       "name": "Boston Police Department",
       "appeal_mail_address": {
         "status": "complete",
-        "department": "Parking Violations",
-        "address1": "354 Columbus Avenue",
+        "department": "Parking Clerk",
+        "address1": "P.O. Box 55800",
         "address2": null,
         "city": "Boston",
         "state": "MA",
-        "zip": "02116",
+        "zip": "02205",
         "country": "US"
       },
       "routing_rule": "direct",

@@ -4,11 +4,6 @@ Citation Validation Service for Fight City Tickets.com
 Validates parking citation numbers and calculates appeal deadlines across multiple cities.
 Implements multi-city support via CityRegistry (Schema 4.3.0) with backward compatibility.
 
-TODO: Implement Boston city configuration (us-ma-boston)
-      - High-volume target, digital signatures accepted
-      - Simple checkbox form for third-party appeals
-      - Reference: https://www.boston.gov/parking/parking-tickets
-
 TODO: Remove SF/LA from available cities if following Tier 1-only strategy
       - CA markets have high UPL risk (bar association scrutiny)
       - Keep config files but filter in API response
