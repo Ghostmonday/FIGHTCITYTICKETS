@@ -115,24 +115,6 @@ def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
                 detail="IP not authorized for admin access",
             )
     
-    return x_admin_secret
-        # Log failed attempt
-        try:
-            with open(ADMIN_AUDIT_LOG, "a") as f:
-                from datetime import datetime
-                f.write(json.dumps({
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
-                    "action": "auth_failure",
-                    "ip": client_ip,
-                    "status": "failed",
-                }) + "\n")
-        except Exception:
-            pass
-
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid admin secret",
-        )
 
     logger.info(f"Admin access granted - IP: {os.getenv('REMOTE_ADDR', 'unknown')}")
     return x_admin_secret
