@@ -85,6 +85,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   // Format content with paragraphs
   const paragraphs = post.content.split(/\n\n+/).filter((p) => p.trim());
 
+  // Helper for safe JSON-LD to prevent XSS
+  const safeJsonLd = (data: any) =>
+    JSON.stringify(data).replace(/</g, "\\u003c").replace(/>/g, "\\u003e");
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-white">
       {/* Header */}
@@ -218,7 +222,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: safeJsonLd({
             "@context": "https://schema.org",
             "@type": "Article",
             headline: post.title,
