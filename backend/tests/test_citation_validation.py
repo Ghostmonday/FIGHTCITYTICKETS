@@ -71,11 +71,9 @@ class TestCitationValidator:
     def test_la_citation_matching(self):
         """Test Los Angeles citation matching."""
         test_cases = [
-            # LA pattern is ^[0-9A-Z]{6,11}$ which matches many formats
-            # Actual section is ladot_pvb based on city file
-            ("LA123456", "us-ca-los_angeles", "ladot_pvb", CitationAgency.UNKNOWN),  # LADOT
-            ("DOT789012", "us-ca-los_angeles", "ladot_pvb", CitationAgency.UNKNOWN),  # LADOT
-            # Note: LAX, USC, LAPD sections may not exist in current city files
+            # LA pattern is ^LA\d{6,8}$
+            ("LA12345678", "us-ca-los_angeles", "ladot", CitationAgency.UNKNOWN),  # LADOT
+            ("LAPD123456", "us-ca-los_angeles", "lapd", CitationAgency.UNKNOWN),  # LAPD
         ]
 
         for citation, expected_city, expected_section, expected_agency in test_cases:
@@ -95,11 +93,9 @@ class TestCitationValidator:
     def test_nyc_citation_matching(self):
         """Test New York City citation matching."""
         test_cases = [
-            # NYC pattern is ^[0-9]{10}$ - requires exactly 10 digits
-            ("1234567890", "us-ny-new_york", "nyc_do", CitationAgency.UNKNOWN),  # NYC DOF (10 digits)
-            ("0987654321", "us-ny-new_york", "nyc_do", CitationAgency.UNKNOWN),  # NYC DOF (10 digits)
-            # Note: 7-digit "1234567" matches Denver's ^[0-9]{5,9}$ pattern first
-            # Other sections (NYPD, NYC DOT, airports, CUNY, MTA) may not exist in current city files
+            # NYC pattern is ^NYC\d{8}$
+            ("NYC12345678", "us-ny-new_york", "nyc", CitationAgency.UNKNOWN),
+            ("NYPD1234567", "us-ny-new_york", "nypd", CitationAgency.UNKNOWN),
         ]
 
         for citation, expected_city, expected_section, expected_agency in test_cases:
@@ -118,9 +114,8 @@ class TestCitationValidator:
     def test_city_specific_appeal_deadlines(self):
         """Test city-specific appeal deadline days."""
         test_cases = [
-            # Skipping SF - pattern overlaps with LA
-            ("LA123456", "us-ca-los_angeles", 21),  # LA default
-            ("1234567890", "us-ny-new_york", 21),  # NYC has 21 days (10 digits)
+            ("LA12345678", "us-ca-los_angeles", 21),  # LA default
+            ("NYC12345678", "us-ny-new_york", 30),  # NYC has 30 days
         ]
 
         for citation, expected_city, expected_days in test_cases:
@@ -136,9 +131,8 @@ class TestCitationValidator:
     def test_phone_confirmation_policies(self):
         """Test phone confirmation policies for different cities/sections."""
         test_cases = [
-            # Skipping SF - pattern overlaps
-            ("LA123456", True),  # LADOT - requires phone confirmation (based on actual config)
-            ("1234567890", True),  # NYC DOF - requires phone confirmation (based on actual config)
+            ("LA12345678", False),  # LADOT - required: false in json
+            ("NYC12345678", False),  # NYC - required: false in json
         ]
 
         for citation, expected_required in test_cases:
@@ -168,8 +162,8 @@ class TestCitationValidator:
         # Test urgent status (within 3 days of deadline)
         # This depends on current date relative to test date
 
-        # Test NYC citation with 30-day deadline
-        citation2 = "1234567"
+        # Test Denver citation
+        citation2 = "DN1234567"
         violation_date2 = "2024-01-01"
 
         validation2 = self.validator.validate_citation(
@@ -177,8 +171,9 @@ class TestCitationValidator:
         )
 
         assert validation2.is_valid
-        # Denver has 21 days default, so 2024-01-01 + 21 = 2024-01-22
-        assert validation2.deadline_date == "2024-01-22"
+        # Denver has 20 days appeal deadline
+        # 2024-01-01 + 20 = 2024-01-21
+        assert validation2.deadline_date == "2024-01-21"
 
     def test_invalid_citations(self):
         """Test invalid citation numbers."""
@@ -252,12 +247,12 @@ class TestCitationValidator:
         validation = self.validator.validate_citation(
             citation_number="912345678", license_plate="A"
         )
-        assert validation.is_valid  # Citation still valid
+        assert not validation.is_valid  # Invalid license plate makes result invalid
         assert validation.error_message is not None  # But has error about license plate
 
     def test_citation_info_retrieval(self):
         """Test full citation info retrieval."""
-        citation = "LA123456"
+        citation = "LA12345678"
         info = CitationValidator.get_citation_info(citation)
 
         assert info.citation_number == citation
@@ -266,7 +261,7 @@ class TestCitationValidator:
         assert info.deadline_date is None  # No violation date provided
         assert info.days_remaining is None
         assert info.is_within_appeal_window is False
-        assert info.can_appeal_online is True  # SFMTA citations can appeal online
+        assert info.can_appeal_online is False  # LA online appeal is false in json
 
     def test_fallback_when_city_registry_unavailable(self):
         """Test backward compatibility when CityRegistry fails."""

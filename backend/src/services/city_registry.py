@@ -222,6 +222,52 @@ class PhoneConfirmationPolicy:
 
 
 @dataclass
+class SpecialRequirements:
+    """Special requirements for city/section."""
+
+    representative_checkbox_enabled: bool = False
+    agent_authorization_optional: bool = False
+    digital_signature_accepted: bool = False
+    digital_signature_notes: Optional[str] = None
+    requires_poa: bool = False
+    lockbox_city: bool = False
+    certified_mail_required: bool = False
+    notes: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for API responses."""
+        result: Dict[str, Any] = {
+            "representative_checkbox_enabled": self.representative_checkbox_enabled,
+            "agent_authorization_optional": self.agent_authorization_optional,
+            "digital_signature_accepted": self.digital_signature_accepted,
+            "requires_poa": self.requires_poa,
+            "lockbox_city": self.lockbox_city,
+            "certified_mail_required": self.certified_mail_required,
+        }
+        if self.digital_signature_notes:
+            result["digital_signature_notes"] = self.digital_signature_notes
+        if self.notes:
+            result["notes"] = self.notes
+        return result
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SpecialRequirements":
+        """Create SpecialRequirements from dictionary."""
+        return cls(
+            representative_checkbox_enabled=data.get(
+                "representative_checkbox_enabled", False
+            ),
+            agent_authorization_optional=data.get("agent_authorization_optional", False),
+            digital_signature_accepted=data.get("digital_signature_accepted", False),
+            digital_signature_notes=data.get("digital_signature_notes"),
+            requires_poa=data.get("requires_poa", False),
+            lockbox_city=data.get("lockbox_city", False),
+            certified_mail_required=data.get("certified_mail_required", False),
+            notes=data.get("notes"),
+        )
+
+
+@dataclass
 class CitationPattern:
     """Citation pattern with regex matching."""
 
@@ -263,6 +309,7 @@ class CitySection:
     appeal_mail_address: Optional[AppealMailAddress] = None
     routing_rule: RoutingRule = RoutingRule.DIRECT
     phone_confirmation_policy: Optional[PhoneConfirmationPolicy] = None
+    special_requirements: Optional[SpecialRequirements] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
@@ -277,6 +324,8 @@ class CitySection:
             result["phone_confirmation_policy"] = (  # type: ignore[assignment]
                 self.phone_confirmation_policy.to_dict()
             )
+        if self.special_requirements:
+            result["special_requirements"] = self.special_requirements.to_dict()
         return result
 
 
@@ -526,12 +575,19 @@ class CityRegistry:
                     phone_number_examples=policy_data.get("phone_number_examples"),
                 )
 
+            special_requirements = None
+            if "special_requirements" in section_data:
+                special_requirements = SpecialRequirements.from_dict(
+                    section_data["special_requirements"]
+                )
+
             section = CitySection(
                 section_id=section_id,
                 name=section_data["name"],
                 appeal_mail_address=appeal_mail_address,
                 routing_rule=RoutingRule(section_data.get("routing_rule", "direct")),
                 phone_confirmation_policy=phone_confirmation_policy,
+                special_requirements=special_requirements,
             )
             sections[section_id] = section
 
