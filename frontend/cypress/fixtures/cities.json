@@ -1,0 +1,39 @@
+{
+  "cities": [
+    {
+      "id": "sf",
+      "name": "San Francisco",
+      "state": "CA",
+      "citationFormat": "9XXXXXXXX",
+      "appealDays": 21
+    },
+    {
+      "id": "nyc",
+      "name": "New York City",
+      "state": "NY",
+      "citationFormat": "XXXXXXXXXX",
+      "appealDays": 30
+    },
+    {
+      "id": "la",
+      "name": "Los Angeles",
+      "state": "CA",
+      "citationFormat": "LAXXXXXXXXXX",
+      "appealDays": 21
+    },
+    {
+      "id": "chicago",
+      "name": "Chicago",
+      "state": "IL",
+      "citationFormat": "XXXXXXXXXX",
+      "appealDays": 20
+    },
+    {
+      "id": "portland",
+      "name": "Portland",
+      "state": "OR",
+      "citationFormat": "XXXXXXXXXX",
+      "appealDays": 10
+    }
+  ]
+}
