@@ -1,7 +1,17 @@
 """
-Statement Refinement Routes for Fight City Tickets.com
+Statement Refinement Routes for FIGHTCITYTICKETS.com
 
 Handles AI-powered appeal statement refinement using DeepSeek.
+
+IMPORTANT: This service REFINES and ARTICULATE user-provided content.
+We do NOT create legal arguments, suggest strategies, or provide legal advice.
+The user's voice and position are preserved - we only polish expression.
+
+UPL Compliance:
+- No legal advice is provided
+- No legal strategies are suggested  
+- No outcomes are predicted
+- User's exact content and position are preserved
 """
 
 from typing import Optional

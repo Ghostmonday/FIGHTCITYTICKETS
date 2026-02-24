@@ -66,12 +66,12 @@ function AppealPageContent() {
   return (
     <main className="min-h-[calc(100vh-5rem)] flex flex-col items-center justify-center px-4 py-8 theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
       <div className="w-full max-w-lg step-content">
-        
+
         {/* Progress Bar */}
         <div className="mb-12">
           <div className="progress-bar">
-            <div 
-              className="progress-bar-fill" 
+            <div
+              className="progress-bar-fill"
               style={{ width: `${((step - 1) / (steps.length - 1)) * 100}%` }}
             />
           </div>
@@ -85,12 +85,12 @@ function AppealPageContent() {
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold mb-3 theme-transition" style={{ color: "var(--text-primary)" }}>
-            Appeal Your {formatCityName(state.cityId)} Ticket
+            Submitting to {formatCityName(state.cityId)}
           </h1>
-          <p className="theme-transition" style={{ color: "var(--text-secondary)" }}>
-            You&apos;re almost done. Add evidence and review your appeal.
+          <p className="font-medium theme-transition" style={{ color: "var(--text-secondary)" }}>
+            Your appeal is being processed through the Clerical Engine™.
           </p>
-          <div 
+          <div
             className="inline-flex items-center gap-2 px-4 py-2 mt-4 rounded-lg"
             style={{ backgroundColor: "var(--bg-subtle)" }}
           >
@@ -137,12 +137,12 @@ export default function AppealPage() {
   return (
     <Suspense
       fallback={
-        <div 
-          className="min-h-screen flex items-center justify-center theme-transition" 
+        <div
+          className="min-h-screen flex items-center justify-center theme-transition"
           style={{ backgroundColor: "var(--bg-page)" }}
         >
           <div className="text-center">
-            <div 
+            <div
               className="animate-spin rounded-full h-10 w-10 mx-auto mb-4"
               style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
             />

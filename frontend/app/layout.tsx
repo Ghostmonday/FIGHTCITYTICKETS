@@ -10,23 +10,23 @@ import Link from "next/link";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FightCityTickets - Beat Your Parking Ticket",
+  title: "Procedural Compliance | Clerical Engine™ | FIGHTCITYTICKETS.com",
   description:
-    "One-step parking ticket appeals. Upload your ticket, generate your defense, fight back.",
+    "We aren't lawyers. We're paperwork experts. Procedural compliance services for municipal ticket appeals.",
   keywords:
-    "parking ticket appeal, contest parking ticket, fight parking citation, appeal parking violation, parking ticket help",
-  authors: [{ name: "FightCityTickets" }],
+    "parking ticket appeal, clerical engine, paperwork expert, municipal appeal help, procedural compliance",
+  authors: [{ name: "FIGHTCITYTICKETS.com" }],
   openGraph: {
-    title: "FightCityTickets - Beat Your Parking Ticket",
-    description: "One-step parking ticket appeals",
+    title: "Procedural Compliance | Clerical Engine™",
+    description: "We aren't lawyers. We're paperwork experts.",
     type: "website",
     url: config.baseUrl,
-    siteName: "FightCityTickets",
+    siteName: "FIGHTCITYTICKETS.com",
   },
   twitter: {
     card: "summary_large_image",
-    title: "FightCityTickets - Beat Your Parking Ticket",
-    description: "One-step parking ticket appeals",
+    title: "Procedural Compliance | Clerical Engine™",
+    description: "We aren't lawyers. We're paperwork experts.",
   },
   robots: {
     index: true,
@@ -59,11 +59,11 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Organization",
-              name: "FightCityTickets",
+              name: "FIGHTCITYTICKETS.com",
               url: config.baseUrl,
               logo: `${config.baseUrl}/logo.png`,
               description:
-                "One-step parking ticket appeals",
+                "Procedural compliance services for parking ticket appeals",
               sameAs: [],
             }),
           }}
@@ -75,7 +75,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              name: "FightCityTickets",
+              name: "FIGHTCITYTICKETS.com",
               url: config.baseUrl,
               potentialAction: {
                 "@type": "SearchAction",
@@ -92,21 +92,21 @@ export default function RootLayout({
           <header className="fixed top-0 left-0 right-0 z-50 theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
             <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
               <Link href="/" className="flex items-center">
-                <img 
-                  src="/logo.png" 
-                  alt="FightCityTickets" 
+                <img
+                  src="/logo.png"
+                  alt="FightCityTickets"
                   className="h-16 w-auto"
                 />
               </Link>
               <ThemeToggle />
             </div>
           </header>
-          
+
           {/* Main Content */}
           <main className="pt-20">
             {children}
           </main>
-          
+
           <FooterDisclaimer />
         </Providers>
       </body>

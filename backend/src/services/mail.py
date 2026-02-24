@@ -456,8 +456,7 @@ class LobMailService:
         # Submission metadata footer
         metadata_parts = [
             f"Citation: {request.citation_number}",
-            f"Type: {request.appeal_type.title()} Appeal",
-            f"Clerical Engine ID: {request.clerical_id}",
+            f"Clerical Engine™ Filing ID: {request.clerical_id}",
             f"Date: {datetime.now().strftime('%Y-%m-%d')}",
         ]
         story.append(Paragraph(" | ".join(metadata_parts), footer_style))
@@ -474,7 +473,7 @@ class LobMailService:
         )
         story.append(
             Paragraph(
-                "Procedural Compliance Submission - Neural Draft LLC", page_info_style
+                "Procedural Compliance Submission | FIGHTCITYTICKETS.com | We aren't lawyers. We're paperwork experts.", page_info_style
             )
         )
 

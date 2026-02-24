@@ -39,11 +39,12 @@ export default function LegalDisclaimer({
           reason for appealing.
         </p>
         <p>
-          FightCityTickets is a{" "}
-          <strong>document preparation service</strong>. We do not provide legal
+          FIGHTCITYTICKETS.com is a{" "}
+          <strong>procedural compliance service</strong>. We do not provide legal
           advice, legal representation, or legal recommendations. We do not
           interpret laws or guarantee outcomes. We ensure your appeal meets the
-          clerical standards that municipalities use.
+          exacting clerical standards that municipalities use to reject citizen
+          submissions.
         </p>
         <p style={{ ...mutedText, fontStyle: "italic", borderTop: "1px solid var(--border)", paddingTop: "0.75rem" }}>
           If you require legal advice, please consult with a licensed attorney.
@@ -53,37 +54,36 @@ export default function LegalDisclaimer({
     compact: (
       <p style={{ ...mutedText, lineHeight: "1.6" }}>
         <strong style={{ color: "var(--text-secondary)" }}>
-          Document preparation only — not legal advice.
+          We aren&apos;t lawyers. We&apos;re paperwork experts.
         </strong>{" "}
-        We help you prepare appeal paperwork but don&apos;t provide legal advice
-        or representation.{" "}
+        We help you articulate your own reasons for appealing. Our service is procedural compliance—not legal advice.{" "}
         <Link
           href="/terms"
           style={{ color: "var(--text-secondary)", textDecoration: "underline", textUnderlineOffset: "2px" }}
           className="hover:opacity-80 transition-opacity"
         >
-          Learn more
+          Terms
         </Link>
       </p>
     ),
     inline: (
       <span style={{ ...mutedText, fontStyle: "italic" }}>
-        Document preparation only — not legal advice
+        Document preparation service. Not a law firm. Paperwork is power.
       </span>
     ),
     elegant: (
       <div style={{ ...baseText, display: "flex", flexDirection: "column", gap: "0.75rem" }}>
         <p>
           <strong style={{ color: "var(--text-primary)" }}>
-            Document preparation only — not legal advice.
+            We aren&apos;t lawyers. We&apos;re paperwork experts.
           </strong>{" "}
-          We help you prepare appeal paperwork but don&apos;t provide legal
-          advice, legal representation, or recommendations.
+          FIGHTCITYTICKETS.com is a procedural compliance service that helps you
+          articulate your own reasons for appealing a parking ticket. We refine
+          and format the information you provide to create a perfectly compliant
+          appeal letter.
         </p>
         <p style={{ ...mutedText, borderTop: "1px solid var(--border)", paddingTop: "0.75rem" }}>
-          FightCityTickets is a{" "}
-          <strong>document preparation service</strong>. Outcome determined by
-          the municipal authority.
+          We do not provide legal advice. For legal guidance, consult a licensed attorney.
         </p>
       </div>
     ),
@@ -95,10 +95,10 @@ export default function LegalDisclaimer({
 
   if (variant === "compact") {
     return (
-      <div 
+      <div
         className={`theme-transition ${className}`}
-        style={{ 
-          borderTop: "1px solid var(--border)", 
+        style={{
+          borderTop: "1px solid var(--border)",
           paddingTop: "1rem",
         }}
       >
@@ -111,11 +111,11 @@ export default function LegalDisclaimer({
     return (
       <div
         className={`theme-transition ${className}`}
-        style={{ 
-          backgroundColor: "var(--bg-subtle)", 
-          border: "1px solid var(--border)", 
-          borderRadius: "8px", 
-          padding: "1.25rem" 
+        style={{
+          backgroundColor: "var(--bg-subtle)",
+          border: "1px solid var(--border)",
+          borderRadius: "8px",
+          padding: "1.25rem"
         }}
       >
         {disclaimerText.elegant}
@@ -126,25 +126,24 @@ export default function LegalDisclaimer({
   return (
     <div
       className={`theme-transition ${className}`}
-      style={{ 
-        backgroundColor: "var(--bg-subtle)", 
-        border: "1px solid var(--border)", 
-        borderRadius: "8px", 
-        padding: "1.25rem" 
+      style={{
+        backgroundColor: "var(--bg-subtle)",
+        border: "1px solid var(--border)",
+        borderRadius: "8px",
+        padding: "1.25rem"
       }}
     >
       {!isExpanded ? (
         <div>
           <p style={{ ...baseText, marginBottom: "0.5rem" }}>
-            <strong>Document preparation only — not legal advice.</strong> We
-            help you prepare appeal paperwork but don&apos;t provide legal
-            representation.
+            <strong>We aren&apos;t lawyers. We&apos;re paperwork experts.</strong> We
+            help you articulate your own reasons for appealing.
           </p>
           <button
             onClick={() => setIsExpanded(true)}
-            style={{ 
-              ...mutedText, 
-              textDecoration: "underline", 
+            style={{
+              ...mutedText,
+              textDecoration: "underline",
               textUnderlineOffset: "2px",
               cursor: "pointer",
             }}
@@ -158,10 +157,10 @@ export default function LegalDisclaimer({
           {disclaimerText.full}
           <button
             onClick={() => setIsExpanded(false)}
-            style={{ 
-              ...mutedText, 
+            style={{
+              ...mutedText,
               marginTop: "0.75rem",
-              textDecoration: "underline", 
+              textDecoration: "underline",
               textUnderlineOffset: "2px",
               cursor: "pointer",
             }}

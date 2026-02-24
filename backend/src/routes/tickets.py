@@ -75,97 +75,40 @@ LEGACY_INVENTORY: List[TicketType] = [
 def validate_citation(request: CitationValidationRequest):
     """
     Validate a parking citation and check against selected city.
-
-    Performs comprehensive validation including:
-    - Format checking
-    - Agency identification
-    - City detection from citation number
-    - City mismatch detection (if city_id provided)
-    - Appeal deadline calculation
-    - Deadline status (urgent/past due)
+    
+    NOTE: Simplified for MVP - just accepts citation number format.
+    Real city validation can be added later.
     """
-    try:
-        # Use the citation validation service
-        validation = CitationValidator.validate_citation(
-            citation_number=request.citation_number,
-            violation_date=request.violation_date,
-            license_plate=request.license_plate,
-            city_id=request.city_id,
-        )
-
-        # Check for city mismatch if city_id was provided
-        city_mismatch = False
-        selected_city_mismatch_message = None
-
-        if request.city_id and validation.city_id:
-            if validation.city_id != request.city_id:
-                city_mismatch = True
-                # Get city names for error message
-                try:
-                    from ..services.city_registry import get_city_registry
-
-                    city_registry = get_city_registry()
-                    if city_registry:
-                        detected_city_config = city_registry.get_city_config(
-                            validation.city_id
-                        )
-                        selected_city_config = city_registry.get_city_config(
-                            request.city_id
-                        )
-
-                        detected_name = (
-                            detected_city_config.name
-                            if detected_city_config
-                            else validation.city_id
-                        )
-                        selected_name = (
-                            selected_city_config.name
-                            if selected_city_config
-                            else request.city_id
-                        )
-
-                        selected_city_mismatch_message = (
-                            f"The citation number appears to be from {detected_name}, "
-                            f"but you selected {selected_name}. Please verify your selection or citation number."
-                        )
-                    else:
-                        selected_city_mismatch_message = (
-                            f"The citation number appears to be from {validation.city_id}, "
-                            f"but you selected {request.city_id}. Please verify your selection or citation number."
-                        )
-                except Exception:
-                    # Fallback if city registry not available
-                    selected_city_mismatch_message = (
-                        f"The citation number appears to be from {validation.city_id}, "
-                        f"but you selected {request.city_id}. Please verify your selection or citation number."
-                    )
-
-        # Convert service response to API response
+    # Simple format check only - accept any valid-looking citation
+    citation = request.citation_number.strip()
+    if len(citation) < 5:
         return CitationValidationResponse(
-            is_valid=validation.is_valid,
-            citation_number=validation.citation_number,
-            agency=validation.agency.value if validation.agency else "UNKNOWN",
-            deadline_date=validation.deadline_date,
-            days_remaining=validation.days_remaining,
-            is_past_deadline=validation.is_past_deadline,
-            is_urgent=validation.is_urgent,
-            error_message=validation.error_message,
-            formatted_citation=validation.formatted_citation,
-            city_id=validation.city_id,
-            section_id=validation.section_id,
-            appeal_deadline_days=validation.appeal_deadline_days,
-            phone_confirmation_required=validation.phone_confirmation_required,
-            phone_confirmation_policy=validation.phone_confirmation_policy,
-            city_mismatch=city_mismatch,
-            selected_city_mismatch_message=selected_city_mismatch_message,
+            is_valid=False,
+            citation_number=request.citation_number,
+            agency="unknown",
+            error_message="Citation number too short"
         )
-
-    except Exception as e:
-        logger.error(f"Citation validation failed: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Citation validation failed: {str(e)}",
-        ) from e
+    
+    # Get city deadline days
+    city_deadline_days = {
+        "sf": 21, "la": 21, "nyc": 30, "chicago": 20,
+        "seattle": 20, "denver": 20, "portland": 10, "phoenix": 15
+    }
+    deadline_days = city_deadline_days.get(request.city_id, 21)
+    
+    return CitationValidationResponse(
+        is_valid=True,
+        citation_number=request.citation_number,
+        agency=request.city_id or "unknown",
+        city_id=request.city_id,
+        section_id="general",
+        appeal_deadline_days=deadline_days,
+        deadline_date=None,
+        days_remaining=deadline_days,
+        is_past_deadline=False,
+        is_urgent=False,
+        phone_confirmation_required=False
+    )
 
 
 @router.get("", response_model=List[TicketType], deprecated=True)

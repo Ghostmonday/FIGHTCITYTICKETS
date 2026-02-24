@@ -7,26 +7,26 @@ const supportEmail =
 
 export default function FooterDisclaimer() {
   return (
-    <footer 
+    <footer
       className="border-t py-6 px-4 mt-auto theme-transition"
-      style={{ 
+      style={{
         borderColor: "var(--border)",
         backgroundColor: "var(--bg-surface)",
       }}
     >
       <div className="max-w-7xl mx-auto">
-        <p 
+        <p
           className="text-center leading-relaxed max-w-4xl mx-auto mb-4"
-          style={{ 
+          style={{
             color: "var(--text-muted)",
             fontSize: "0.75rem",
           }}
         >
-          <strong style={{ color: "var(--text-secondary)" }}>Document preparation only — not legal advice.</strong>{" "}
-          FightCityTickets helps you prepare appeal paperwork but does not
-          provide legal advice, legal representation, or legal recommendations.
+          <strong style={{ color: "var(--text-secondary)" }}>We aren&apos;t lawyers. We&apos;re paperwork experts.</strong>{" "}
+          FIGHTCITYTICKETS.com is a procedural compliance service that helps you articulate
+          your own reasons for appealing a parking ticket. We refine and format the information
+          you provide to create a professional appeal letter. We do not provide legal advice.
           The decision to appeal and the arguments presented are entirely yours.
-          Outcome determined by the municipal authority.
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Link
@@ -65,8 +65,8 @@ export default function FooterDisclaimer() {
             Support
           </a>
         </div>
-        <p 
-          className="text-center mt-4" 
+        <p
+          className="text-center mt-4"
           style={{ color: "var(--text-muted)", fontSize: "0.75rem" }}
         >
           © {new Date().getFullYear()} FightCityTickets — All rights reserved

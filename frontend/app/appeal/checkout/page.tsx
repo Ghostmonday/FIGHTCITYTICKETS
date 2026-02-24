@@ -107,7 +107,7 @@ export default function CheckoutPage() {
   return (
     <main className="min-h-[calc(100vh-5rem)] px-4 py-8 theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
       <div className="max-w-lg mx-auto step-content">
-        
+
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2 theme-transition" style={{ color: "var(--text-primary)" }}>
@@ -164,7 +164,7 @@ export default function CheckoutPage() {
                 className="input-strike"
                 placeholder="123 Main St"
               />
-              {addressError && <p style={{ color: "#DC2626", fontSize: "0.875rem", marginTop: "rem" }}>{addressError}0.25</p>}
+              {addressError && <p style={{ color: "#DC2626", fontSize: "0.875rem", marginTop: "0.25rem" }}>{addressError}</p>}
               <p style={{ color: "var(--text-muted)", fontSize: "0.875rem", marginTop: "0.25rem" }}>
                 The municipal authority will send their response here.
               </p>
@@ -222,6 +222,17 @@ export default function CheckoutPage() {
           </div>
         </div>
 
+        {/* Clerical Engine Processing Add-on */}
+        <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: "#EFF6FF", border: "1px solid #BFDBFE" }}>
+          <p className="font-semibold mb-2" style={{ color: "#1E3A8A" }}>
+            Clerical Engine™ Processing
+          </p>
+          <p className="text-sm" style={{ color: "#1E40AF" }}>
+            Your appeal will be formatted, printed, and mailed with procedural perfection.
+            Payment confirms your commitment to due process.
+          </p>
+        </div>
+
         {/* Order Summary */}
         <div className="card-step p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4 theme-transition" style={{ color: "var(--text-primary)" }}>
@@ -256,7 +267,7 @@ export default function CheckoutPage() {
         </div>
 
         {/* Warning */}
-        <div 
+        <div
           className="p-4 rounded-lg mb-6"
           style={{ backgroundColor: "#FEF3C7", border: "1px solid #FDE68A" }}
         >
@@ -298,7 +309,7 @@ export default function CheckoutPage() {
             disabled={loading || !acceptedTerms}
             className="btn-strike flex-1"
           >
-            {loading ? "Processing..." : "Proceed to Payment →"}
+            {loading ? "Processing..." : "Submit Appeal →"}
           </button>
         </div>
 

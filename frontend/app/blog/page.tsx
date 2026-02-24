@@ -68,7 +68,7 @@ export default function BlogIndexPage() {
                 /(phoenix|san francisco|los angeles|new york|chicago|seattle|dallas|houston|denver|portland|philadelphia|miami|atlanta|boston|baltimore|detroit|minneapolis|charlotte|louisville|salt lake city|oakland|sacramento|san diego)/i
               );
               const violationMatch = post.title.match(
-                /(PCC \d+-\d+[a-z]?|Section \d+\.\d+\.\d+[\(a-z\)]?|Section \d+[a-z]?)/i
+                /(PCC \d+-\d+[a-z]?|Section \d+\.\d+\.\d+[(a-z)]?|Section \d+[a-z]?)/i
               );
 
               return (
@@ -102,27 +102,29 @@ export default function BlogIndexPage() {
           </div>
         </div>
 
-        {/* CTA Section - Transformation Focus */}
-        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl p-8 text-white text-center shadow-xl">
+        {/* CTA Section - Compliance Focus */}
+        <div className="bg-gradient-to-r from-stone-600 to-stone-800 rounded-2xl p-8 text-white text-center shadow-xl">
           <h2 className="text-3xl font-bold mb-4">
-            Stop Paying. Start Winning.
+            Paperwork is Power.
           </h2>
-          <p className="text-xl text-green-100 mb-2 max-w-2xl mx-auto font-medium">
-            Every ticket you pay is money you&apos;ll never see again.
+          <p className="text-xl text-stone-100 mb-2 max-w-2xl mx-auto font-medium">
+            Municipalities win through clerical precision.
           </p>
-          <p className="text-lg text-green-50 mb-6 max-w-2xl mx-auto">
-            Appeal your ticket now and keep your money. Get it dismissed.
-            Protect your record.
+          <p className="text-lg text-stone-50 mb-6 max-w-2xl mx-auto">
+            We help you meet their exacting standards with a professionally
+            articulated appeal. Don&apos;t be intimidated into paying a
+            ticket you believe is unfair.
             <strong>
               {" "}
-              The cost to appeal is tiny compared to what you&apos;ll save.
+              The Clerical Engine™ ensures your appeal is formatted exactly how
+              they require it.
             </strong>
           </p>
           <Link
             href="/"
-            className="inline-block bg-white text-green-600 px-8 py-4 rounded-lg font-bold hover:bg-green-50 transition text-lg shadow-lg hover:shadow-xl"
+            className="inline-block bg-white text-stone-800 px-8 py-4 rounded-lg font-bold hover:bg-stone-50 transition text-lg shadow-lg hover:shadow-xl"
           >
-            Get My Ticket Dismissed →
+            Prepare My Appeal →
           </Link>
         </div>
       </main>

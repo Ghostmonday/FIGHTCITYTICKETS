@@ -301,7 +301,7 @@ async def create_appeal(data: AppealUpdateRequest):
             appeal_reason=data.appeal_reason,
             selected_evidence=data.selected_evidence,
             signature_data=data.signature_data,
-            city=data.city or "s",
+            city=data.city or "",
             status="draft",
         )
 

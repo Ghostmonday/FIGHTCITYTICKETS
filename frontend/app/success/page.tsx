@@ -58,7 +58,7 @@ function SuccessContent() {
     return (
       <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
         <div className="text-center">
-          <div 
+          <div
             className="animate-spin rounded-full h-10 w-10 mx-auto mb-4"
             style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
           />
@@ -85,10 +85,10 @@ function SuccessContent() {
   return (
     <main className="min-h-[calc(100vh-5rem)] px-4 py-12 theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
       <div className="max-w-lg mx-auto step-content space-y-6 animate-fade-in">
-        
+
         {/* Success Header */}
         <div className="card-step p-8 text-center">
-          <div 
+          <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
             style={{ backgroundColor: "#D1FAE5" }}
           >
@@ -97,14 +97,18 @@ function SuccessContent() {
             </svg>
           </div>
           <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
-            Appeal Submitted
+            Submission Successful
           </h1>
+          <p className="text-lg mb-2 font-semibold" style={{ color: "var(--text-primary)" }}>
+            Your appeal is being processed with procedural perfection
+          </p>
           <p className="mb-6" style={{ color: "var(--text-secondary)" }}>
-            Your appeal documents have been received and are being processed.
+            We&apos;ve received your payment and generated your appeal letter. It will be mailed
+            within 1-2 business days—formatted exactly how the municipality requires it.
           </p>
 
           {/* Reference ID */}
-          <div 
+          <div
             className="inline-block p-4 rounded-lg"
             style={{ backgroundColor: "var(--bg-subtle)" }}
           >
@@ -135,28 +139,35 @@ function SuccessContent() {
         </div>
 
         {/* Next Steps */}
-        <div className="card-step p-6">
-          <h2 className="text-lg font-semibold mb-4" style={{ color: "var(--text-primary)" }}>What Happens Next</h2>
+        <div className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-2xl shadow-xl p-8 text-white">
+          <h2 className="text-2xl font-bold mb-6">Your Appeal Journey</h2>
           <div className="space-y-4">
-            <div className="flex gap-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "var(--accent)", color: "white", fontSize: "0.875rem" }}>1</div>
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold">1</div>
               <div>
-                <p style={{ color: "var(--text-primary)", fontWeight: 500 }}>Appeal being prepared</p>
-                <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>We format your documents for procedural compliance.</p>
+                <h3 className="font-bold text-lg mb-1">Clerical Perfection</h3>
+                <p className="text-green-100">
+                  Your appeal letter has been formatted with precise compliance to municipal standards.
+                </p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "var(--bg-subtle)", color: "var(--text-muted)", fontSize: "0.875rem" }}>2</div>
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold">2</div>
               <div>
-                <p style={{ color: "var(--text-primary)", fontWeight: 500 }}>Mailed via certified mail</p>
-                <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>Your appeal will be mailed within 1-2 business days.</p>
+                <h3 className="font-bold text-lg mb-1">Submission in Progress</h3>
+                <p className="text-green-100">
+                  Your appeal will be mailed via certified mail within 1-2 business days.
+                </p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "var(--bg-subtle)", color: "var(--text-muted)", fontSize: "0.875rem" }}>3</div>
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center font-bold">3</div>
               <div>
-                <p style={{ color: "var(--text-primary)", fontWeight: 500 }}>Municipal review</p>
-                <p style={{ color: "var(--text-secondary)", fontSize: "0.875rem" }}>The city will respond to your mailing address.</p>
+                <h3 className="font-bold text-lg mb-1">Due Process Complete</h3>
+                <p className="text-green-100">
+                  If successful, you keep your money. No ticket to pay. Clean record.
+                  The city followed their own rules—you won by making them follow them perfectly.
+                </p>
               </div>
             </div>
           </div>
@@ -197,7 +208,7 @@ export default function SuccessPage() {
       fallback={
         <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>
           <div className="text-center">
-            <div 
+            <div
               className="animate-spin rounded-full h-10 w-10 mx-auto mb-4"
               style={{ borderColor: "var(--accent)", borderTopColor: "transparent" }}
             />

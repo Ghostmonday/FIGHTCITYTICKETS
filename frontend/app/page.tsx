@@ -34,7 +34,7 @@ type Step = "citation" | "upload" | "success";
 export default function Home() {
   const router = useRouter();
   const { state, updateState } = useAppeal();
-  
+
   // UI State
   const [currentStep, setCurrentStep] = useState<Step>("citation");
   const [progress, setProgress] = useState(33);
@@ -43,7 +43,7 @@ export default function Home() {
   const [licensePlate, setLicensePlate] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Upload State
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
@@ -51,7 +51,7 @@ export default function Home() {
   const handleValidateCitation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCity || !citationNumber) return;
-    
+
     setError(null);
     setIsValidating(true);
 
@@ -134,8 +134,8 @@ export default function Home() {
       {/* Progress Bar */}
       <div className="w-full max-w-lg mb-12 animate-fade-in">
         <div className="progress-bar">
-          <div 
-            className="progress-bar-fill" 
+          <div
+            className="progress-bar-fill"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -148,16 +148,35 @@ export default function Home() {
 
       {/* Step Content */}
       <div className="w-full max-w-lg step-content">
-        
+
         {/* STEP 1: Citation Number */}
         {currentStep === "citation" && (
           <div className="animate-slide-up">
-            <h1 className="text-display text-center mb-4 theme-transition" style={{ color: "var(--text-primary)" }}>
-              What&apos;s the<br />Citation Number?
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extralight mb-8 tracking-tight text-center leading-tight theme-transition" style={{ color: "var(--text-primary)" }}>
+              They Demand Perfection.<br className="hidden sm:block" /> We Deliver It.
             </h1>
-            <p className="text-lg text-center mb-10 theme-transition" style={{ color: "var(--text-secondary)" }}>
-              Found on your parking ticket or notice
+            <p className="text-xl sm:text-2xl mb-3 font-light text-center tracking-wide theme-transition" style={{ color: "var(--text-secondary)" }}>
+              A parking citation is a procedural document.
             </p>
+            <p className="text-lg sm:text-xl mb-10 text-center theme-transition" style={{ color: "var(--text-secondary)" }}>
+              Municipalities win through clerical precision.<br className="hidden sm:block" />
+              <span className="font-normal" style={{ color: "var(--text-primary)" }}>We make their weapon our shield.</span>
+            </p>
+            <div className="mt-6 mb-12 text-sm text-center font-medium theme-transition" style={{ color: "var(--text-muted)" }}>
+              We aren&apos;t lawyers. We&apos;re paperwork experts. And in a bureaucracy, paperwork is power.
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-extralight mb-4 tracking-tight text-center theme-transition" style={{ color: "var(--text-primary)" }}>
+              Due Process as a Service
+            </h2>
+            <p className="text-base sm:text-lg max-w-lg mx-auto font-light text-center mb-10 theme-transition" style={{ color: "var(--text-secondary)" }}>
+              We don&apos;t offer legal advice. We deliver procedural perfection—formatted exactly how the city requires it.
+            </p>
+
+            <h3 className="text-xl font-medium text-center mb-6 theme-transition" style={{ color: "var(--text-primary)" }}>
+              What&apos;s the Citation Number?
+            </h3>
+
 
             <form onSubmit={handleValidateCitation} className="space-y-6">
               {/* City Selection */}
@@ -233,7 +252,7 @@ export default function Home() {
                     Validating...
                   </span>
                 ) : (
-                  "Next →"
+                  "Submit Appeal →"
                 )}
               </button>
             </form>
@@ -250,7 +269,7 @@ export default function Home() {
               {citationNumber} — {CITIES.find(c => c.cityId === selectedCity)?.name}
             </p>
 
-            <div 
+            <div
               className={`drop-zone ${isDragging ? "active" : ""}`}
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
               onDragLeave={() => setIsDragging(false)}

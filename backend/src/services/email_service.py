@@ -20,72 +20,74 @@ logger = logging.getLogger(__name__)
 # Email templates
 EMAIL_TEMPLATES = {
     "payment_confirmation": {
-        "subject": "Payment Received - Your Appeal is Processing",
-        "body": """Thank you for your payment!
+        "subject": "Due Process Delivered - Citation {citation_number}",
+        "body": """We aren't lawyers. We're paperwork experts.
+        
+Thank you for using our procedural compliance service.
 
-Your parking ticket appeal for citation {citation_number} is now being processed.
+Your articulated statement for citation {citation_number} is being processed through the Clerical Engine™. 
 
 Details:
-- Amount Paid: {amount}
-- Appeal Type: {appeal_type}
-- Reference: {clerical_id}
+- Service Level: {appeal_type}
+- Reference ID: {clerical_id}
+- Amount: {amount}
 
-Your appeal letter is being prepared and will be mailed to the appropriate agency shortly. You will receive a follow-up email with tracking information once your appeal has been mailed.
+Your appeal is being formatted, printed, and mailed exactly how the municipality requires it. We act as your scribe, ensuring your own reasons for appealing are presented with procedural perfection.
 
 Questions? Reply to this email or contact {support_email}
 
-- The Fight City Tickets.com Team
+- The FIGHTCITYTICKETS.com Team
 
 ---
-Note: We are not lawyers. This is a document preparation service only.
+Legal Disclosure: FIGHTCITYTICKETS.com is a procedural compliance service. We are not a law firm and do not provide legal advice.
 """,
     },
     "appeal_mailed": {
-        "subject": "Your Appeal Has Been Mailed - Tracking Included",
-        "body": """Great news! Your appeal has been mailed.
+        "subject": "Procedural Filing Complete - Citation {citation_number}",
+        "body": """Your appeal has been professionally formatted and mailed.
 
 Citation: {citation_number}
 Tracking Number: {tracking_number}
-Expected Delivery: {expected_delivery}
+Status: Filed with Municipality
 
-Your appeal letter has been sent via USPS Certified Mail with tracking. You can track delivery status using the tracking number above.
+FIGHTCITYTICKETS.com has delivered your articulated statement to the appropriate agency. We have ensured your filing meets the clerical standards required for administrative review.
 
-What happens next?
-1. The agency receives your appeal (typically 3-5 business days)
-2. They will process your appeal (timelines vary by city)
-3. You will receive a decision by mail
+Your Appeal Journey:
+1. Filing Received: The agency typically receives the document within 3-5 business days.
+2. Administrative Review: The municipality will review the procedural and factual points you provided.
+3. Decision Mailed: You will receive their decision directly at your provided address.
 
 Questions? Reply to this email or contact {support_email}
 
-- The Fight City Tickets.com Team
+- The FIGHTCITYTICKETS.com Team
 
 ---
-Note: We are not lawyers. This is a document preparation service only.
+Legal Disclosure: We aren't lawyers. We're paperwork experts. We do not guarantee outcomes.
 """,
     },
     "appeal_rejected": {
-        "subject": "Update on Your Appeal - Citation {citation_number}",
-        "body": """We wanted to let you know about the status of your appeal.
+        "subject": "Agency Response Received - Citation {citation_number}",
+        "body": """The municipality has issued a response to your filing.
 
 Citation: {citation_number}
-Status: Appeal Not Accepted
+Agency Determination: Appeal Not Accepted
 
-The agency provided the following reason:
+Reason Provided:
 {reason}
 
-This is not necessarily the end of the process. You may have additional options:
-1. Request a hearing to present your case in person
-2. Consult with a traffic attorney for legal advice
-3. Review the agency's decision for any procedural errors
+FIGHTCITYTICKETS.com provided procedural compliance services for your initial filing. The administrative review has reached a determination based on the facts you provided.
 
-Note: We cannot provide legal advice. This message is for informational purposes only.
+Next Steps:
+- You may have the right to request a formal hearing.
+- You may wish to consult with a licensed attorney for legal advice.
+- You should review the agency's decision notice for further instructions.
 
 Questions? Reply to this email or contact {support_email}
 
-- The Fight City Tickets.com Team
+- The FIGHTCITYTICKETS.com Team
 
 ---
-Note: We are not lawyers. This is a document preparation service only.
+Legal Disclosure: We are not lawyers. We've helped you fulfill the procedural requirements of your appeal.
 """,
     },
 }

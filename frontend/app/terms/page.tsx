@@ -25,35 +25,29 @@ export default function TermsPage() {
               </h3>
               <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
                 <p>
-                  <strong className="text-gray-900">
-                    We aren&apos;t lawyers. We&apos;re paperwork experts.
-                  </strong>{" "}
-                  And in a bureaucracy, paperwork is power.
+                  <strong className="text-gray-900">We aren&apos;t lawyers. We&apos;re paperwork experts.</strong>{" "}
+                  FIGHTCITYTICKETS.com is a procedural compliance service. We help you articulate
+                  and refine your own reasons for appealing a parking ticket. We act as a scribe,
+                  helping you express what <strong className="text-gray-900">you</strong> tell us
+                  is your reason for appealing. We make the appeal process frictionless so you are
+                  not intimidated into paying a ticket you believe is unfair.
                 </p>
                 <p>
-                  FIGHTCITYTICKETS.com is a{" "}
-                  <strong>procedural compliance service</strong>. We help you
-                  articulate and refine your own reasons for appealing a parking
-                  ticket. We act as a scribe, helping you express what{" "}
-                  <strong className="text-gray-900">you</strong> tell us is your
-                  reason for appealing. We make the appeal process frictionless
-                  so you are not intimidated into paying a ticket you believe is
-                  unfair.
+                  <strong className="text-gray-900">Procedural compliance, not legal advice.</strong>{" "}
+                  We are not a law firm, and we are not attorneys, legal practitioners, or legal
+                  professionals. We do not provide legal advice, legal representation, legal
+                  recommendations, or legal guidance. We do not suggest legal strategies, interpret
+                  laws, guarantee outcomes, or make representations about the success of your appeal.
                 </p>
                 <p>
-                  We do not provide legal advice, legal representation, or legal
-                  recommendations. We do not interpret laws, guarantee outcomes,
-                  or make representations about the success of your appeal. Our
-                  tools assist you in formatting and articulating your own
-                  appeal based on the information{" "}
-                  <strong className="text-gray-900">you</strong> provide. You
-                  are solely responsible for the content, accuracy, and
-                  submission of your appeal. Using this Service does not create
-                  an attorney-client relationship.
+                  Our tools assist you in formatting and articulating your own appeal based on
+                  the information <strong className="text-gray-900">you</strong> provide. We ensure
+                  your submission meets the exacting clerical standards that municipalities require.
+                  You are solely responsible for the content, accuracy, and submission of your appeal.
+                  Using this Service does not create an attorney-client relationship.
                 </p>
                 <p className="text-xs text-gray-500 italic pt-2 border-t border-gray-200">
-                  If you require legal advice, please consult with a licensed
-                  attorney.
+                  If you require legal advice, please consult with a licensed attorney.
                 </p>
               </div>
             </div>

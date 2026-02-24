@@ -66,21 +66,21 @@ class Settings(BaseSettings):
 
     # Service Fees
     fightcity_service_fee: int = 1995  # $19.95 certified only
-    fightcity_standard_fee: int = 0  # DEPRECATED
+
 
     # =========================================================================
     # PENDING ITEMS
     # =========================================================================
     #
-    # TODO: Add Stripe Connect for sub-accounts (fleet management)
+
     #       - Allow fleet companies to manage multiple citations
     #       - Requires: Stripe Connect onboarding flow
     #
-    # TODO: Add email verification service (SendGrid domain verification)
+
     #       - Prevent spam complaints
     #       - Improve deliverability
     #
-    # TODO: Add analytics/tracking configuration
+
     #       - Google Analytics ID
     #       - Mixpanel/Amplitude for product analytics
     #
