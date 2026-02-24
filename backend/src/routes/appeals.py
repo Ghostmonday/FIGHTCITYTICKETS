@@ -243,6 +243,7 @@ async def get_appeal(
 
     Requires a valid appeal token for the specific intake ID.
     Used to restore user progress from the database.
+    Protected against IDOR via verify_appeal_token dependency.
     """
     db_service = get_db_service()
 
