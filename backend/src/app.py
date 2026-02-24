@@ -35,6 +35,7 @@ from .middleware.rate_limit import (
 from .routes.admin import router as admin_router
 from .routes.appeals import router as appeals_router
 from .routes.checkout import router as checkout_router
+from .routes.cities import router as cities_router
 from .routes.health import router as health_router
 from .routes.places import router as places_router
 from .routes.statement import router as statement_router
@@ -189,13 +190,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Note: This must be called after routers are included
 def _share_limiter():
     """Share limiter instance with route modules."""
-    from .routes import checkout, webhooks, admin, tickets, statement, status
+    from .routes import checkout, webhooks, admin, tickets, statement, status, cities
+
     checkout.limiter = limiter_instance
     webhooks.limiter = limiter_instance
     admin.limiter = limiter_instance
     tickets.limiter = limiter_instance
     statement.limiter = limiter_instance
     status.limiter = limiter_instance
+    cities.limiter = limiter_instance
 
 # Configure CORS
 app.add_middleware(
@@ -220,6 +223,7 @@ app.add_middleware(
 # NOTE: Nginx strips /api/ prefix, so routes mounted at /api/* should be registered without /api/
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(tickets_router, prefix="/tickets", tags=["tickets"])
+app.include_router(cities_router, prefix="/cities", tags=["cities"])
 app.include_router(statement_router, prefix="/statement", tags=["statement"])
 app.include_router(photos_router, prefix="/api", tags=["photos"])
 

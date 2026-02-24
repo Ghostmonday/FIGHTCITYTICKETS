@@ -46,8 +46,13 @@ logger = logging.getLogger(__name__)
 # Cache TTL for city configs (1 hour)
 CITY_CONFIG_CACHE_TTL = 3600
 
-# Cache for CityRegistry instances
-_registry_cache: Dict[Path, "CityRegistry"] = {}
+# Tier 1 Exclusion List (CA markets)
+TIER_1_EXCLUDED_CITIES = {
+    "us-ca-san_francisco",
+    "us-ca-los_angeles",
+    "s",  # Legacy SF ID
+    "la",  # Legacy LA ID
+}
 
 
 class AppealMailStatus(str, Enum):
@@ -225,52 +230,6 @@ class PhoneConfirmationPolicy:
 
 
 @dataclass
-class SpecialRequirements:
-    """Special requirements for city/section."""
-
-    representative_checkbox_enabled: bool = False
-    agent_authorization_optional: bool = False
-    digital_signature_accepted: bool = False
-    digital_signature_notes: Optional[str] = None
-    requires_poa: bool = False
-    lockbox_city: bool = False
-    certified_mail_required: bool = False
-    notes: Optional[str] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for API responses."""
-        result: Dict[str, Any] = {
-            "representative_checkbox_enabled": self.representative_checkbox_enabled,
-            "agent_authorization_optional": self.agent_authorization_optional,
-            "digital_signature_accepted": self.digital_signature_accepted,
-            "requires_poa": self.requires_poa,
-            "lockbox_city": self.lockbox_city,
-            "certified_mail_required": self.certified_mail_required,
-        }
-        if self.digital_signature_notes:
-            result["digital_signature_notes"] = self.digital_signature_notes
-        if self.notes:
-            result["notes"] = self.notes
-        return result
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SpecialRequirements":
-        """Create SpecialRequirements from dictionary."""
-        return cls(
-            representative_checkbox_enabled=data.get(
-                "representative_checkbox_enabled", False
-            ),
-            agent_authorization_optional=data.get("agent_authorization_optional", False),
-            digital_signature_accepted=data.get("digital_signature_accepted", False),
-            digital_signature_notes=data.get("digital_signature_notes"),
-            requires_poa=data.get("requires_poa", False),
-            lockbox_city=data.get("lockbox_city", False),
-            certified_mail_required=data.get("certified_mail_required", False),
-            notes=data.get("notes"),
-        )
-
-
-@dataclass
 class CitationPattern:
     """Citation pattern with regex matching."""
 
@@ -312,7 +271,6 @@ class CitySection:
     appeal_mail_address: Optional[AppealMailAddress] = None
     routing_rule: RoutingRule = RoutingRule.DIRECT
     phone_confirmation_policy: Optional[PhoneConfirmationPolicy] = None
-    special_requirements: Optional[SpecialRequirements] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
@@ -327,8 +285,6 @@ class CitySection:
             result["phone_confirmation_policy"] = (  # type: ignore[assignment]
                 self.phone_confirmation_policy.to_dict()
             )
-        if self.special_requirements:
-            result["special_requirements"] = self.special_requirements.to_dict()
         return result
 
 
@@ -578,19 +534,12 @@ class CityRegistry:
                     phone_number_examples=policy_data.get("phone_number_examples"),
                 )
 
-            special_requirements = None
-            if "special_requirements" in section_data:
-                special_requirements = SpecialRequirements.from_dict(
-                    section_data["special_requirements"]
-                )
-
             section = CitySection(
                 section_id=section_id,
                 name=section_data["name"],
                 appeal_mail_address=appeal_mail_address,
                 routing_rule=RoutingRule(section_data.get("routing_rule", "direct")),
                 phone_confirmation_policy=phone_confirmation_policy,
-                special_requirements=special_requirements,
             )
             sections[section_id] = section
 
@@ -849,18 +798,28 @@ class CityRegistry:
 
         return config.routing_rule
 
-    def get_all_cities(self) -> List[Dict[str, Any]]:
-        """Get list of all loaded cities with basic info."""
-        return [
-            {
-                "city_id": city_id,
-                "name": config.name,
-                "jurisdiction": config.jurisdiction.value,
-                "citation_pattern_count": len(config.citation_patterns),
-                "section_count": len(config.sections),
-            }
-            for city_id, config in self.city_configs.items()
-        ]
+    def get_all_cities(self, eligible_only: bool = True) -> List[Dict[str, Any]]:
+        """
+        Get list of all loaded cities with basic info.
+
+        Args:
+            eligible_only: If True, exclude cities not eligible for current strategy (e.g. Tier 1)
+        """
+        cities = []
+        for city_id, config in self.city_configs.items():
+            if eligible_only and city_id in TIER_1_EXCLUDED_CITIES:
+                continue
+
+            cities.append(
+                {
+                    "city_id": city_id,
+                    "name": config.name,
+                    "jurisdiction": config.jurisdiction.value,
+                    "citation_pattern_count": len(config.citation_patterns),
+                    "section_count": len(config.sections),
+                }
+            )
+        return cities
 
     def validate_phone_for_city(
         self, city_id: str, phone_number: str, section_id: Optional[str] = None
@@ -884,23 +843,74 @@ class CityRegistry:
 
 
 # Helper function for easy import
-def get_city_registry(cities_dir: Optional[Union[str, Path]] = None) -> CityRegistry:
+def get_city_registry(cities_dir: Optional[Path] = None) -> CityRegistry:
     """Get a configured CityRegistry instance."""
-    if cities_dir is None:
-        target_path = Path(__file__).parent.parent.parent / "cities"
-    elif isinstance(cities_dir, str):
-        target_path = Path(cities_dir)
-    else:
-        target_path = cities_dir
-
-    resolved_path = target_path.resolve()
-
-    if resolved_path in _registry_cache:
-        return _registry_cache[resolved_path]
-
-    registry = CityRegistry(resolved_path)
+    registry = CityRegistry(cities_dir)
     registry.load_cities()
-    _registry_cache[resolved_path] = registry
     return registry
 
 
+# Example usage
+if __name__ == "__main__":
+    # Test the registry
+    registry = CityRegistry()
+
+    # Create test SF configuration (would normally come from JSON)
+    sf_config = CityConfiguration(
+        city_id="s",
+        name="San Francisco",
+        jurisdiction=Jurisdiction.CITY,
+        citation_patterns=[
+            CitationPattern(
+                regex=r"^9\d{8}$",
+                section_id="sfmta",
+                description="SFMTA parking citation",
+                example_numbers=["912345678"],
+            )
+        ],
+        appeal_mail_address=AppealMailAddress(
+            status=AppealMailStatus.COMPLETE,
+            department="SFMTA Citation Review",
+            address1="1 South Van Ness Avenue",
+            address2="Floor 7",
+            city="San Francisco",
+            state="CA",
+            zip="94103",
+            country="USA",
+        ),
+        phone_confirmation_policy=PhoneConfirmationPolicy(required=False),
+        routing_rule=RoutingRule.DIRECT,
+        sections={
+            "sfmta": CitySection(
+                section_id="sfmta", name="SFMTA", routing_rule=RoutingRule.DIRECT
+            )
+        },
+        verification_metadata=VerificationMetadata(
+            last_updated="2024-01-01", source="official_website", confidence_score=0.95
+        ),
+    )
+
+    # Manually add for testing
+    registry.city_configs["s"] = sf_config
+    registry._build_citation_cache_for_city("s", sf_config)
+
+    # Test matching
+    match = registry.match_citation("912345678")
+    if match:
+        city_id, section_id = match
+        print("✅ Matched citation: city={city_id}, section={section_id}")
+
+        # Test address retrieval
+        address = registry.get_mail_address(city_id, section_id)
+        if address:
+            print("📫 Address status: {address.status.value}")
+
+        # Test phone validation
+        policy = registry.get_phone_confirmation_policy(city_id, section_id)
+        if policy:
+            print("📞 Phone confirmation required: {policy.required}")
+
+    else:
+        print("❌ No match found")
+
+    print("Loaded cities: {len(registry.city_configs)}")

@@ -4,13 +4,11 @@ Citation Validation Service for Fight City Tickets.com
 Validates parking citation numbers and calculates appeal deadlines across multiple cities.
 Implements multi-city support via CityRegistry (Schema 4.3.0) with backward compatibility.
 
-TODO: Remove SF/LA from available cities if following Tier 1-only strategy
-      - CA markets have high UPL risk (bar association scrutiny)
-      - Keep config files but filter in API response
+TODO: Implement Boston city configuration (us-ma-boston)
+      - High-volume target, digital signatures accepted
+      - Simple checkbox form for third-party appeals
+      - Reference: https://www.boston.gov/parking/parking-tickets
 
-TODO: Add city eligibility endpoint: GET /api/cities?eligible=true
-      - Filter cities by business rules (digital signatures, no POA required)
-      - Block Tier 3 cities (Chicago, D.C., etc.)
 """
 
 import json
@@ -43,7 +41,6 @@ AppealMailStatus = Enum("AppealMailStatus", ["COMPLETE", "ROUTES_ELSEWHERE", "MI
 REDIS_URL = os.getenv("REDIS_URL", "")
 REDIS_CACHE_TTL = 3600  # 1 hour cache for citation validations
 _CITATION_CACHE: dict[str, tuple[Any, float]] = {}  # In-memory fallback cache
-_REDIS_CLIENT = None
 
 # Logger for caching operations
 logger = logging.getLogger(__name__)
@@ -51,15 +48,10 @@ logger = logging.getLogger(__name__)
 
 def _get_redis_client():
     """Get Redis client if available."""
-    global _REDIS_CLIENT
-    if _REDIS_CLIENT:
-        return _REDIS_CLIENT
-
     try:
         import redis
         if REDIS_URL:
-            _REDIS_CLIENT = redis.Redis.from_url(REDIS_URL, decode_responses=True)
-            return _REDIS_CLIENT
+            return redis.Redis.from_url(REDIS_URL, decode_responses=True)
     except ImportError:
         pass
     return None
@@ -190,7 +182,6 @@ class CitationValidationResult:
     appeal_deadline_days: int = 21  # Default SF deadline
     phone_confirmation_required: bool = False
     phone_confirmation_policy: Optional[Dict[str, Any]] = None
-    special_requirements: Optional[Dict[str, Any]] = None
 
     # Clerical defect detection (not legal conclusions)
     # Indicates potential documentation issues (missing date, mismatched info, etc.)
@@ -220,7 +211,6 @@ class CitationInfo:
     routing_rule: Optional[str] = None
     phone_confirmation_required: bool = False
     phone_confirmation_policy: Optional[Dict[str, Any]] = None
-    special_requirements: Optional[Dict[str, Any]] = None
     appeal_deadline_days: int = 21  # Default SF deadline
 
 
@@ -428,7 +418,7 @@ class CitationValidator:
             cached = _get_cached_citation(clean_number)
             if cached:
                 # Return cached result (create new object to avoid mutation issues)
-                result = CitationValidationResult(
+                return CitationValidationResult(
                     is_valid=cached.get("is_valid", False),
                     citation_number=cached.get("citation_number", citation_number),
                     agency=CitationAgency(cached.get("agency", "UNKNOWN")),
@@ -445,19 +435,9 @@ class CitationValidator:
                         "phone_confirmation_required", False
                     ),
                     phone_confirmation_policy=cached.get("phone_confirmation_policy"),
-                    special_requirements=cached.get("special_requirements"),
                     clerical_defect_detected=cached.get("clerical_defect_detected", False),
                     clerical_defect_description=cached.get("clerical_defect_description"),
                 )
-
-                # If license plate provided, validate it against the cached result
-                if license_plate:
-                    license_plate_clean = license_plate.strip().upper()
-                    if len(license_plate_clean) < 2 or len(license_plate_clean) > 8:
-                        result.is_valid = False
-                        result.error_message = "Invalid license plate format"
-
-                return result
 
         # Step 1: Basic format validation
         is_valid_format, error_msg = self.validate_citation_format(citation_number)
@@ -515,15 +495,6 @@ class CitationValidator:
                     phone_confirmation_policy = policy.to_dict()
                     phone_confirmation_required = policy.required
 
-            # Get special requirements
-            special_requirements = None
-            if self.city_registry:
-                config = self.city_registry.get_city_config(city_id)
-                if config and section_id in config.sections:
-                    section = config.sections[section_id]
-                    if section.special_requirements:
-                        special_requirements = section.special_requirements.to_dict()
-
         else:
             # No city match, fall back to SF-only validation
             city_id = None
@@ -532,7 +503,6 @@ class CitationValidator:
             appeal_deadline_days = self.DEFAULT_APPEAL_DEADLINE_DAYS
             phone_confirmation_policy = None
             phone_confirmation_required = False
-            special_requirements = None
 
         # Step 5: Calculate deadline if violation date provided
         deadline_date = None
@@ -577,7 +547,6 @@ class CitationValidator:
             appeal_deadline_days=appeal_deadline_days,
             phone_confirmation_required=phone_confirmation_required,
             phone_confirmation_policy=phone_confirmation_policy,
-            special_requirements=special_requirements,
         )
 
         # Cache valid results for future lookups (skip caching if violation_date was provided
@@ -599,7 +568,6 @@ class CitationValidator:
                     "appeal_deadline_days": result.appeal_deadline_days,
                     "phone_confirmation_required": result.phone_confirmation_required,
                     "phone_confirmation_policy": result.phone_confirmation_policy,
-                    "special_requirements": result.special_requirements,
                     "clerical_defect_detected": result.clerical_defect_detected,
                     "clerical_defect_description": result.clerical_defect_description,
                 }
@@ -657,7 +625,6 @@ class CitationValidator:
         routing_rule = None
         phone_confirmation_policy = validation.phone_confirmation_policy
         phone_confirmation_required = validation.phone_confirmation_required
-        special_requirements = validation.special_requirements
 
         if validation.city_id and self.city_registry:
             # Get mailing address
@@ -700,7 +667,6 @@ class CitationValidator:
             routing_rule=routing_rule,
             phone_confirmation_required=phone_confirmation_required,
             phone_confirmation_policy=phone_confirmation_policy,
-            special_requirements=special_requirements,
             appeal_deadline_days=validation.appeal_deadline_days,
         )
 
@@ -815,3 +781,88 @@ def get_appeal_method_messaging(
         }
 
 
+# Example usage and testing
+if __name__ == "__main__":
+    print("TESTING: Testing Citation Validation Service with CityRegistry")
+    print("=" * 50)
+
+    # Create a validator with cities directory
+    validator = CitationValidator()
+
+    # Test cases including SF citations that should match
+    test_cases = [
+        (
+            "912345678",
+            "2024-01-15",
+            "ABC123",
+        ),  # Valid SFMTA (should match us-ca-san_francisco.json)
+        (
+            "SF123456",
+            "2024-01-15",
+            "TEST123",
+        ),  # SFPD-like (should match us-ca-san_francisco.json)
+        (
+            "SFSU12345",
+            "2024-01-15",
+            "CAMPUS",
+        ),  # SFSU (should match us-ca-san_francisco.json)
+        ("123456", "2024-01-15", "XYZ789"),  # Too short (no city match)
+        ("ABCDEFGHIJKLMNOP", "2024-01-15", "TEST"),  # Too long (no city match)
+        ("", "2024-01-15", "TEST"),  # Empty
+        ("912-345-678", "2024-01-15", "CAL123"),  # With dashes (should match SFMTA)
+    ]
+
+    for citation, date, plate in test_cases:
+        print(f"\nCITATION: Citation: {citation}")
+        print(f"   Date: {date}, Plate: {plate}")
+
+        try:
+            result = validator._validate_citation(citation, date, plate)
+            if result.is_valid:
+                print(f"   OK: VALID - Agency: {result.agency.value}")
+                print(f"      Formatted: {result.formatted_citation}")
+                if result.city_id:
+                    print(f"      City: {result.city_id}, Section: {result.section_id}")
+                    print(f"      Appeal Deadline Days: {result.appeal_deadline_days}")
+                    print(
+                        f"      Phone Confirmation Required: {result.phone_confirmation_required}"
+                    )
+                if result.deadline_date:
+                    print(f"      Deadline: {result.deadline_date}")
+                    print(f"      Days remaining: {result.days_remaining}")
+                    print(f"      Urgent: {result.is_urgent}")
+            else:
+                print(f"   FAIL: INVALID - {result.error_message}")
+        except Exception as e:
+            print(f"   WARN: ERROR - {str(e)}")
+
+    # Test CitationInfo retrieval for a valid citation
+    print("\n" + "=" * 50)
+    print("TESTING: Testing CitationInfo Retrieval")
+    print("=" * 50)
+
+    try:
+        info = validator._get_citation_info(
+            citation_number="912345678",
+            violation_date="2024-01-15",
+            license_plate="ABC123",
+            vehicle_info="Toyota Camry",
+        )
+        print(f"CITATION: Citation: {info.citation_number}")
+        print(f"   Agency: {info.agency.value}")
+        print(f"   City: {info.city_id}, Section: {info.section_id}")
+        print(f"   Within Appeal Window: {info.is_within_appeal_window}")
+        print(f"   Can Appeal Online: {info.can_appeal_online}")
+        print(f"   Appeal Deadline Days: {info.appeal_deadline_days}")
+        print(f"   Phone Confirmation Required: {info.phone_confirmation_required}")
+        if info.appeal_mail_address:
+            print(
+                f"   Appeal Mail Address Status: {info.appeal_mail_address.get('status')}"
+            )
+        if info.routing_rule:
+            print(f"   Routing Rule: {info.routing_rule}")
+    except Exception as e:
+        print(f"   WARN: ERROR - {str(e)}")
+
+    print("\n" + "=" * 50)
+    print("OK: Citation Validation Service Test Complete")
