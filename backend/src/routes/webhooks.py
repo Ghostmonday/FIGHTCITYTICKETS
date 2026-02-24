@@ -14,9 +14,9 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi.concurrency import run_in_threadpool
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from starlette.concurrency import run_in_threadpool
 
 from ..config import settings
 from ..models import AppealType, PaymentStatus, WebhookEvent
@@ -48,80 +48,70 @@ def _generate_event_id(event_type: str, object_id: str) -> str:
     return f"{event_type}:{object_id}"
 
 
-def _is_event_processed_db(event_id: str) -> tuple[bool, Optional[dict]]:
-    """Blocking database check for processed event."""
-    try:
-        db_service = get_db_service()
-        # Use proper context manager for session
-        with db_service.get_session() as session:
-            # Check database for processed event
-            event = session.query(WebhookEvent).filter(
-                WebhookEvent.stripe_event_id == event_id,
-                WebhookEvent.processed == True
-            ).first()
-
-            if event:
-                return True, {"message": event.result_message}
-
-            return False, None
-    except Exception as e:
-        logger.warning("Database idempotency check failed: %s", e)
-        return False, None
-
-
 async def _is_event_processed(event_id: str) -> tuple[bool, Optional[dict]]:
     """
-    Check if an event has already been processed (async, database-backed).
+    Check if an event has already been processed (database-backed).
     
     Returns:
         (is_processed, cached_result)
     """
-    # Check database first (in thread)
-    is_processed, result = await run_in_threadpool(_is_event_processed_db, event_id)
-    if is_processed:
-        return True, result
-
-    # Check memory cache as fallback
-    return _is_event_processed_memory(event_id)
-
-
-def _mark_event_processed_db(event_id: str, event_type: str, result: dict) -> None:
-    """Mark an event as processed in the database (blocking)."""
     try:
-        db_service = get_db_service()
-        with db_service.get_session() as session:
-            # Check if already exists
-            existing = session.query(WebhookEvent).filter(
-                WebhookEvent.stripe_event_id == event_id
-            ).first()
+        def _check_db():
+            db_service = get_db_service()
+            with db_service.get_session() as session:
+                # Check database for processed event
+                event = session.query(WebhookEvent).filter(
+                    WebhookEvent.stripe_event_id == event_id,
+                    WebhookEvent.processed == True
+                ).first()
 
-            if existing:
-                # Update existing record
-                existing.processed = True
-                existing.result_message = result.get("message", "")[:500]
-                existing.updated_at = datetime.now(timezone.utc)
-            else:
-                # Create new record
-                webhook_event = WebhookEvent(
-                    stripe_event_id=event_id,
-                    event_type=event_type,
-                    processed=True,
-                    result_message=result.get("message", "")[:500],
-                )
-                session.add(webhook_event)
+                if event:
+                    return True, {"message": event.result_message}
+                return False, None
+        
+        is_processed, result = await run_in_threadpool(_check_db)
+        if is_processed:
+            return True, result
 
-            session.commit()
+        return False, None
     except Exception as e:
-        logger.warning("Failed to mark event processed in database: %s", e)
+        logger.warning("Database idempotency check failed: %s, falling back to memory", e)
+        # Fall back to memory cache on database errors
+        return _is_event_processed_memory(event_id)
 
 
 async def _mark_event_processed(event_id: str, event_type: str, result: dict) -> None:
-    """Mark an event as processed (async, database + memory)."""
-    # Update database (in thread)
-    await run_in_threadpool(_mark_event_processed_db, event_id, event_type, result)
+    """Mark an event as processed in the database."""
+    try:
+        def _mark_db():
+            db_service = get_db_service()
+            with db_service.get_session() as session:
+                # Check if already exists
+                existing = session.query(WebhookEvent).filter(
+                    WebhookEvent.stripe_event_id == event_id
+                ).first()
 
-    # Update memory cache (sync)
-    _mark_event_processed_memory(event_id, result)
+                if existing:
+                    # Update existing record
+                    existing.processed = True
+                    existing.result_message = result.get("message", "")[:500]
+                    existing.updated_at = datetime.now(timezone.utc)
+                else:
+                    # Create new record
+                    webhook_event = WebhookEvent(
+                        stripe_event_id=event_id,
+                        event_type=event_type,
+                        processed=True,
+                        result_message=result.get("message", "")[:500],
+                    )
+                    session.add(webhook_event)
+                # session commits on exit
+        
+        await run_in_threadpool(_mark_db)
+    except Exception as e:
+        logger.warning("Failed to mark event processed in database: %s", e)
+        # Fall back to memory cache
+        _mark_event_processed_memory(event_id, result)
 
 
 # Legacy in-memory functions (fallback)
@@ -201,162 +191,6 @@ def verify_admin_secret(
     return x_admin_secret
 
 
-def _process_payment_data_sync(
-    session_id: str,
-    payment_intent: str,
-    customer: str,
-    receipt_url: str,
-    metadata: dict,
-    event_id: str,
-) -> tuple[dict, bool, Optional[AppealLetterRequest], Optional[int], Optional[str], Optional[str], Optional[str]]:
-    """
-    Synchronously process payment data and prepare for fulfillment.
-
-    Returns:
-        (result, should_continue, mail_request, payment_id, citation_number, user_email, appeal_type_str)
-    """
-    result: dict[str, Any] = {
-        "event_type": "checkout.session.completed",
-        "processed": False,
-        "message": "",
-        "payment_id": metadata.get("payment_id"),
-        "intake_id": metadata.get("intake_id"),
-        "draft_id": metadata.get("draft_id"),
-        "fulfillment_result": None,
-    }
-
-    try:
-        db_service = get_db_service()
-        payment = db_service.get_payment_by_session(session_id)
-        
-        # Check database for existing payment status
-        if payment:
-            payment_status_value = (
-                payment.status.value
-                if hasattr(payment.status, "value")
-                else str(payment.status)
-            )
-            is_paid = payment_status_value == PaymentStatus.PAID.value
-            is_fulfilled = getattr(payment, "is_fulfilled", False)
-            
-            if is_paid and is_fulfilled:
-                result["processed"] = True
-                result["message"] = "Already fulfilled (idempotent)"
-                logger.info("Webhook already processed for payment %s", payment.id)
-                # Cache the result
-                _mark_event_processed_db(event_id, "checkout.session.completed", result)
-                return result, False, None, payment.id, None, None, None
-        
-        if not payment:
-            logger.warning("Payment not found for session %s", session_id)
-            result["message"] = f"Payment not found for session {session_id}"
-            # Cache the result
-            _mark_event_processed_db(event_id, "checkout.session.completed", result)
-            return result, False, None, None, None, None, None
-
-        # Update payment status to PAID
-        now = datetime.now(timezone.utc)
-        updated_payment = db_service.update_payment_status(
-            stripe_session_id=session_id,
-            status=PaymentStatus.PAID,
-            stripe_payment_intent=payment_intent,
-            stripe_customer_id=customer,
-            receipt_url=receipt_url,
-            paid_at=now,
-            stripe_metadata=metadata,
-        )
-
-        if not updated_payment:
-            result["message"] = "Failed to update payment status"
-            return result, False, None, payment.id, None, None, None
-
-        # Get intake and draft
-        intake = db_service.get_intake(payment.intake_id)
-        if not intake:
-            result["message"] = f"Intake {payment.intake_id} not found"
-            return result, False, None, payment.id, None, None, None
-
-        draft = db_service.get_latest_draft(payment.intake_id)
-        if not draft:
-            result["message"] = f"Draft for intake {payment.intake_id} not found"
-            return result, False, None, payment.id, intake.citation_number, intake.user_email, None
-
-        # Extract city_id from metadata
-        city_id: str | None = None
-        section_id: str | None = None
-
-        if metadata:
-            city_id = metadata.get("city_id") or metadata.get("cityId")
-            section_id = metadata.get("section_id") or metadata.get("sectionId")
-
-        # Fallback: re-validate citation
-        if not city_id:
-            try:
-                from ..services.citation import CitationValidator
-
-                validator = CitationValidator()
-                validation = validator.validate_citation(intake.citation_number)
-                if validation and validation.city_id:
-                    city_id = validation.city_id
-                    section_id = validation.section_id
-                    logger.info(
-                        "Re-validated citation %s: city_id=%s, section_id=%s",
-                        intake.citation_number,
-                        city_id,
-                        section_id,
-                    )
-            except Exception as e:
-                logger.warning("Could not re-validate citation: %s", e)
-
-        appeal_type_str = (
-            payment.appeal_type.value
-            if hasattr(payment.appeal_type, "value")
-            else str(payment.appeal_type)
-        )
-
-        # Prepare mail request
-        mail_request = AppealLetterRequest(
-            citation_number=intake.citation_number,
-            user_name=intake.user_name,
-            user_address_line_1=intake.user_address_line1,
-            user_address_line_2=intake.user_address_line2,
-            user_city=intake.user_city,
-            user_state=intake.user_state,
-            user_zip=intake.user_zip,
-            user_email=intake.user_email or "",
-            letter_text=draft.draft_text,
-            agency_name=city_id or "unknown",
-            agency_address="",
-            appeal_type=appeal_type_str,
-            signature_data=intake.signature_data,
-            city_id=city_id,
-            section_id=section_id,
-        )
-
-        return result, True, mail_request, payment.id, intake.citation_number, intake.user_email, appeal_type_str
-
-    except Exception as e:
-        logger.exception("Error in _process_payment_data_sync")
-        result["message"] = f"Error processing payment data: {str(e)}"
-        return result, False, None, None, None, None, None
-
-
-def _handle_mail_failure_sync(payment_id: int) -> None:
-    """Mark payment as failed fulfillment (blocking)."""
-    try:
-        db_service = get_db_service()
-        with db_service.get_session() as session:
-             payment = session.query(Payment).filter(Payment.id == payment_id).first()
-             if payment:
-                 # Note: 'failed_fulfillment' is not in PaymentStatus enum, using 'failed' instead
-                 # or falling back to string if flexible.
-                 # Replicating intent of original code but being safer.
-                 payment.status = PaymentStatus.FAILED
-             session.commit()
-    except Exception as e:
-        logger.error("Failed to mark payment failure: %s", e)
-
-
 async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str, Any]:
     """
     Handle checkout.session.completed webhook event.
@@ -395,68 +229,140 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
 
     # Idempotency check - check database first to avoid race conditions
     event_id = _generate_event_id("checkout.session.completed", session_id)
-
-    # Check cache (Async now)
+    
     try:
+        db_service = get_db_service()
+        # payment = db_service.get_payment_by_session(session_id)
+        payment = await run_in_threadpool(db_service.get_payment_by_session, session_id)
+        
+        # Check database for existing payment status before checking cache
+        if payment:
+            payment_status_value = (
+                payment.status.value
+                if hasattr(payment.status, "value")
+                else str(payment.status)
+            )
+            is_paid = payment_status_value == PaymentStatus.PAID.value
+            is_fulfilled = getattr(payment, "is_fulfilled", False)
+            
+            if is_paid and is_fulfilled:
+                result["processed"] = True
+                result["message"] = "Already fulfilled (idempotent)"
+                logger.info("Webhook already processed for payment %s", payment.id)
+                # Cache the result for future quick lookups
+                await _mark_event_processed(event_id, "checkout.session.completed", result)
+                return result
+        
+        # Check cache only after database check to avoid race conditions
         is_processed, cached_result = await _is_event_processed(event_id)
         if is_processed and cached_result:
-             logger.info("Returning cached result for event %s", event_id)
-             return cached_result
-    except Exception as e:
-         logger.warning("Idempotency check failed: %s", e)
+            logger.info("Returning cached result for event %s", event_id)
+            return cached_result
 
-    # Process payment data (DB intensive)
-    payment_intent = session.get("payment_intent") or ""
-    customer = session.get("customer") or ""
-    receipt_url = session.get("receipt_url") or ""
+        if not payment:
+            payment_id = metadata.get("payment_id")
+            logger.warning("Payment not found for session %s", session_id)
+            result["message"] = f"Payment not found for session {session_id}"
+            # Cache the result to prevent retries
+            await _mark_event_processed(event_id, "checkout.session.completed", result)
+            return result
 
-    (
-        process_result,
-        should_continue,
-        mail_request,
-        payment_id,
-        citation_number,
-        user_email,
-        appeal_type_str
-    ) = await run_in_threadpool(
-        _process_payment_data_sync,
-        session_id=session_id,
-        payment_intent=payment_intent,
-        customer=customer,
-        receipt_url=receipt_url,
-        metadata=metadata,
-        event_id=event_id,
-    )
+        # Update payment status to PAID
+        now = datetime.now(timezone.utc)
+        # updated_payment = db_service.update_payment_status(...)
+        updated_payment = await run_in_threadpool(
+            db_service.update_payment_status,
+            stripe_session_id=session_id,
+            status=PaymentStatus.PAID,
+            stripe_payment_intent=session.get("payment_intent") or "",
+            stripe_customer_id=session.get("customer") or "",
+            receipt_url=session.get("receipt_url") or "",
+            paid_at=now,
+            stripe_metadata=metadata,
+        )
 
-    # Merge process_result into result
-    result.update(process_result)
+        if not updated_payment:
+            result["message"] = "Failed to update payment status"
+            return result
 
-    if not should_continue:
-        return result
+        # Get intake and draft for fulfillment
+        # intake = db_service.get_intake(payment.intake_id)
+        intake = await run_in_threadpool(db_service.get_intake, payment.intake_id)
+        if not intake:
+            result["message"] = f"Intake {payment.intake_id} not found"
+            return result
 
-    if not mail_request or not payment_id:
-        # Should not happen if should_continue is True
-        result["message"] = "Internal error: Missing mail request data"
-        return result
+        # draft = db_service.get_latest_draft(payment.intake_id)
+        draft = await run_in_threadpool(db_service.get_latest_draft, payment.intake_id)
+        if not draft:
+            result["message"] = f"Draft for intake {payment.intake_id} not found"
+            return result
 
-    try:
-        # Send appeal via mail service (Async)
+        # Extract city_id from metadata
+        city_id: str | None = None
+        section_id: str | None = None
+
+        if metadata:
+            city_id = metadata.get("city_id") or metadata.get("cityId")
+            section_id = metadata.get("section_id") or metadata.get("sectionId")
+
+        # Fallback: re-validate citation
+        if not city_id:
+            try:
+                from ..services.citation import CitationValidator
+
+                validator = CitationValidator()
+                validation = validator.validate_citation(intake.citation_number)
+                if validation and validation.city_id:
+                    city_id = validation.city_id
+                    section_id = validation.section_id
+                    logger.info(
+                        "Re-validated citation %s: city_id=%s, section_id=%s",
+                        intake.citation_number,
+                        city_id,
+                        section_id,
+                    )
+            except Exception as e:
+                logger.warning("Could not re-validate citation: %s", e)
+
+        # Prepare mail request
+        mail_request = AppealLetterRequest(
+            citation_number=intake.citation_number,
+            appeal_type=payment.appeal_type.value
+            if hasattr(payment.appeal_type, "value")
+            else str(payment.appeal_type),
+            user_name=intake.user_name,
+            user_address_line_1=intake.user_address_line1,
+            user_address_line_2=intake.user_address_line2,
+            user_city=intake.user_city,
+            user_state=intake.user_state,
+            user_zip=intake.user_zip,
+            user_email=intake.user_email or "",
+            letter_text=draft.draft_text,
+            signature_data=intake.signature_data,
+            city_id=city_id,
+            section_id=section_id,
+            agency_name=city_id or "unknown",
+            agency_address="",
+        )
+
+        # Send appeal via mail service
         mail_service = get_mail_service()
-        # mail_request is not None if should_continue is True
         mail_result = await mail_service.send_appeal_letter(mail_request)
 
         # Update payment with fulfillment result
         if mail_result.success:
             tracking_id = (
                 mail_result.tracking_number
-                or f"LOB_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}_{payment_id}"
+                or f"LOB_{now.strftime('%Y%m%d_%H%M%S')}_{payment.id}"
             )
-            mail_type = "standard"
-            if appeal_type_str == AppealType.CERTIFIED.value:
-                 mail_type = "certified"
+            mail_type = (
+                "certified"
+                if payment.appeal_type == AppealType.CERTIFIED
+                else "standard"
+            )
 
-            # Mark fulfilled (Blocking DB)
-            db_service = get_db_service()
+            # fulfillment_result = db_service.mark_payment_fulfilled(...)
             fulfillment_result = await run_in_threadpool(
                 db_service.mark_payment_fulfilled,
                 stripe_session_id=session_id,
@@ -465,61 +371,78 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
             )
 
             if fulfillment_result:
-                 # Update result dict
-                 result["processed"] = True
-                 result["message"] = "Payment processed and appeal sent successfully"
-                 result["fulfillment_result"] = {
+                result["processed"] = True
+                result["message"] = "Payment processed and appeal sent successfully"
+                result["fulfillment_result"] = {
                     "success": True,
                     "tracking_number": mail_result.tracking_number,
                     "letter_id": mail_result.letter_id,
                     "expected_delivery": mail_result.expected_delivery,
                 }
 
-                 logger.info(
+                logger.info(
                     "Successfully fulfilled appeal for payment %s, citation %s, tracking: %s",
-                    payment_id,
-                    citation_number,
+                    payment.id,
+                    intake.citation_number,
                     mail_result.tracking_number,
                 )
 
-                 # Send email notifications (Async)
-                 email_service = get_email_service()
-                 if user_email:
-                      await email_service.send_payment_confirmation(
-                          email=user_email,
-                          citation_number=citation_number or "",
-                          amount_paid=fulfillment_result.amount_total,
-                          appeal_type=appeal_type_str or "standard",
-                          session_id=session_id,
-                      )
+                # Send email notifications
+                email_service = get_email_service()
+                if intake.user_email:
+                    await email_service.send_payment_confirmation(
+                        email=intake.user_email,
+                        citation_number=intake.citation_number,
+                        amount_paid=payment.amount_total,
+                        appeal_type=str(payment.appeal_type),
+                        session_id=session_id,
+                    )
 
-                      await email_service.send_appeal_mailed(
-                          email=user_email,
-                          citation_number=citation_number or "",
-                          tracking_number=mail_result.tracking_number or "",
-                          expected_delivery=mail_result.expected_delivery,
-                      )
+                    await email_service.send_appeal_mailed(
+                        email=intake.user_email,
+                        citation_number=intake.citation_number,
+                        tracking_number=mail_result.tracking_number or "",
+                        expected_delivery=mail_result.expected_delivery,
+                    )
             else:
-                 result["message"] = (
+                result["message"] = (
                     "Payment marked as paid but failed to mark as fulfilled"
-                 )
-                 logger.error("Failed to mark payment %s as fulfilled", payment_id)
+                )
+                logger.error("Failed to mark payment %s as fulfilled", payment.id)
         else:
-             # Mail failed
-             error_msg = mail_result.error_message or "Unknown mail error"
-             result["message"] = f"Payment processed but mail failed: {error_msg}"
-             logger.error(
+            error_msg = mail_result.error_message or "Unknown mail error"
+            result["message"] = f"Payment processed but mail failed: {error_msg}"
+            logger.error(
                 "Mail service failed for payment %s, citation %s: %s",
-                payment_id,
-                citation_number,
+                payment.id,
+                intake.citation_number,
                 error_msg,
-             )
+            )
 
-             # Handle failure (Blocking DB update)
-             await run_in_threadpool(_handle_mail_failure_sync, payment_id)
+            # Mark payment as failed_fulfillment for retry
+            # payment.status = "failed_fulfillment"
+            # db_service.db.commit()
 
+            await run_in_threadpool(
+                db_service.update_payment_status,
+                stripe_session_id=session_id,
+                status=PaymentStatus.FAILED, # Using valid Enum
+            )
+            
+            # Alert admin via Sentry (already configured in app.py)
+            # The /admin/retry endpoint can be used to retry failed mailings
+            # DO NOT suspend the droplet - that would take the entire service offline
+
+    except ValueError as e:
+        # Specific error for missing data
+        logger.error(
+            "Validation error processing checkout.session.completed for session %s: %s",
+            session_id,
+            str(e),
+        )
+        result["message"] = f"Validation error: {str(e)}"
     except Exception as e:
-         # Log specific error type and message for debugging
+        # Log specific error type and message for debugging
         error_type = type(e).__name__
         error_msg = str(e)
         logger.exception(
@@ -530,8 +453,9 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
         )
         result["message"] = f"Error processing payment: {error_type}: {error_msg}"
 
-    # Cache result (Async)
+    # Always cache the result for idempotency
     await _mark_event_processed(event_id, "checkout.session.completed", result)
+    
     return result
 
 
