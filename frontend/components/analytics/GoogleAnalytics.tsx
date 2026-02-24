@@ -1,10 +1,10 @@
-"use client";
+'use client'
 
-import Script from "next/script";
-import { config } from "../../app/lib/config";
+import Script from 'next/script'
+import { config } from '../../app/lib/config'
 
 export default function GoogleAnalytics() {
-  if (!config.googleAnalyticsId) return null;
+  if (!config.googleAnalyticsId) return null
 
   return (
     <>
@@ -22,5 +22,5 @@ export default function GoogleAnalytics() {
         `}
       </Script>
     </>
-  );
+  )
 }

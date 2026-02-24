@@ -20,7 +20,7 @@ export const config = {
     process.env.NEXT_PUBLIC_API_URL ||
     "http://localhost:8000",
 
-  // Analytics
+  // Analytics configuration
   googleAnalyticsId: process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID,
   mixpanelToken: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN,
   amplitudeApiKey: process.env.NEXT_PUBLIC_AMPLITUDE_API_KEY,

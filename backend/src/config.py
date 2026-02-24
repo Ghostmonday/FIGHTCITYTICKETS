@@ -1,11 +1,8 @@
-import logging
 import warnings
 from typing import Optional
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -70,6 +67,10 @@ class Settings(BaseSettings):
     # Service Fees
     fightcity_service_fee: int = 1995  # $19.95 certified only
 
+    # Analytics Configuration
+    google_analytics_id: Optional[str] = None
+    mixpanel_token: Optional[str] = None
+    amplitude_api_key: Optional[str] = None
 
     # =========================================================================
     # PENDING ITEMS
@@ -83,13 +84,7 @@ class Settings(BaseSettings):
     #       - Prevent spam complaints
     #       - Improve deliverability
     #
-
     # =========================================================================
-
-    # Analytics Configuration
-    google_analytics_id: Optional[str] = None
-    mixpanel_token: Optional[str] = None
-    amplitude_api_key: Optional[str] = None
 
     @property
     def debug(self) -> bool:
@@ -139,7 +134,7 @@ class Settings(BaseSettings):
                 )
             else:
                 # dev environment - just log warning
-                logger.warning(
+                print(
                     f"⚠️  Warning: {field_name} is using default value. Change this before production."
                 )
 
@@ -255,7 +250,7 @@ class Settings(BaseSettings):
             warning_msg = "Production configuration warnings:\n" + "\n".join(
                 f"  ⚠️  {w}" for w in warnings_list
             )
-            logger.warning(warning_msg)
+            print(warning_msg)
 
         return True
 
