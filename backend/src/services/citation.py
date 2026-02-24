@@ -750,17 +750,20 @@ def get_appeal_method_messaging(
                 "notes": "Mailed appeals are universally accepted and provide physical proof of submission.",
             }
 
-    # TODO: CODE_REpt clause; shouldVIEW - Bare except clause; should catch specific exceptions
+    # TODO: CODE_REVIEW - Broad except silently converts any exception (including config/import errors)
+    #       into a "mail required" response, masking bugs. Narrow to (ValueError, KeyError, TypeError)
+    #       and log the exception so city config regressions are visible in production.
     except Exception:
         return {
             "online_appeal_available": False,
             "message": "Mail appeal required. Our service ensures proper formatting and delivery.",
             "recommended_method": "mail",
             "notes": "Most governing bodies require mailed appeals for accessibility.",
-        }q
+        }
 
 # Example usage and testing
-# TODO: CODE_REVIEW - Remove test code from production file
+# TODO: CODE_REVIEW - Move these manual smoke tests to backend/tests/. The __main__ guard prevents
+#       execution on import, but raw print()-based tests don't run in CI and will bitrot silently.
 if __name__ == "__main__":
     print("TESTING: Testing Citation Validation Service with CityRegistry")
     print("=" * 50)
