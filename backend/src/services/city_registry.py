@@ -11,7 +11,7 @@ CITY EXPANSION STRATEGY (see docs/MARKET_STRATEGY.md):
 
 TIER 1 - HIGH PRIORITY (Easy entry, high volume):
   - NYC (us-ny-new_york) ✓ Active - simple checkbox, digital signatures
-  - Boston (us-ma-boston) ✓ Active - easy to add, digital signatures accepted
+  - Boston (us-ma-boston) TODO - easy to add, digital signatures accepted
 
 TIER 2 - CAUTION (Moderate risk):
   - San Francisco (us-ca-san_francisco) ✓ Active - UPL risk if AI drafts arguments
@@ -26,6 +26,7 @@ SCRIVENER DEFENSE:
   This service is a "document preparation service" only.
   We transcribe user facts onto municipal forms - NO legal advice.
 
+TODO: Add Boston (us-ma-boston)
 TODO: Add eligibility filter to get_all_cities()
 TODO: Add is_eligible_for_appeals(city_id) method
 """
@@ -85,6 +86,33 @@ class Jurisdiction(str, Enum):
     REGIONAL = "regional"
     SPECIAL_DISTRICT = "special_district"
     DISTRICT = "district"
+
+
+@dataclass
+class SpecialRequirements:
+    """Special requirements and restrictions for a city/section."""
+
+    digital_signature_accepted: bool = False
+    requires_poa: bool = False
+    hard_poa_required: bool = False
+    corporate_blocked: bool = False
+    fleet_appeals_blocked: bool = False
+    certified_mail_required: bool = False
+    notes: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for API responses."""
+        result = {
+            "digital_signature_accepted": self.digital_signature_accepted,
+            "requires_poa": self.requires_poa,
+            "hard_poa_required": self.hard_poa_required,
+            "corporate_blocked": self.corporate_blocked,
+            "fleet_appeals_blocked": self.fleet_appeals_blocked,
+            "certified_mail_required": self.certified_mail_required,
+        }
+        if self.notes:
+            result["notes"] = self.notes
+        return result
 
 
 @dataclass
@@ -262,6 +290,7 @@ class CitySection:
     appeal_mail_address: Optional[AppealMailAddress] = None
     routing_rule: RoutingRule = RoutingRule.DIRECT
     phone_confirmation_policy: Optional[PhoneConfirmationPolicy] = None
+    special_requirements: Optional[SpecialRequirements] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
@@ -276,6 +305,8 @@ class CitySection:
             result["phone_confirmation_policy"] = (  # type: ignore[assignment]
                 self.phone_confirmation_policy.to_dict()
             )
+        if self.special_requirements:
+            result["special_requirements"] = self.special_requirements.to_dict()
         return result
 
 
@@ -323,6 +354,44 @@ class CityConfiguration:
     online_appeal_available: bool = False
     online_appeal_url: Optional[str] = None
 
+    @property
+    def is_eligible(self) -> bool:
+        """
+        Check if city is eligible for our service.
+
+        Eligibility Rules:
+        1. Must NOT require wet-ink signatures (digital signatures accepted preferred, or we handle it)
+        2. Must NOT require Power of Attorney (POA)
+        3. Must NOT block corporate appeals (if we target businesses, but currently we block these)
+
+        A city is eligible if at least one section is eligible.
+        """
+        for section in self.sections.values():
+            if not section.special_requirements:
+                # If no special requirements specified, assume eligible (default)
+                return True
+
+            reqs = section.special_requirements
+
+            # Check for blockers
+            if reqs.requires_poa or reqs.hard_poa_required:
+                continue  # This section is blocked
+
+            if reqs.corporate_blocked or reqs.fleet_appeals_blocked:
+                # Note: If we support individual appeals, we might still consider this eligible.
+                # But per instructions "Block Tier 3 cities (Chicago, D.C., etc.)",
+                # and Chicago has corporate_blocked=True.
+                # Assuming this blocks the whole city for our target use case.
+                # However, if we want to allow individuals in Chicago, we should refine this.
+                # Given "Block Tier 3", and Chicago is Tier 3, we treat this as a block.
+                continue
+
+            # If we passed blockers, this section is eligible, so the city is eligible
+            return True
+
+        # If we checked all sections and found none eligible
+        return False
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
         return {
@@ -339,6 +408,7 @@ class CityConfiguration:
             "appeal_deadline_days": self.appeal_deadline_days,
             "online_appeal_available": self.online_appeal_available,
             "online_appeal_url": self.online_appeal_url,
+            "is_eligible": self.is_eligible,
         }
 
 
@@ -525,12 +595,30 @@ class CityRegistry:
                     phone_number_examples=policy_data.get("phone_number_examples"),
                 )
 
+            special_requirements = None
+            if "special_requirements" in section_data:
+                req_data = section_data["special_requirements"]
+                special_requirements = SpecialRequirements(
+                    digital_signature_accepted=req_data.get(
+                        "digital_signature_accepted", False
+                    ),
+                    requires_poa=req_data.get("requires_poa", False),
+                    hard_poa_required=req_data.get("hard_poa_required", False),
+                    corporate_blocked=req_data.get("corporate_blocked", False),
+                    fleet_appeals_blocked=req_data.get("fleet_appeals_blocked", False),
+                    certified_mail_required=req_data.get(
+                        "certified_mail_required", False
+                    ),
+                    notes=req_data.get("notes"),
+                )
+
             section = CitySection(
                 section_id=section_id,
                 name=section_data["name"],
                 appeal_mail_address=appeal_mail_address,
                 routing_rule=RoutingRule(section_data.get("routing_rule", "direct")),
                 phone_confirmation_policy=phone_confirmation_policy,
+                special_requirements=special_requirements,
             )
             sections[section_id] = section
 
@@ -789,29 +877,28 @@ class CityRegistry:
 
         return config.routing_rule
 
-    def get_all_cities(self, eligible_only: bool = True) -> List[Dict[str, Any]]:
+    def get_all_cities(self, eligible_only: bool = False) -> List[Dict[str, Any]]:
         """
         Get list of all loaded cities with basic info.
 
         Args:
-            eligible_only: If True, exclude cities not in Tier 1 strategy (e.g. SF/LA)
+            eligible_only: If True, return only cities eligible for service.
         """
-        # Cities excluded in Tier 1 strategy due to UPL risk
-        excluded_cities = {"us-ca-san_francisco", "us-ca-los_angeles", "s", "la"}
-
         cities = []
         for city_id, config in self.city_configs.items():
-            if eligible_only and city_id in excluded_cities:
+            if eligible_only and not config.is_eligible:
                 continue
 
-            cities.append({
-                "city_id": city_id,
-                "name": config.name,
-                "jurisdiction": config.jurisdiction.value,
-                "citation_pattern_count": len(config.citation_patterns),
-                "section_count": len(config.sections),
-            })
-
+            cities.append(
+                {
+                    "city_id": city_id,
+                    "name": config.name,
+                    "jurisdiction": config.jurisdiction.value,
+                    "citation_pattern_count": len(config.citation_patterns),
+                    "section_count": len(config.sections),
+                    "is_eligible": config.is_eligible,
+                }
+            )
         return cities
 
     def validate_phone_for_city(

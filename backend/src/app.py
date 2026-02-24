@@ -18,7 +18,6 @@ from .config import settings
 from .logging_config import setup_logging
 from .sentry_config import init_sentry
 from .middleware.request_id import RequestIDMiddleware, get_request_id
-from .middleware.security_headers import SecurityHeadersMiddleware
 from .middleware.errors import (
     APIError,
     ErrorCode,
@@ -44,7 +43,6 @@ from .routes.telemetry import router as telemetry_router
 from .routes.tickets import router as tickets_router
 from .routes.photos import router as photos_router
 from .routes.webhooks import router as webhooks_router
-from .routes.verification import router as verification_router
 from .services.database import get_db_service
 
 # Set up structured logging
@@ -162,9 +160,6 @@ app = FastAPI(
 # Request ID Middleware - adds unique ID to every request for tracking
 app.add_middleware(RequestIDMiddleware)
 
-# Security Headers Middleware - adds security headers to all responses
-app.add_middleware(SecurityHeadersMiddleware)
-
 # Metrics middleware - track request counts
 from .routes.health import increment_request_count, increment_error_count
 
@@ -185,6 +180,21 @@ async def metrics_middleware(request: Request, call_next):
 limiter_instance = get_rate_limiter()
 app.state.limiter = limiter_instance
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Share limiter instance with route modules
+# Rate limiting - share limiter with all route modules
+# Note: This must be called after routers are included
+def _share_limiter():
+    """Share limiter instance with route modules."""
+    from .routes import checkout, webhooks, admin, tickets, statement, status, cities
+
+    checkout.limiter = limiter_instance
+    webhooks.limiter = limiter_instance
+    admin.limiter = limiter_instance
+    tickets.limiter = limiter_instance
+    statement.limiter = limiter_instance
+    status.limiter = limiter_instance
+    cities.limiter = limiter_instance
 
 # Configure CORS
 app.add_middleware(
@@ -215,17 +225,20 @@ app.include_router(photos_router, prefix="/api", tags=["photos"])
 
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
-app.include_router(cities_router, prefix="/cities", tags=["cities"])
 app.include_router(places_router, prefix="/places", tags=["places"])
+app.include_router(cities_router, prefix="/cities", tags=["cities"])
 # Appeal storage router for frontend persistence
 app.include_router(appeals_router, prefix="/api", tags=["appeals"])
-app.include_router(verification_router, prefix="/verification", tags=["verification"])
 # Webhook router: nginx strips /api/, so mount at /webhook (not /api/webhook)
 app.include_router(webhooks_router, prefix="/webhook", tags=["webhooks"])
 app.include_router(status_router, prefix="/status", tags=["status"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
 # OCR telemetry endpoint (opt-in) - nginx strips /api/ prefix
 app.include_router(telemetry_router, prefix="/telemetry", tags=["telemetry"])
+
+# Share limiter instance with route modules
+# BACKLOG PRIORITY 1: Rate limiting integration
+_share_limiter()
 
 
 @app.get("/")
@@ -346,15 +359,11 @@ async def not_found_handler(request: Request, exc):
     request_id = get_request_id(request)
     logger.warning(f"404 Not Found [request_id={request_id}]: {request.url.path}")
 
-    message = "The requested resource was not found"
-    if hasattr(exc, "detail"):
-        message = exc.detail
-
     return JSONResponse(
         status_code=404,
         content=error_response(
             error_code=ErrorCode.NOT_FOUND,
-            message=message,
+            message="The requested resource was not found",
             status_code=404,
             request=request,
             details={"path": request.url.path},
