@@ -198,6 +198,41 @@ export default function CameraPage() {
           </div>
         )}
 
+        {/* OCR Failed */}
+        {ocrResults.some((r: OcrResult, i: number) => !r.citationNumber && photos[i]) && (
+          <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: "#FEE2E2" }}>
+            <h3 className="font-semibold mb-2" style={{ color: "#991B1B" }}>Citation not detected</h3>
+            {ocrResults.map((result: OcrResult, i: number) =>
+              !result.citationNumber && photos[i] && (
+                <div key={i} className="flex flex-col gap-2 mt-2 p-3 rounded" style={{ backgroundColor: "white" }}>
+                  <div className="flex items-center justify-between">
+                    <span style={{ color: "#991B1B", fontSize: "0.875rem" }}>Photo {i + 1}: Could not read citation number</span>
+                  </div>
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => removePhoto(i)}
+                      className="text-sm px-3 py-1 rounded border border-red-200 hover:bg-red-50"
+                      style={{ color: "#991B1B" }}
+                    >
+                      Retake Photo
+                    </button>
+                    <button
+                      onClick={() => setShowManualInput(true)}
+                      className="text-sm px-3 py-1 rounded border border-red-200 hover:bg-red-50"
+                      style={{ color: "#991B1B" }}
+                    >
+                      Enter Manually
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+            <p style={{ color: "#991B1B", fontSize: "0.75rem", marginTop: "0.5rem" }}>
+              Please ensure the photo is clear and the citation number is visible, or enter it manually below.
+            </p>
+          </div>
+        )}
+
         {/* Photo Preview */}
         {photos.length > 0 && (
           <div className="card-step p-6 mb-6">
