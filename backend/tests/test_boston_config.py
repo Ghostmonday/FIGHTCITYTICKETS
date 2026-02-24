@@ -1,74 +1,59 @@
-#!/usr/bin/env python3
-"""
-Test script for Boston City Configuration (us-ma-boston)
-
-Tests that Boston's special requirements are correctly loaded and exposed
-via the Citation Validation Service.
-"""
 
 import sys
+import pytest
 from pathlib import Path
 
-# Add parent directory to path for imports
+# Add backend/src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.services.citation import CitationValidator
 
+class TestBostonConfig:
+    def setup_method(self):
+        self.cities_dir = Path(__file__).parent.parent / "cities"
+        self.validator = CitationValidator(cities_dir=self.cities_dir)
 
-def test_boston_configuration():
-    """Test Boston city configuration loading and special requirements."""
-    print("🦞 Testing Boston Configuration (us-ma-boston)")
-    print("=" * 60)
+    def test_boston_parking_citation(self):
+        # Boston Parking Commission citation: BO + 7 digits
+        citation = "BO1234567"
 
-    # Initialize validator
-    cities_dir = Path(__file__).parent.parent / "cities"
-    validator = CitationValidator(cities_dir)
+        validation = self.validator.validate_citation(citation)
 
-    # Test Boston citation
-    citation = "BO1234567"  # Boston Parking Commission format
-    print(f"Validating Boston citation: {citation}")
+        assert validation.is_valid
+        assert validation.city_id == "us-ma-boston"
+        assert validation.section_id == "parking"
 
-    result = validator.validate_citation(citation)
+        # Check special requirements
+        reqs = validation.special_requirements
+        assert reqs is not None
+        assert reqs["representative_checkbox_enabled"] is True
+        assert reqs["digital_signature_accepted"] is True
+        assert "Massachusetts state law" in reqs["digital_signature_notes"]
 
-    if not result.is_valid:
-        print(f"❌ Citation should be valid, got: {result.error_message}")
-        sys.exit(1)
+    def test_boston_police_citation(self):
+        # Boston Police Department citation: BPD + 6 digits
+        citation = "BPD123456"
 
-    print("✅ Citation matched correctly")
-    print(f"   City ID: {result.city_id}")
-    print(f"   Section ID: {result.section_id}")
+        validation = self.validator.validate_citation(citation)
 
-    if result.city_id != "us-ma-boston":
-        print(f"❌ Expected city_id 'us-ma-boston', got '{result.city_id}'")
-        sys.exit(1)
+        assert validation.is_valid
+        assert validation.city_id == "us-ma-boston"
+        assert validation.section_id == "police"
 
-    # Check special requirements
-    print("\n🔍 Checking Special Requirements")
-    special_reqs = result.special_requirements
+        # Check special requirements
+        reqs = validation.special_requirements
+        assert reqs is not None
+        assert reqs["representative_checkbox_enabled"] is True
+        # Police section might differ slightly
+        assert reqs["digital_signature_accepted"] is True
 
-    if not special_reqs:
-        print("❌ Special requirements missing from validation result")
-        sys.exit(1)
+    def test_citation_info_includes_requirements(self):
+        citation = "BO1234567"
+        info = self.validator.get_citation_info(citation)
 
-    print(f"   {special_reqs}")
-
-    # Verify specific fields from TODO requirements
-    # "High-volume target, digital signatures accepted"
-    if special_reqs.get("digital_signature_accepted") is True:
-        print("✅ Digital signatures accepted")
-    else:
-        print("❌ 'digital_signature_accepted' should be True")
-        sys.exit(1)
-
-    # "Simple checkbox form for third-party appeals"
-    if special_reqs.get("representative_checkbox_enabled") is True:
-        print("✅ Representative checkbox enabled")
-    else:
-        print("❌ 'representative_checkbox_enabled' should be True")
-        sys.exit(1)
-
-    print("\n✅ Boston configuration verification passed!")
-
+        assert info.city_id == "us-ma-boston"
+        assert info.special_requirements is not None
+        assert info.special_requirements["representative_checkbox_enabled"] is True
 
 if __name__ == "__main__":
-    test_boston_configuration()
+    sys.exit(pytest.main(["-v", __file__]))
