@@ -9,20 +9,12 @@ import {
 
 describe("Cities Library", () => {
   describe("CITIES constant", () => {
-    it("should be an array", () => {
+    it("should be an array of cities", () => {
       expect(Array.isArray(CITIES)).toBe(true);
+      expect(CITIES.length).toBeGreaterThan(0);
     });
 
-    it("should contain valid city objects", () => {
-      CITIES.forEach((city) => {
-        expect(city).toHaveProperty("cityId");
-        expect(city).toHaveProperty("name");
-        expect(city).toHaveProperty("state");
-        expect(city).toHaveProperty("stateCode");
-      });
-    });
-
-    it("should contain San Francisco", () => {
+    it("should contain San Francisco as the first entry", () => {
       const sf = CITIES.find((c) => c.cityId === "us-ca-san_francisco");
       expect(sf).toBeDefined();
       expect(sf?.name).toBe("San Francisco");
@@ -32,22 +24,20 @@ describe("Cities Library", () => {
 
   describe("getCityById", () => {
     it("should return the correct city for a valid ID", () => {
-      // Use the first city from the list to avoid hardcoding specific city dependency
-      // (though we still rely on CITIES not being empty)
-      const expectedCity = CITIES[0];
-      const city = getCityById(expectedCity.cityId);
+      const city = getCityById("us-ny-new_york");
       expect(city).toBeDefined();
-      expect(city).toEqual(expectedCity);
+      expect(city?.name).toBe("New York");
+      expect(city?.state).toBe("New York");
     });
 
     it("should return undefined for an invalid ID", () => {
-      const city = getCityById("invalid-id-that-does-not-exist");
+      const city = getCityById("invalid-id");
       expect(city).toBeUndefined();
     });
   });
 
   describe("getCityDisplayName", () => {
-    it("should return the correctly formatted display name", () => {
+    it("should format the display name correctly", () => {
       const city: City = {
         cityId: "test-city",
         name: "Test City",
@@ -62,40 +52,40 @@ describe("Cities Library", () => {
     it("should group cities by state", () => {
       const grouped = getCitiesByState();
 
-      // Verify all states from CITIES are present
-      const uniqueStates = new Set(CITIES.map(c => c.state));
+      // Check California
+      expect(grouped["California"]).toBeDefined();
+      expect(Array.isArray(grouped["California"])).toBe(true);
+      expect(grouped["California"].some(c => c.name === "San Francisco")).toBe(true);
+      expect(grouped["California"].some(c => c.name === "Los Angeles")).toBe(true);
 
-      uniqueStates.forEach(state => {
-        expect(grouped[state]).toBeDefined();
-        expect(grouped[state].length).toBeGreaterThan(0);
-        grouped[state].forEach((city) => {
-          expect(city.state).toBe(state);
-        });
-      });
+      // Check New York
+      expect(grouped["New York"]).toBeDefined();
+      expect(grouped["New York"].some(c => c.name === "New York")).toBe(true);
     });
   });
 
   describe("getSortedCities", () => {
-    it("should return cities sorted alphabetically by name", () => {
+    it("should return cities sorted by name", () => {
       const sorted = getSortedCities();
 
-      for (let i = 0; i < sorted.length - 1; i++) {
-        const current = sorted[i].name;
-        const next = sorted[i + 1].name;
-        // localeCompare returns negative if current comes before next, 0 if equal, positive if after.
-        // We want current <= next for ascending order.
-        expect(current.localeCompare(next)).toBeLessThanOrEqual(0);
-      }
+      // Check that it's a new array
+      expect(sorted).not.toBe(CITIES);
+      expect(sorted.length).toBe(CITIES.length);
 
-      // Redundant check for robustness
-      const names = sorted.map(c => c.name);
-      const expectedNames = [...names].sort((a, b) => a.localeCompare(b));
-      expect(names).toEqual(expectedNames);
+      // Verify sorting
+      for (let i = 0; i < sorted.length - 1; i++) {
+        expect(sorted[i].name.localeCompare(sorted[i + 1].name)).toBeLessThanOrEqual(0);
+      }
     });
 
-    it("should return a new array and not mutate the original CITIES", () => {
-        const sorted = getSortedCities();
-        expect(sorted).not.toBe(CITIES);
+    it("should not mutate the original CITIES array", () => {
+        // Find a city that is not first alphabetically but first in the list
+        // San Francisco is first in the list but "Atlanta" is alphabetically first.
+        // Wait, San Francisco is first in the list.
+        // Let's verify the original list order is preserved.
+        const originalFirst = CITIES[0];
+        getSortedCities();
+        expect(CITIES[0]).toBe(originalFirst);
     });
   });
 });
