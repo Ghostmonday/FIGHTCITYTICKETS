@@ -1,8 +1,11 @@
+import logging
 import warnings
 from typing import Optional
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -134,7 +137,7 @@ class Settings(BaseSettings):
                 )
             else:
                 # dev environment - just log warning
-                print(
+                logger.warning(
                     f"⚠️  Warning: {field_name} is using default value. Change this before production."
                 )
 
@@ -250,7 +253,7 @@ class Settings(BaseSettings):
             warning_msg = "Production configuration warnings:\n" + "\n".join(
                 f"  ⚠️  {w}" for w in warnings_list
             )
-            print(warning_msg)
+            logger.warning(warning_msg)
 
         return True
 
