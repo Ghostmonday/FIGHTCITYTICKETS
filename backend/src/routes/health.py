@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import Any, Optional
 
 import httpx
-from sqlalchemy import func
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
@@ -320,39 +319,32 @@ _ERROR_COUNT = 0
 _START_TIME = time.time()
 
 
-def _get_business_metrics_sync() -> dict[str, int]:
-    """
-    Synchronously fetch business metrics from the database.
-    This function is intended to be run in a thread pool to avoid blocking the event loop.
-    """
+def _get_business_metrics_sync() -> dict:
+    """Fetch business metrics synchronously."""
     try:
+        from ..services.database import get_db_service
         db = get_db_service()
+        if db.health_check():
+            with db.get_session() as session:
+                from sqlalchemy import func
+                from ..models import Intake, Payment, PaymentStatus
 
-        # Check if database is healthy before attempting queries
-        if not db.health_check():
-            return {}
-
-        with db.get_session() as session:
-            from ..models import Intake, Payment, PaymentStatus
-
-            # Using standard SQLAlchemy sync queries
-            total_intakes = session.query(func.count(Intake.id)).scalar() or 0
-            total_payments = session.query(func.count(Payment.id)).scalar() or 0
-            successful_payments = (
-                session.query(func.count(Payment.id))
-                .filter(Payment.status == PaymentStatus.PAID)
-                .scalar()
-                or 0
-            )
-
-            return {
-                "total_intakes": total_intakes,
-                "total_payments": total_payments,
-                "successful_payments": successful_payments,
-            }
+                total_intakes = session.query(func.count(Intake.id)).scalar() or 0
+                total_payments = session.query(func.count(Payment.id)).scalar() or 0
+                successful_payments = (
+                    session.query(func.count(Payment.id))
+                    .filter(Payment.status == PaymentStatus.PAID)
+                    .scalar()
+                    or 0
+                )
+                return {
+                    "total_intakes": total_intakes,
+                    "total_payments": total_payments,
+                    "successful_payments": successful_payments,
+                }
     except Exception as e:
         logger.warning(f"Could not fetch business metrics: {e}")
-        return {}
+    return {}
 
 
 @router.get("/metrics")
@@ -366,11 +358,18 @@ async def metrics():
     - Uptime
     - Business metrics (appeals, payments)
     """
+    global _REQUEST_COUNT, _ERROR_COUNT
+
     # Calculate uptime
     uptime_seconds = time.time() - _START_TIME
 
-    # Get business metrics from database asynchronously (offloaded to thread)
-    business_metrics = await asyncio.to_thread(_get_business_metrics_sync)
+    # Get business metrics from database if available
+    # Run in thread pool to avoid blocking the event loop
+    try:
+        business_metrics = await asyncio.to_thread(_get_business_metrics_sync)
+    except Exception as e:
+        logger.warning(f"Could not fetch business metrics: {e}")
+        business_metrics = {}
 
     # Return Prometheus-format metrics
     return {
