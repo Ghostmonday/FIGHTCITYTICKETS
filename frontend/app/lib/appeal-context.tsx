@@ -19,11 +19,6 @@
  * TODO: Add multi-step progress saving
  *       - Save after each major step
  *       - Enable "continue where you left off" via email
- *
- * TODO: Add citation OCR retry logic
- *       - Tesseract.js can fail on blurry photos
- *       - Add "Try again" button
- *       - Fallback to manual entry
  */
 
 import {
