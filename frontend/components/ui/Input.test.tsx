@@ -1,72 +1,78 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { Input } from "./Input";
+import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
+import { Input } from "./Input";
 
 describe("Input Component", () => {
   it("renders with default props", () => {
-    render(<Input />);
-    const input = screen.getByRole("textbox");
+    render(<Input placeholder="Enter text" />);
+    const input = screen.getByPlaceholderText("Enter text");
     expect(input).toBeInTheDocument();
     expect(input).toHaveClass("border-border");
   });
 
-  it("renders with a label and associates it with the input", () => {
+  it("renders with a label and associates it correctly", () => {
     render(<Input label="Username" />);
     const label = screen.getByText("Username");
     const input = screen.getByLabelText("Username");
+
     expect(label).toBeInTheDocument();
     expect(input).toBeInTheDocument();
-    expect(input).toHaveAttribute("id", "username");
+    expect(label).toHaveAttribute("for", input.id);
   });
 
-  it("uses custom id if provided", () => {
+  it("uses provided id for label association", () => {
     render(<Input label="Username" id="custom-id" />);
+    const label = screen.getByText("Username");
     const input = screen.getByLabelText("Username");
+
     expect(input).toHaveAttribute("id", "custom-id");
+    expect(label).toHaveAttribute("for", "custom-id");
   });
 
-  it("renders with error state and message", () => {
-    const errorMessage = "This field is required";
+  it("renders error message and applies error styles", () => {
+    const errorMessage = "Invalid input";
     render(<Input error={errorMessage} />);
-    const input = screen.getByRole("textbox");
-    const errorText = screen.getByText(errorMessage);
 
+    const error = screen.getByText(errorMessage);
+    const input = screen.getByRole("textbox");
+
+    expect(error).toBeInTheDocument();
+    expect(error).toHaveClass("text-error");
     expect(input).toHaveClass("border-error");
-    expect(errorText).toBeInTheDocument();
-    expect(errorText).toHaveClass("text-error");
   });
 
-  it("renders with success state", () => {
+  it("applies success styles when success prop is true", () => {
     render(<Input success />);
     const input = screen.getByRole("textbox");
     expect(input).toHaveClass("border-success");
   });
 
-  it("renders with a hint when no error is present", () => {
-    const hintMessage = "Enter your username";
-    render(<Input hint={hintMessage} />);
-    const hintText = screen.getByText(hintMessage);
-    expect(hintText).toBeInTheDocument();
-    expect(hintText).toHaveClass("text-text-muted");
+  it("renders hint message when provided and no error", () => {
+    const hintText = "This is a hint";
+    render(<Input hint={hintText} />);
+    const hint = screen.getByText(hintText);
+    expect(hint).toBeInTheDocument();
+    expect(hint).toHaveClass("text-text-muted");
   });
 
   it("does not render hint when error is present", () => {
-    const hintMessage = "Enter your username";
-    const errorMessage = "Error occurred";
-    render(<Input hint={hintMessage} error={errorMessage} />);
+    const hintText = "This is a hint";
+    const errorText = "This is an error";
+    render(<Input hint={hintText} error={errorText} />);
 
-    expect(screen.queryByText(hintMessage)).not.toBeInTheDocument();
-    expect(screen.getByText(errorMessage)).toBeInTheDocument();
+    expect(screen.queryByText(hintText)).not.toBeInTheDocument();
+    expect(screen.getByText(errorText)).toBeInTheDocument();
   });
 
-  it("handles user input correctly", async () => {
-    const user = userEvent.setup();
-    render(<Input />);
-    const input = screen.getByRole("textbox");
+  it("handles user typing", () => {
+    const handleChange = jest.fn();
+    render(<Input onChange={handleChange} />);
 
-    await user.type(input, "Hello World");
-    expect(input).toHaveValue("Hello World");
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "Hello" } });
+
+    expect(handleChange).toHaveBeenCalledTimes(1);
+    expect(input).toHaveValue("Hello");
   });
 
   it("forwards ref to the input element", () => {
@@ -75,17 +81,22 @@ describe("Input Component", () => {
     expect(ref.current).toBeInstanceOf(HTMLInputElement);
   });
 
-  it("merges custom className with default styles", () => {
+  it("merges custom className", () => {
     render(<Input className="custom-class" />);
     const input = screen.getByRole("textbox");
     expect(input).toHaveClass("custom-class");
-    expect(input).toHaveClass("w-full"); // Default class
+    expect(input).toHaveClass("bg-bg-surface"); // verify default classes are still there
   });
 
-  it("passes other props to the input element", () => {
-    render(<Input placeholder="Enter text" disabled data-testid="test-input" />);
-    const input = screen.getByTestId("test-input");
-    expect(input).toHaveAttribute("placeholder", "Enter text");
+  it("passes disabled attribute", () => {
+    render(<Input disabled />);
+    const input = screen.getByRole("textbox");
     expect(input).toBeDisabled();
+  });
+
+  it("generates id from label if not provided", () => {
+     render(<Input label="First Name" />);
+     const input = screen.getByLabelText("First Name");
+     expect(input.id).toBe("first-name");
   });
 });
