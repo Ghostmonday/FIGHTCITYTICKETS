@@ -14,11 +14,10 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
-from fastapi.concurrency import run_in_threadpool
-from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from ..config import settings
+from ..middleware.rate_limit import limiter
 from ..models import AppealType, PaymentStatus, WebhookEvent
 from ..services.database import get_db_service
 from ..services.email_service import get_email_service
@@ -29,9 +28,6 @@ from ..services.stripe_service import StripeService
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 # Admin authentication
 ADMIN_SECRET_HEADER = "X-Admin-Secret"
@@ -48,7 +44,7 @@ def _generate_event_id(event_type: str, object_id: str) -> str:
     return f"{event_type}:{object_id}"
 
 
-async def _is_event_processed(event_id: str) -> tuple[bool, Optional[dict]]:
+def _is_event_processed(event_id: str) -> tuple[bool, Optional[dict]]:
     """
     Check if an event has already been processed (database-backed).
     
@@ -56,23 +52,18 @@ async def _is_event_processed(event_id: str) -> tuple[bool, Optional[dict]]:
         (is_processed, cached_result)
     """
     try:
-        def _check_db():
-            db_service = get_db_service()
-            with db_service.get_session() as session:
-                # Check database for processed event
-                event = session.query(WebhookEvent).filter(
-                    WebhookEvent.stripe_event_id == event_id,
-                    WebhookEvent.processed == True
-                ).first()
-
-                if event:
-                    return True, {"message": event.result_message}
-                return False, None
+        db_service = get_db_service()
+        db = db_service.db
         
-        is_processed, result = await run_in_threadpool(_check_db)
-        if is_processed:
-            return True, result
-
+        # Check database for processed event
+        event = db.query(WebhookEvent).filter(
+            WebhookEvent.stripe_event_id == event_id,
+            WebhookEvent.processed == True
+        ).first()
+        
+        if event:
+            return True, {"message": event.result_message}
+        
         return False, None
     except Exception as e:
         logger.warning("Database idempotency check failed: %s, falling back to memory", e)
@@ -80,34 +71,33 @@ async def _is_event_processed(event_id: str) -> tuple[bool, Optional[dict]]:
         return _is_event_processed_memory(event_id)
 
 
-async def _mark_event_processed(event_id: str, event_type: str, result: dict) -> None:
+def _mark_event_processed(event_id: str, event_type: str, result: dict) -> None:
     """Mark an event as processed in the database."""
     try:
-        def _mark_db():
-            db_service = get_db_service()
-            with db_service.get_session() as session:
-                # Check if already exists
-                existing = session.query(WebhookEvent).filter(
-                    WebhookEvent.stripe_event_id == event_id
-                ).first()
-
-                if existing:
-                    # Update existing record
-                    existing.processed = True
-                    existing.result_message = result.get("message", "")[:500]
-                    existing.updated_at = datetime.now(timezone.utc)
-                else:
-                    # Create new record
-                    webhook_event = WebhookEvent(
-                        stripe_event_id=event_id,
-                        event_type=event_type,
-                        processed=True,
-                        result_message=result.get("message", "")[:500],
-                    )
-                    session.add(webhook_event)
-                # session commits on exit
+        db_service = get_db_service()
+        db = db_service.db
         
-        await run_in_threadpool(_mark_db)
+        # Check if already exists
+        existing = db.query(WebhookEvent).filter(
+            WebhookEvent.stripe_event_id == event_id
+        ).first()
+        
+        if existing:
+            # Update existing record
+            existing.processed = True
+            existing.result_message = result.get("message", "")[:500]
+            existing.updated_at = datetime.now(timezone.utc)
+        else:
+            # Create new record
+            webhook_event = WebhookEvent(
+                stripe_event_id=event_id,
+                event_type=event_type,
+                processed=True,
+                result_message=result.get("message", "")[:500],
+            )
+            db.add(webhook_event)
+        
+        db.commit()
     except Exception as e:
         logger.warning("Failed to mark event processed in database: %s", e)
         # Fall back to memory cache
@@ -232,8 +222,7 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
     
     try:
         db_service = get_db_service()
-        # payment = db_service.get_payment_by_session(session_id)
-        payment = await run_in_threadpool(db_service.get_payment_by_session, session_id)
+        payment = db_service.get_payment_by_session(session_id)
         
         # Check database for existing payment status before checking cache
         if payment:
@@ -250,11 +239,11 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
                 result["message"] = "Already fulfilled (idempotent)"
                 logger.info("Webhook already processed for payment %s", payment.id)
                 # Cache the result for future quick lookups
-                await _mark_event_processed(event_id, "checkout.session.completed", result)
+                _mark_event_processed(event_id, "checkout.session.completed", result)
                 return result
         
         # Check cache only after database check to avoid race conditions
-        is_processed, cached_result = await _is_event_processed(event_id)
+        is_processed, cached_result = _is_event_processed(event_id)
         if is_processed and cached_result:
             logger.info("Returning cached result for event %s", event_id)
             return cached_result
@@ -264,14 +253,12 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
             logger.warning("Payment not found for session %s", session_id)
             result["message"] = f"Payment not found for session {session_id}"
             # Cache the result to prevent retries
-            await _mark_event_processed(event_id, "checkout.session.completed", result)
+            _mark_event_processed(event_id, "checkout.session.completed", result)
             return result
 
         # Update payment status to PAID
         now = datetime.now(timezone.utc)
-        # updated_payment = db_service.update_payment_status(...)
-        updated_payment = await run_in_threadpool(
-            db_service.update_payment_status,
+        updated_payment = db_service.update_payment_status(
             stripe_session_id=session_id,
             status=PaymentStatus.PAID,
             stripe_payment_intent=session.get("payment_intent") or "",
@@ -286,14 +273,12 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
             return result
 
         # Get intake and draft for fulfillment
-        # intake = db_service.get_intake(payment.intake_id)
-        intake = await run_in_threadpool(db_service.get_intake, payment.intake_id)
+        intake = db_service.get_intake(payment.intake_id)
         if not intake:
             result["message"] = f"Intake {payment.intake_id} not found"
             return result
 
-        # draft = db_service.get_latest_draft(payment.intake_id)
-        draft = await run_in_threadpool(db_service.get_latest_draft, payment.intake_id)
+        draft = db_service.get_latest_draft(payment.intake_id)
         if not draft:
             result["message"] = f"Draft for intake {payment.intake_id} not found"
             return result
@@ -332,18 +317,14 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
             if hasattr(payment.appeal_type, "value")
             else str(payment.appeal_type),
             user_name=intake.user_name,
-            user_address_line_1=intake.user_address_line1,
-            user_address_line_2=intake.user_address_line2,
+            user_address=intake.user_address_line1,
             user_city=intake.user_city,
             user_state=intake.user_state,
             user_zip=intake.user_zip,
-            user_email=intake.user_email or "",
             letter_text=draft.draft_text,
             signature_data=intake.signature_data,
             city_id=city_id,
             section_id=section_id,
-            agency_name=city_id or "unknown",
-            agency_address="",
         )
 
         # Send appeal via mail service
@@ -362,9 +343,7 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
                 else "standard"
             )
 
-            # fulfillment_result = db_service.mark_payment_fulfilled(...)
-            fulfillment_result = await run_in_threadpool(
-                db_service.mark_payment_fulfilled,
+            fulfillment_result = db_service.mark_payment_fulfilled(
                 stripe_session_id=session_id,
                 lob_tracking_id=tracking_id,
                 lob_mail_type=mail_type,
@@ -420,14 +399,8 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
             )
 
             # Mark payment as failed_fulfillment for retry
-            # payment.status = "failed_fulfillment"
-            # db_service.db.commit()
-
-            await run_in_threadpool(
-                db_service.update_payment_status,
-                stripe_session_id=session_id,
-                status=PaymentStatus.FAILED, # Using valid Enum
-            )
+            payment.status = "failed_fulfillment"
+            db_service.db.commit()
             
             # Alert admin via Sentry (already configured in app.py)
             # The /admin/retry endpoint can be used to retry failed mailings
@@ -454,7 +427,7 @@ async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str
         result["message"] = f"Error processing payment: {error_type}: {error_msg}"
 
     # Always cache the result for idempotency
-    await _mark_event_processed(event_id, "checkout.session.completed", result)
+    _mark_event_processed(event_id, "checkout.session.completed", result)
     
     return result
 

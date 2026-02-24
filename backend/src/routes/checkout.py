@@ -17,20 +17,16 @@ from typing import Optional
 import httpx
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field, validator
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import text
 
 from ..config import settings
+from ..middleware.rate_limit import limiter
 from ..models import Payment, PaymentStatus
 from ..services.database import get_db_service
 from ..services.stripe_service import StripeService
 
 # Initialize logger
 logger = logging.getLogger(__name__)
-
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 # States where service is blocked due to UPL regulations
 # Can be overridden via BLOCKED_STATES environment variable (comma-separated)

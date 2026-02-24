@@ -10,14 +10,12 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
+from ..middleware.rate_limit import limiter
 from ..services.citation import CitationValidator
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Rate limiter - will be set from app.py after app initialization
-limiter: Optional[object] = None
 
 
 class TicketType(BaseModel):
