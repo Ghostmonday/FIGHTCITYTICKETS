@@ -4,11 +4,6 @@ Citation Validation Service for Fight City Tickets.com
 Validates parking citation numbers and calculates appeal deadlines across multiple cities.
 Implements multi-city support via CityRegistry (Schema 4.3.0) with backward compatibility.
 
-TODO: Implement Boston city configuration (us-ma-boston)
-      - High-volume target, digital signatures accepted
-      - Simple checkbox form for third-party appeals
-      - Reference: https://www.boston.gov/parking/parking-tickets
-
 TODO: Remove SF/LA from available cities if following Tier 1-only strategy
       - CA markets have high UPL risk (bar association scrutiny)
       - Keep config files but filter in API response
@@ -195,6 +190,7 @@ class CitationValidationResult:
     appeal_deadline_days: int = 21  # Default SF deadline
     phone_confirmation_required: bool = False
     phone_confirmation_policy: Optional[Dict[str, Any]] = None
+    special_requirements: Optional[Dict[str, Any]] = None
 
     # Clerical defect detection (not legal conclusions)
     # Indicates potential documentation issues (missing date, mismatched info, etc.)
@@ -224,6 +220,7 @@ class CitationInfo:
     routing_rule: Optional[str] = None
     phone_confirmation_required: bool = False
     phone_confirmation_policy: Optional[Dict[str, Any]] = None
+    special_requirements: Optional[Dict[str, Any]] = None
     appeal_deadline_days: int = 21  # Default SF deadline
 
 
@@ -431,7 +428,7 @@ class CitationValidator:
             cached = _get_cached_citation(clean_number)
             if cached:
                 # Return cached result (create new object to avoid mutation issues)
-                return CitationValidationResult(
+                result = CitationValidationResult(
                     is_valid=cached.get("is_valid", False),
                     citation_number=cached.get("citation_number", citation_number),
                     agency=CitationAgency(cached.get("agency", "UNKNOWN")),
@@ -448,9 +445,19 @@ class CitationValidator:
                         "phone_confirmation_required", False
                     ),
                     phone_confirmation_policy=cached.get("phone_confirmation_policy"),
+                    special_requirements=cached.get("special_requirements"),
                     clerical_defect_detected=cached.get("clerical_defect_detected", False),
                     clerical_defect_description=cached.get("clerical_defect_description"),
                 )
+
+                # If license plate provided, validate it against the cached result
+                if license_plate:
+                    license_plate_clean = license_plate.strip().upper()
+                    if len(license_plate_clean) < 2 or len(license_plate_clean) > 8:
+                        result.is_valid = False
+                        result.error_message = "Invalid license plate format"
+
+                return result
 
         # Step 1: Basic format validation
         is_valid_format, error_msg = self.validate_citation_format(citation_number)
@@ -508,6 +515,15 @@ class CitationValidator:
                     phone_confirmation_policy = policy.to_dict()
                     phone_confirmation_required = policy.required
 
+            # Get special requirements
+            special_requirements = None
+            if self.city_registry:
+                config = self.city_registry.get_city_config(city_id)
+                if config and section_id in config.sections:
+                    section = config.sections[section_id]
+                    if section.special_requirements:
+                        special_requirements = section.special_requirements.to_dict()
+
         else:
             # No city match, fall back to SF-only validation
             city_id = None
@@ -516,6 +532,7 @@ class CitationValidator:
             appeal_deadline_days = self.DEFAULT_APPEAL_DEADLINE_DAYS
             phone_confirmation_policy = None
             phone_confirmation_required = False
+            special_requirements = None
 
         # Step 5: Calculate deadline if violation date provided
         deadline_date = None
@@ -560,6 +577,7 @@ class CitationValidator:
             appeal_deadline_days=appeal_deadline_days,
             phone_confirmation_required=phone_confirmation_required,
             phone_confirmation_policy=phone_confirmation_policy,
+            special_requirements=special_requirements,
         )
 
         # Cache valid results for future lookups (skip caching if violation_date was provided
@@ -581,6 +599,7 @@ class CitationValidator:
                     "appeal_deadline_days": result.appeal_deadline_days,
                     "phone_confirmation_required": result.phone_confirmation_required,
                     "phone_confirmation_policy": result.phone_confirmation_policy,
+                    "special_requirements": result.special_requirements,
                     "clerical_defect_detected": result.clerical_defect_detected,
                     "clerical_defect_description": result.clerical_defect_description,
                 }
@@ -638,6 +657,7 @@ class CitationValidator:
         routing_rule = None
         phone_confirmation_policy = validation.phone_confirmation_policy
         phone_confirmation_required = validation.phone_confirmation_required
+        special_requirements = validation.special_requirements
 
         if validation.city_id and self.city_registry:
             # Get mailing address
@@ -680,6 +700,7 @@ class CitationValidator:
             routing_rule=routing_rule,
             phone_confirmation_required=phone_confirmation_required,
             phone_confirmation_policy=phone_confirmation_policy,
+            special_requirements=special_requirements,
             appeal_deadline_days=validation.appeal_deadline_days,
         )
 
