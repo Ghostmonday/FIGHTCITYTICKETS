@@ -6,6 +6,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
 import { useAppeal } from "../../lib/appeal-context";
 import { extractTextFromImage } from "../../lib/ocr-helper";
+import { uploadPhoto } from "../../lib/s3-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -61,34 +62,90 @@ export default function CameraPage() {
     handlePhotoCapture(base64);
   };
 
+  const base64ToFile = (base64: string, filename: string): File => {
+    const arr = base64.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
   const handlePhotoCapture = async (base64: string) => {
     setIsProcessing(true);
-    const newPhotos = [...photos, base64];
     let ocrResult: OcrResult = { confidence: 0, rawText: "" };
+
     try {
-      ocrResult = await extractTextFromImage(base64);
+      // 1. Start upload
+      const file = base64ToFile(base64, `photo_${Date.now()}.jpg`);
+      const uploadPromise = uploadPhoto(file, state.citationNumber || undefined, state.cityId);
+
+      // 2. Start OCR (parallel)
+      const ocrPromise = extractTextFromImage(base64);
+
+      // Wait for both
+      const [uploadResult, ocr] = await Promise.all([uploadPromise, ocrPromise]);
+      ocrResult = ocr;
+
+      // 3. Update state with URL
+      // If S3 upload succeeded, use the URL. If fallback (local), use base64 for display so it works in dev
+      const photoUrl = uploadResult.is_s3 ? uploadResult.url : base64;
+
+      const newPhotos = [...photos, photoUrl];
+      setPhotos(newPhotos);
+      setOcrResults([...ocrResults, ocrResult]);
+      updateState({ photos: newPhotos });
+
     } catch (error) {
-      console.warn("OCR failed:", error);
+      console.error("Processing failed:", error);
+      alert("Failed to process photo. Please try again.");
+    } finally {
+      setIsProcessing(false);
     }
-    setPhotos(newPhotos);
-    setOcrResults([...ocrResults, ocrResult]);
-    updateState({ photos: newPhotos });
-    setIsProcessing(false);
   };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
     setIsProcessing(true);
+
+    const newPhotosList = [...photos];
+    const newOcrResultsList = [...ocrResults];
+
     for (const file of Array.from(files)) {
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = (event) => resolve(event.target?.result as string);
-        reader.onerror = () => reject(new Error("Failed to read file"));
-        reader.readAsDataURL(file);
-      });
-      await handlePhotoCapture(base64);
+      try {
+        // Read for OCR
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = (event) => resolve(event.target?.result as string);
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsDataURL(file);
+        });
+
+        // Start upload
+        const uploadPromise = uploadPhoto(file, state.citationNumber || undefined, state.cityId);
+
+        // Start OCR
+        const ocrPromise = extractTextFromImage(base64);
+
+        const [uploadResult, ocrResult] = await Promise.all([uploadPromise, ocrPromise]);
+
+        const photoUrl = uploadResult.is_s3 ? uploadResult.url : base64;
+
+        newPhotosList.push(photoUrl);
+        newOcrResultsList.push(ocrResult);
+
+      } catch (error) {
+        console.error("File processing failed:", error);
+      }
     }
+
+    setPhotos(newPhotosList);
+    setOcrResults(newOcrResultsList);
+    updateState({ photos: newPhotosList });
     setIsProcessing(false);
   };
 

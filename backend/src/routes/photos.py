@@ -9,6 +9,8 @@ from typing import Optional
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 
+from ..services.storage import get_storage_service
+
 router = APIRouter(tags=["photos"])
 
 # Configure upload directory
@@ -22,12 +24,85 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 
+class PresignedUrlRequest(BaseModel):
+    filename: str
+    content_type: str
+    citation_number: Optional[str] = None
+
+
+class PresignedUrlResponse(BaseModel):
+    upload_url: str
+    key: str
+    public_url: str
+    photo_id: str
+
+
 class UploadResponse(BaseModel):
     """Response model for photo upload."""
     photo_id: str
     filename: str
     size: int
     uploaded_at: str
+
+
+@router.post("/photos/presigned-url", response_model=PresignedUrlResponse)
+def get_presigned_url(request: PresignedUrlRequest):
+    """
+    Generate a presigned URL for direct S3 upload.
+    """
+    storage = get_storage_service()
+    if not storage.is_configured:
+         raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="S3 storage is not configured",
+        )
+
+    # Validate file type
+    if request.content_type not in ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid file type. Allowed: {', '.join(ALLOWED_TYPES)}",
+        )
+
+    # Generate unique ID
+    photo_id = str(uuid.uuid4())
+
+    # Determine extension from filename if possible, else content type
+    ext = Path(request.filename).suffix
+    if not ext:
+        if request.content_type == "image/jpeg":
+            ext = ".jpg"
+        elif request.content_type == "image/png":
+            ext = ".png"
+        elif request.content_type == "image/webp":
+            ext = ".webp"
+        elif request.content_type == "image/gif":
+            ext = ".gif"
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    safe_filename = f"{photo_id}_{timestamp}{ext}"
+
+    # Subdir
+    subdir = "temp"
+    if request.citation_number:
+         safe_citation = "".join(c for c in request.citation_number if c.isalnum())[:20]
+         subdir = safe_citation
+
+    object_name = f"uploads/{subdir}/{safe_filename}"
+
+    data = storage.generate_presigned_url(object_name, request.content_type)
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate presigned URL",
+        )
+
+    return PresignedUrlResponse(
+        upload_url=data["upload_url"],
+        key=data["key"],
+        public_url=data["public_url"],
+        photo_id=photo_id
+    )
 
 
 @router.post("/photos/upload", response_model=UploadResponse)

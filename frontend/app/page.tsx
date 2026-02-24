@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppeal } from "./lib/appeal-context";
 import { apiClient } from "./lib/api-client";
+import { uploadPhoto } from "./lib/s3-upload";
 import LegalDisclaimer from "../components/LegalDisclaimer";
 
 // Force dynamic rendering
@@ -117,26 +118,24 @@ export default function Home() {
       if (uploadedFile) {
         try {
           setIsValidating(true);
-          const uploadData = await apiClient.upload<{
-            photo_id: string;
-            filename: string;
-            size: number;
-          }>(
-            "/api/photos/upload",
-            uploadedFile,
-            {
-              citation_number: citationNumber,
-              city_id: selectedCity,
-            }
-          );
+          const uploadResult = await uploadPhoto(uploadedFile, citationNumber, selectedCity);
           
-          // Store photo ID in context for the appeal page
+          let photoRef = uploadResult.url;
+          if (!uploadResult.is_s3) {
+             // Fallback: Use base64 for display if not S3
+             photoRef = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target?.result as string);
+                reader.readAsDataURL(uploadedFile);
+             });
+          }
+
+          // Store photo URL/Ref in context for the appeal page
           updateState({
             citationNumber,
             licensePlate,
             cityId: selectedCity,
-            // Store photo ID reference (photos will be loaded from backend)
-            photos: [uploadData.photo_id],
+            photos: [photoRef],
           });
         } catch (err) {
           console.error("Failed to upload photo:", err);
