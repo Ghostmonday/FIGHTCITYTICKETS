@@ -1,31 +1,24 @@
 {
   "city_id": "us-ma-boston",
-  "status": "active",
   "name": "Boston",
   "jurisdiction": "city",
-  "status": "active",
   "citation_patterns": [
     {
       "regex": "^BO\\d{7,9}$",
       "section_id": "parking",
       "description": "Boston Parking Commission citation",
-      "example_numbers": [
-        "BO1234567",
-        "BO9876543"
-      ]
+      "example_numbers": ["BO1234567", "BO9876543"]
     },
     {
       "regex": "^BPD\\d{6,8}$",
       "section_id": "police",
       "description": "Boston Police Department parking citation",
-      "example_numbers": [
-        "BPD123456"
-      ]
+      "example_numbers": ["BPD123456"]
     }
   ],
   "appeal_mail_address": {
     "status": "complete",
-    "department": "Office of the Parking Clerk",
+    "department": "Parking Clerk",
     "address1": "P.O. Box 55800",
     "address2": null,
     "city": "Boston",
@@ -47,7 +40,7 @@
       "name": "Boston Parking Commission",
       "appeal_mail_address": {
         "status": "complete",
-        "department": "Office of the Parking Clerk",
+        "department": "Parking Clerk",
         "address1": "P.O. Box 55800",
         "address2": null,
         "city": "Boston",
@@ -75,7 +68,7 @@
       "name": "Boston Police Department",
       "appeal_mail_address": {
         "status": "complete",
-        "department": "Office of the Parking Clerk",
+        "department": "Parking Clerk",
         "address1": "P.O. Box 55800",
         "address2": null,
         "city": "Boston",
@@ -98,13 +91,13 @@
     }
   },
   "verification_metadata": {
-    "last_updated": "2024-05-21",
-    "source": "https://www.boston.gov/departments/parking-clerk/how-appeal-parking-ticket",
+    "last_updated": "2025-01-25",
+    "source": "https://www.boston.gov/departments/parking-clerk",
     "confidence_score": 0.95,
     "notes": "DIGITAL SIGNATURES ENABLED per Massachusetts law. Easy entry, high volume target.",
-    "verified_by": "jules",
-    "verification_date": "2024-05-21",
-    "verified_url": "https://www.boston.gov/departments/parking-clerk/how-appeal-parking-ticket"
+    "verified_by": "system",
+    "verification_date": "2026-01-25",
+    "verified_url": "https://www.boston.gov/departments/parking-clerk"
   },
   "timezone": "America/New_York",
   "appeal_deadline_days": 21,

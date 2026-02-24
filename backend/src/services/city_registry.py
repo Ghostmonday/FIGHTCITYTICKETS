@@ -11,7 +11,7 @@ CITY EXPANSION STRATEGY (see docs/MARKET_STRATEGY.md):
 
 TIER 1 - HIGH PRIORITY (Easy entry, high volume):
   - NYC (us-ny-new_york) ✓ Active - simple checkbox, digital signatures
-  - Boston (us-ma-boston) TODO - easy to add, digital signatures accepted
+  - Boston (us-ma-boston) ✓ Active - easy to add, digital signatures accepted
 
 TIER 2 - CAUTION (Moderate risk):
   - San Francisco (us-ca-san_francisco) ✓ Active - UPL risk if AI drafts arguments
@@ -26,7 +26,6 @@ SCRIVENER DEFENSE:
   This service is a "document preparation service" only.
   We transcribe user facts onto municipal forms - NO legal advice.
 
-TODO: Add Boston (us-ma-boston)
 TODO: Add eligibility filter to get_all_cities()
 TODO: Add is_eligible_for_appeals(city_id) method
 """
