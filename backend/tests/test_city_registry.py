@@ -65,14 +65,24 @@ def test_eligibility():
     # Check is_eligible_for_appeals
     print("\nChecking eligibility logic:")
 
-    # Active/Caution should be eligible
-    eligible_cities = ["us-ma-boston", "us-ca-san_francisco", "us-ny-new_york"]
+    # Only Active/Beta should be eligible (Strict Tier 1 Strategy)
+    eligible_cities = ["us-ma-boston", "us-ny-new_york"]
     for city_id in eligible_cities:
         if registry.is_eligible_for_appeals(city_id):
             print(f"✅ {city_id} is eligible")
             passed += 1
         else:
             print(f"❌ {city_id} should be eligible")
+            failed += 1
+
+    # Caution cities (SF/LA) should be ineligible under strict rules
+    caution_cities = ["us-ca-san_francisco", "us-ca-los_angeles"]
+    for city_id in caution_cities:
+        if not registry.is_eligible_for_appeals(city_id):
+            print(f"✅ {city_id} (Caution) is correctly ineligible")
+            passed += 1
+        else:
+            print(f"❌ {city_id} (Caution) should be ineligible")
             failed += 1
 
     # Blocked should not be eligible

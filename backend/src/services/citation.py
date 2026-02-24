@@ -8,9 +8,6 @@ TODO: Remove SF/LA from available cities if following Tier 1-only strategy
       - CA markets have high UPL risk (bar association scrutiny)
       - Keep config files but filter in API response
 
-TODO: Add city eligibility endpoint: GET /api/cities?eligible=true
-      - Filter cities by business rules (digital signatures, no POA required)
-      - Block Tier 3 cities (Chicago, D.C., etc.)
 """
 
 import json
@@ -119,7 +116,6 @@ def _set_cached_citation(citation_number: str, result: Dict[str, Any]) -> None:
     logger.debug(f"Cached in memory: {citation_number}")
 
 try:
-    # Strategy 1: Relative import (works when module is imported)
     from .city_registry import (  # noqa: F401
         AppealMailAddress,  # noqa: F401
         AppealMailStatus,  # noqa: F401
@@ -130,28 +126,7 @@ try:
 
     CITY_REGISTRY_AVAILABLE = True
 except ImportError:
-    try:
-        # Strategy 2: Absolute import from src.services (works in script mode)
-        import sys
-        from pathlib import Path
-
-        # Add parent directory to path
-        src_dir = Path(__file__).parent.parent
-        if str(src_dir) not in sys.path:
-            sys.path.insert(0, str(src_dir))
-        from services.city_registry import (  # noqa: F401
-            AppealMailAddress,  # noqa: F401
-            AppealMailStatus,  # noqa: F401
-            CityRegistry,  # noqa: F401
-            PhoneConfirmationPolicy,  # noqa: F401
-            get_city_registry,
-        )
-
-        CITY_REGISTRY_AVAILABLE = True
-    except ImportError:
-        # Strategy 3: Use stubs (fallback)
-        CITY_REGISTRY_AVAILABLE = False
-        # Stubs already defined above
+    CITY_REGISTRY_AVAILABLE = False
 
 
 class CitationAgency(Enum):

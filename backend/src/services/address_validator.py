@@ -5,7 +5,8 @@ Validates mailing addresses by scraping city websites in real-time using DeepSee
 Compares scraped addresses with stored addresses and updates database if they differ.
 
 Features:
-- If scraping fails 3x in a row, send admin alert (City websites may have changed or blocked bots)
+Features:
+- Monitors URL availability and alerts admins on repeated failure (3x)
 - Admins can manually update addresses without scraping (Needed when websites block bots or content changes)
 - Run daily for all configured cities
 - Log results to monitoring system

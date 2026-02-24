@@ -44,6 +44,7 @@ from .routes.telemetry import router as telemetry_router
 from .routes.tickets import router as tickets_router
 from .routes.photos import router as photos_router
 from .routes.webhooks import router as webhooks_router
+from .routes.fleets import router as fleets_router
 from .services.database import get_db_service
 
 # Set up structured logging
@@ -236,6 +237,7 @@ app.include_router(cities_router, prefix="/cities", tags=["cities"])
 app.include_router(appeals_router, prefix="/api", tags=["appeals"])
 # Webhook router: nginx strips /api/, so mount at /webhook (not /api/webhook)
 app.include_router(webhooks_router, prefix="/webhook", tags=["webhooks"])
+app.include_router(fleets_router, prefix="/fleets", tags=["fleets"])
 app.include_router(status_router, prefix="/status", tags=["status"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
 # OCR telemetry endpoint (opt-in) - nginx strips /api/ prefix

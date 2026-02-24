@@ -224,3 +224,23 @@ async def test_rate_limiting(email_service, mock_httpx_client):
     )
 
     assert email_service._daily_count == 1
+
+@pytest.mark.asyncio
+async def test_send_admin_alert(email_service, mock_httpx_client):
+    """Test sending admin alert."""
+    mock_response = MagicMock()
+    mock_response.raise_for_status.return_value = None
+    mock_httpx_client.post.return_value = mock_response
+
+    result = await email_service.send_admin_alert(
+        subject="Alert Subject",
+        message="Alert Message"
+    )
+
+    assert result is True
+    mock_httpx_client.post.assert_called_once()
+    payload = mock_httpx_client.post.call_args[1]["json"]
+    assert "Alert Subject" in payload["subject"]
+    assert "Alert Message" in payload["content"][0]["value"]
+    # Check recipient is support email
+    assert payload["personalizations"][0]["to"][0]["email"] == "support@example.com"

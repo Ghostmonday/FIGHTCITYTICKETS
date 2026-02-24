@@ -41,6 +41,33 @@ class PaymentStatus(str, enum.Enum):
     REFUNDED = "refunded"
 
 
+class Fleet(Base):
+    """
+    Represents a fleet management company.
+    """
+
+    __tablename__ = "fleets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    email = Column(String(100), nullable=False, index=True)
+    stripe_account_id = Column(String(100), nullable=True, index=True)
+    stripe_account_status = Column(String(50), default="pending")
+
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    # Relationships
+    intakes = relationship("Intake", back_populates="fleet")
+
+
 class Intake(Base):
     """
     Represents an appeal intake/submission.
@@ -67,6 +94,10 @@ class Intake(Base):
     user_email = Column(String(100), nullable=True, index=True)
     email_verified = Column(Boolean, default=False)
     user_phone = Column(String(20), nullable=True)
+
+    # Fleet information
+    fleet_id = Column(Integer, ForeignKey("fleets.id"), nullable=True, index=True)
+    is_fleet_managed = Column(Boolean, default=False)
 
     # Appeal details
     appeal_reason = Column(Text, nullable=True)
@@ -95,6 +126,7 @@ class Intake(Base):
     payments = relationship(
         "Payment", back_populates="intake", cascade="all, delete-orphan"
     )
+    fleet = relationship("Fleet", back_populates="intakes")
 
     # Indexes
     __table_args__ = (

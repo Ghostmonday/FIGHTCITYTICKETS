@@ -119,8 +119,9 @@ class AppealStorage:
             Storage key for retrieving the appeal later
         """
         # Generate a unique storage key
+        current_time = datetime.now()
         storage_key = (
-            f"{citation_number}_{user_zip}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+            f"{citation_number}_{user_zip}_{current_time.strftime('%Y%m%d%H%M%S')}"
         )
 
         appeal = AppealData(
@@ -138,6 +139,7 @@ class AppealStorage:
             appeal_type=appeal_type,
             selected_photo_ids=selected_photo_ids,
             signature_data=signature_data,
+            created_at=current_time.isoformat(),
         )
 
         self._storage[storage_key] = appeal
