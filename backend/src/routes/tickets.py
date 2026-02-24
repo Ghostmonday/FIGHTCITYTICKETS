@@ -12,8 +12,21 @@ from pydantic import BaseModel
 
 from ..middleware.rate_limit import limiter
 from ..services.citation import CitationValidator
+from ..services.city_registry import get_city_registry
 
 logger = logging.getLogger(__name__)
+
+# Legacy short codes to full city IDs mapping
+CITY_ID_MAPPING = {
+    "sf": "us-ca-san_francisco",
+    "la": "us-ca-los_angeles",
+    "nyc": "us-ny-new_york",
+    "chicago": "us-il-chicago",
+    "seattle": "us-wa-seattle",
+    "denver": "us-co-denver",
+    "portland": "us-or-portland",
+    "phoenix": "us-az-phoenix",
+}
 
 router = APIRouter()
 
@@ -87,13 +100,17 @@ def validate_citation(request: CitationValidationRequest):
             error_message="Citation number too short"
         )
     
-    # Get city deadline days
-    city_deadline_days = {
-        "sf": 21, "la": 21, "nyc": 30, "chicago": 20,
-        "seattle": 20, "denver": 20, "portland": 10, "phoenix": 15
-    }
-    deadline_days = city_deadline_days.get(request.city_id, 21)
-    
+    # Get city deadline days from registry
+    # Use mapping for legacy short codes, or raw city_id if not mapped
+    mapped_city_id = CITY_ID_MAPPING.get(request.city_id, request.city_id)
+    deadline_days = 21
+
+    if mapped_city_id:
+        registry = get_city_registry()
+        config = registry.get_city_config(mapped_city_id)
+        if config:
+            deadline_days = config.appeal_deadline_days
+
     return CitationValidationResponse(
         is_valid=True,
         citation_number=request.citation_number,

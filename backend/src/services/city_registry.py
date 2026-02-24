@@ -923,11 +923,30 @@ class CityRegistry:
 
 
 # Helper function for easy import
+_shared_registry = None
+
+
 def get_city_registry(cities_dir: Optional[Path] = None) -> CityRegistry:
-    """Get a configured CityRegistry instance."""
-    registry = CityRegistry(cities_dir)
-    registry.load_cities()
-    return registry
+    """
+    Get a configured CityRegistry instance.
+
+    Returns a shared singleton if cities_dir is None.
+    Returns a new instance if cities_dir is provided (factory behavior).
+    """
+    global _shared_registry
+
+    # Factory behavior: always return new instance if path is specified
+    if cities_dir is not None:
+        registry = CityRegistry(cities_dir)
+        registry.load_cities()
+        return registry
+
+    # Singleton behavior: use shared instance if no path specified
+    if _shared_registry is None:
+        _shared_registry = CityRegistry(None)
+        _shared_registry.load_cities()
+
+    return _shared_registry
 
 
 # Example usage
