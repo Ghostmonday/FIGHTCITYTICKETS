@@ -35,17 +35,14 @@ def create_access_token(intake_id: int) -> str:
     return jwt.encode(payload, settings.secret_key, algorithm="HS256")
 
 
-def get_authenticated_intake_id(
+def verify_appeal_token(
     intake_id: int,
     x_appeal_token: Optional[str] = Header(None, alias="X-Appeal-Token"),
     token: Optional[str] = Query(None),
-) -> int:
+) -> None:
     """
-    Verify the appeal access token and return the authenticated intake ID.
+    Verify the appeal access token.
     Accepts token in header (X-Appeal-Token) or query param (token).
-
-    This function verifies both the validity of the token and that it matches
-    the requested intake_id (preventing IDOR).
     """
     access_token = x_appeal_token or token
 
@@ -60,13 +57,10 @@ def get_authenticated_intake_id(
         token_intake_id = int(payload.get("sub"))
 
         if token_intake_id != intake_id:
-            logger.warning(f"IDOR attempt blocked: Token for {token_intake_id} used to access {intake_id}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Token invalid for this intake",
             )
-
-        return token_intake_id
 
     except jwt.PyJWTError:
         raise HTTPException(
@@ -129,21 +123,16 @@ class AppealResponse(BaseModel):
 async def update_appeal(
     intake_id: int,
     data: AppealUpdateRequest,
-    verified_intake_id: int = Depends(get_authenticated_intake_id),
+    auth_check: None = Depends(verify_appeal_token),
 ):
     """
     Update an existing appeal/intake record.
 
     This endpoint allows the frontend to save progress to the database
     as the user completes the appeal flow.
-    """
-    # Explicitly verify ownership (redundant with dependency but good for clarity)
-    if verified_intake_id != intake_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to update this appeal",
-        )
 
+    Security: Protected against IDOR via `verify_appeal_token` dependency.
+    """
     db_service = get_db_service()
 
     try:
@@ -193,7 +182,7 @@ async def update_appeal(
                 "citation_number", "violation_date", "vehicle_info", "license_plate",
                 "appeal_reason", "selected_evidence", "signature_data", "user_name",
                 "user_address_line1", "user_address_line2", "user_city", "user_state",
-                "user_zip", "user_email", "user_phone", "city", "section_id",
+                "user_zip", "user_email", "user_phone", "city", "section_id", "status",
             }
             # Filter to only allowed columns
             updates = {k: v for k, v in updates.items() if k in ALLOWED_COLUMNS}
@@ -239,20 +228,13 @@ async def update_appeal(
 @router.get("/appeals/{intake_id}", response_model=AppealResponse)
 async def get_appeal(
     intake_id: int,
-    verified_intake_id: int = Depends(get_authenticated_intake_id),
+    _auth: None = Depends(verify_appeal_token),
 ):
     """
     Get an appeal/intake record by ID.
 
     Used to restore user progress from the database.
     """
-    # Explicitly verify ownership
-    if verified_intake_id != intake_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to access this appeal",
-        )
-
     db_service = get_db_service()
 
     try:
