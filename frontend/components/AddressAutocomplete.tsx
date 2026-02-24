@@ -94,6 +94,7 @@ export default function AddressAutocomplete({
   const [useAutocomplete, setUseAutocomplete] = useState(enableAutocomplete);
   const [addressVerified, setAddressVerified] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize session token and load Google Maps API (only if autocomplete is enabled)
   useEffect(() => {
@@ -192,11 +193,16 @@ export default function AddressAutocomplete({
 
     // If autocomplete mode, trigger suggestions
     onInputChange?.(input); // Still notify parent of input changes
+
+    // Clear previous timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
     // Debounce the API call
-    const timeoutId = setTimeout(() => {
+    timeoutRef.current = setTimeout(() => {
       fetchSuggestions(input);
     }, 300);
-    return () => clearTimeout(timeoutId);
   };
 
   // Handle place selection
