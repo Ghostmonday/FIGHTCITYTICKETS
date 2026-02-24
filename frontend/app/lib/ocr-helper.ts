@@ -32,6 +32,7 @@ interface OcrResult {
 class OcrHelper {
   private worker: Worker | null = null;
   private isInitialized = false;
+  private initializationPromise: Promise<void> | null = null;
 
   /**
    * Initialize Tesseract worker with custom configuration
@@ -41,22 +42,35 @@ class OcrHelper {
       return;
     }
 
-    const config = CITY_OCR_CONFIG[cityId] || CITY_OCR_CONFIG.default;
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
 
-    this.worker = await createWorker("eng", 1, {
-      logger: (m) => {
-        if (process.env.NODE_ENV === "development") {
-          console.log("OCR progress:", m);
-        }
-      },
-    });
+    this.initializationPromise = (async () => {
+      try {
+        const config = CITY_OCR_CONFIG[cityId] || CITY_OCR_CONFIG.default;
 
-    // Apply city-specific preprocessing
-    await this.worker.setParameters({
-      tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -",
-    });
+        this.worker = await createWorker("eng", 1, {
+          logger: (m) => {
+            if (process.env.NODE_ENV === "development") {
+              console.log("OCR progress:", m);
+            }
+          },
+        });
 
-    this.isInitialized = true;
+        // Apply city-specific preprocessing
+        await this.worker.setParameters({
+          tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -",
+        });
+
+        this.isInitialized = true;
+      } catch (error) {
+        this.initializationPromise = null;
+        throw error;
+      }
+    })();
+
+    return this.initializationPromise;
   }
 
   /**
@@ -207,6 +221,7 @@ class OcrHelper {
       await this.worker.terminate();
       this.worker = null;
       this.isInitialized = false;
+      this.initializationPromise = null;
     }
   }
 }

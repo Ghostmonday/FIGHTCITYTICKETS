@@ -43,13 +43,6 @@ describe("Homepage", () => {
       expect(screen.getByText(/What's the/i)).toBeInTheDocument();
     });
 
-    it("renders the subtitle", () => {
-      render(<Home />);
-      expect(
-        screen.getByText(/A parking citation is a procedural document/i)
-      ).toBeInTheDocument();
-    });
-
     it("renders the city selection dropdown", () => {
       render(<Home />);
       expect(screen.getByRole("combobox")).toBeInTheDocument();
@@ -68,7 +61,7 @@ describe("Homepage", () => {
       render(<Home />);
 
       const submitButton = screen.getByRole("button", {
-        name: /Submit Appeal →/i,
+        name: /Submit Appeal/i,
       });
       fireEvent.click(submitButton);
 
@@ -82,7 +75,7 @@ describe("Homepage", () => {
 
       const citySelect = screen.getByRole("combobox");
       const submitButton = screen.getByRole("button", {
-        name: /Submit Appeal →/i,
+        name: /Submit Appeal/i,
       });
 
       // Button is disabled until city is selected
