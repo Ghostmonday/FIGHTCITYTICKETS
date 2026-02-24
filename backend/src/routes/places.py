@@ -9,7 +9,7 @@ import os
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -25,10 +25,10 @@ limiter = Limiter(key_func=get_remote_address)
 GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY", "")
 
 
-@router.get("/places/autocomplete")
+@router.get("/autocomplete")
 @limiter.limit("30/minute")
 async def google_places_autocomplete(
-    request,
+    request: Request,
     input: str = Query(..., description="Address input to autocomplete"),
     session_token: Optional[str] = Query(None, description="Session token for billing"),
 ):
@@ -88,6 +88,8 @@ async def google_places_autocomplete(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="Address autocomplete service timeout",
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Error proxying Google Places API request")
         raise HTTPException(
@@ -96,10 +98,10 @@ async def google_places_autocomplete(
         )
 
 
-@router.get("/places/details")
+@router.get("/details")
 @limiter.limit("30/minute")
 async def google_places_details(
-    request,
+    request: Request,
     place_id: str = Query(..., description="Place ID from autocomplete result"),
     session_token: Optional[str] = Query(None, description="Session token for billing"),
 ):
