@@ -200,7 +200,7 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
     - Enables audit trail for procedural compliance
     """
     # Import here to avoid circular imports
-    from ..services.citation import validate_citation
+    from ..services.citation import CitationValidator
 
     # Step 1: Validate city_id and get state
     city_id = data.city_id
@@ -209,7 +209,7 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid city ID format",
         )
-    state = city_id.split("-")[1]
+    state = city_id.split("-")[1].upper()
 
     # Step 2: Check if service is blocked in this state (UPL compliance)
     if state in BLOCKED_STATES:
@@ -219,14 +219,15 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
         )
 
     # Step 3: Validate citation format
-    is_valid_citation, validation_error = validate_citation(
-        data.citation_number, city_id
+    validation_result = CitationValidator.validate_citation(
+        data.citation_number, city_id=city_id
     )
 
-    if not is_valid_citation:
+    if not validation_result.is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=validation_error or "Invalid citation number for this city",
+            detail=validation_result.error_message
+            or "Invalid citation number for this city",
         )
 
     # Step 4: Generate Clerical ID for compliance tracking
@@ -313,6 +314,8 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
                         )
 
     except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
         logger.error(f"Database error creating intake: {e}")
         intake_id = None
 
