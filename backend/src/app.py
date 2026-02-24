@@ -11,6 +11,7 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -102,10 +103,14 @@ async def lifespan(app: FastAPI):
         logger.error(f"❌ Startup error: {e}")
         # Continue startup - some features may work without database
 
+    # Initialize shared HTTP client
+    app.state.client = httpx.AsyncClient(timeout=10.0)
+
     yield
 
     # Shutdown - graceful cleanup
     logger.info("Shutting down Fight City Tickets API")
+    await app.state.client.aclose()
     try:
         # Close database connections gracefully
         db_service = get_db_service()
