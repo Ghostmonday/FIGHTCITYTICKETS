@@ -8,16 +8,23 @@ Protected by admin secret key header.
 import json
 import logging
 import os
+import secrets
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 
-from ..auth import log_admin_action, verify_admin_secret
+from ..auth import (
+    ADMIN_COOKIE_NAME,
+    create_admin_token,
+    get_current_admin,
+    log_admin_action,
+    verify_admin_secret,
+)
 from ..models import Draft, Intake, Payment, PaymentStatus
 from ..services.database import get_db_service
 
@@ -73,13 +80,65 @@ class LogResponse(BaseModel):
     logs: str
 
 
+class LoginRequest(BaseModel):
+    secret: str
+
+
 # Endpoints
+
+
+@router.post("/login")
+@limiter.limit("10/minute")
+def login(request: Request, response: Response, body: LoginRequest):
+    """
+    Admin login endpoint.
+    Verifies secret and sets httpOnly cookie.
+    """
+    admin_secret = os.getenv("ADMIN_SECRET")
+    if not admin_secret:
+        raise HTTPException(status_code=503, detail="Admin auth not configured")
+
+    # Verify secret
+    if not secrets.compare_digest(body.secret.encode(), admin_secret.encode()):
+        logger.warning(f"Failed login attempt from {request.client.host if request.client else 'unknown'}")
+        raise HTTPException(status_code=401, detail="Invalid secret")
+
+    # Generate token
+    token = create_admin_token({"sub": "admin"})
+
+    # Set secure cookie
+    # Only use secure=True in production to allow local dev/testing
+    is_production = os.getenv("APP_ENV", "dev") == "prod"
+
+    response.set_cookie(
+        key=ADMIN_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=is_production,
+        samesite="strict",
+        max_age=43200,  # 12 hours
+    )
+
+    return {"message": "Logged in successfully"}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """Logout by clearing the session cookie."""
+    response.delete_cookie(ADMIN_COOKIE_NAME)
+    return {"message": "Logged out successfully"}
+
+
+@router.get("/me")
+def get_me(admin_secret: str = Depends(get_current_admin)):
+    """Check authentication status."""
+    return {"authenticated": True, "method": "session" if admin_secret == "admin-session" else "header"}
 
 
 @router.get("/stats", response_model=SystemStats)
 @limiter.limit("5/minute")
 def get_system_stats(
-    request: Request, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, admin_secret: str = Depends(get_current_admin)
 ):
     """
     Get high-level system statistics.
@@ -128,7 +187,7 @@ def get_system_stats(
 @router.get("/activity", response_model=List[RecentActivity])
 @limiter.limit("5/minute")
 def get_recent_activity(
-    request: Request, limit: int = 50, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, limit: int = 50, admin_secret: str = Depends(get_current_admin)
 ):
     """
     Get recent intake activity.
@@ -192,7 +251,7 @@ def get_recent_activity(
 @router.get("/intake/{intake_id}", response_model=IntakeDetail)
 @limiter.limit("5/minute")
 def get_intake_detail(
-    request: Request, intake_id: int, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, intake_id: int, admin_secret: str = Depends(get_current_admin)
 ):
     """
     Get full details for a specific intake.
@@ -279,7 +338,7 @@ def get_intake_detail(
 @router.get("/logs", response_model=LogResponse)
 @limiter.limit("5/minute")
 def get_server_logs(
-    request: Request, lines: int = 100, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, lines: int = 100, admin_secret: str = Depends(get_current_admin)
 ):
     """
     Get recent server logs.
