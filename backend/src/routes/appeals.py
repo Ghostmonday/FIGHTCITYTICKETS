@@ -123,13 +123,15 @@ class AppealResponse(BaseModel):
 async def update_appeal(
     intake_id: int,
     data: AppealUpdateRequest,
-    _auth: None = Depends(verify_appeal_token),
+    auth_check: None = Depends(verify_appeal_token),
 ):
     """
     Update an existing appeal/intake record.
 
     This endpoint allows the frontend to save progress to the database
     as the user completes the appeal flow.
+
+    Security: Protected against IDOR via `verify_appeal_token` dependency.
     """
     db_service = get_db_service()
 
