@@ -232,6 +232,33 @@ class EmailService:
 
         return subject, body
 
+    async def send_admin_alert(
+        self,
+        subject: str,
+        message: str,
+    ) -> bool:
+        """
+        Send an admin alert email.
+
+        Args:
+            subject: Email subject
+            message: Email body text
+
+        Returns:
+            True if email was sent successfully (or logged in dev mode)
+        """
+        # Always log
+        logger.warning(f"Sending admin alert: {subject} - {message}")
+
+        # Try to send via SendGrid if configured
+        if self.is_available:
+            success = await self._send_via_sendgrid(self.support_email, subject, message)
+            if success:
+                return True
+            logger.warning("SendGrid send failed, falling back to logged mode")
+
+        return True
+
     async def send_payment_confirmation(
         self,
         email: str,

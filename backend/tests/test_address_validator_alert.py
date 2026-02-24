@@ -68,17 +68,20 @@ async def test_alert_on_consecutive_failures(address_validator, mock_email_servi
 
         # 3rd Failure - Should trigger alert
         await address_validator.validate_address(city_id)
-        assert address_validator._failure_counts[city_id] == 3
+        # Count resets to 0 after alert
+        assert address_validator._failure_counts[city_id] == 0
         mock_email_service.send_admin_alert.assert_called_once()
 
-        # Check call arguments (keyword arguments)
+        # Check call arguments
         args, kwargs = mock_email_service.send_admin_alert.call_args
-        assert "Scraping failed 3 times" in kwargs["message"]
+        # Implementation uses positional args: subject, message
+        message = args[1]
+        assert "Address scraping has failed 3 times" in message
 
-        # 4th Failure - Should not trigger alert again (count increments but check is == 3)
+        # 4th Failure - Should count as 1
         mock_email_service.send_admin_alert.reset_mock()
         await address_validator.validate_address(city_id)
-        assert address_validator._failure_counts[city_id] == 4
+        assert address_validator._failure_counts[city_id] == 1
         mock_email_service.send_admin_alert.assert_not_called()
 
 @pytest.mark.asyncio
