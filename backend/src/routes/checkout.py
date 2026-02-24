@@ -220,13 +220,14 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
 
     # Step 3: Validate citation format
     validation_result = CitationValidator.validate_citation(
-        citation_number=data.citation_number, city_id=city_id
+        data.citation_number, city_id=city_id
     )
 
     if not validation_result.is_valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=validation_result.error_message or "Invalid citation number for this city",
+            detail=validation_result.error_message
+            or "Invalid citation number for this city",
         )
 
     # Step 4: Generate Clerical ID for compliance tracking
@@ -312,9 +313,9 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
                             },
                         )
 
-    except HTTPException:
-        raise
     except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
         logger.error(f"Database error creating intake: {e}")
         intake_id = None
 

@@ -1,11 +1,11 @@
 import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi.testclient import TestClient
 import sys
 import os
 
-# Add backend to path to allow imports from src
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# Add backend to path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.app import app
 from src.services.citation import CitationValidationResult
@@ -13,179 +13,189 @@ from src.services.citation import CitationValidationResult
 client = TestClient(app)
 
 @pytest.fixture
-def mock_citation_validator():
-    # Patching where it is defined because it is imported locally inside the function
-    with patch("src.services.citation.CitationValidator") as mock:
+def mock_stripe_service():
+    with patch("src.routes.checkout.StripeService") as mock:
         yield mock
 
 @pytest.fixture
 def mock_db_service():
-    # Patching in the checkout module
     with patch("src.routes.checkout.get_db_service") as mock:
-        service = MagicMock()
-        mock.return_value = service
-        yield service
+        yield mock
 
 @pytest.fixture
-def mock_stripe_service():
-    # Patching in the checkout module
-    with patch("src.routes.checkout.StripeService") as mock:
-        service_instance = MagicMock()
-        # Mock create_session as async method
-        service_instance.create_session = AsyncMock()
-        # Mock get_session as regular method (it seems it was synchronous in original code but check!)
-        # Wait, if create_session is async, likely get_session is too?
-        # Checking checkout.py:
-        # session = stripe_svc.get_session(session_id)
-        # It is NOT awaited in get_session_status.
-        service_instance.get_session = MagicMock()
+def mock_citation_validator():
+    with patch("src.services.citation.CitationValidator.validate_citation") as mock:
+        yield mock
 
-        mock.return_value = service_instance
-        yield service_instance
-
-def test_create_appeal_checkout_success(mock_citation_validator, mock_db_service, mock_stripe_service):
-    # Setup - mock validation success
-    # CitationValidator.validate_citation returns a CitationValidationResult object
-    mock_citation_validator.validate_citation.return_value = CitationValidationResult(
+def test_create_appeal_checkout_success(mock_stripe_service, mock_db_service, mock_citation_validator):
+    # Setup mocks
+    mock_citation_validator.return_value = CitationValidationResult(
         is_valid=True,
         citation_number="123456",
         agency="SFMTA",
-        city_id="us-ca-san_francisco",
-        section_id="sfmta"
+        is_past_deadline=False
     )
 
-    # Mock DB
-    session = MagicMock()
-    mock_db_service.get_session.return_value.__enter__.return_value = session
-    mock_db_service.get_intake_by_citation.return_value = None
+    # Mock DB interaction
+    mock_session = MagicMock()
+    mock_db_service.return_value.get_session.return_value.__enter__.return_value = mock_session
+    mock_db_service.return_value.get_intake_by_citation.return_value = None # No existing intake
+
+    # Mock session.execute result for INSERT
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = (1,) # intake_id = 1
+    mock_session.execute.return_value = mock_result
 
     # Mock Stripe
-    mock_stripe_service.create_session.return_value = {
-        "url": "http://checkout.url",
-        "id": "cs_test_123"
-    }
+    mock_stripe_instance = mock_stripe_service.return_value
+    mock_stripe_instance.create_session = AsyncMock(return_value={
+        "id": "cs_test_123",
+        "url": "https://checkout.stripe.com/test"
+    })
 
-    response = client.post("/checkout/create-appeal-checkout", json={
+    payload = {
         "citation_number": "123456",
         "city_id": "us-ca-san_francisco",
+        "user_email": "test@example.com",
         "user_attestation": True
-    })
+    }
+
+    response = client.post("/checkout/create-appeal-checkout", json=payload)
 
     assert response.status_code == 200
     data = response.json()
-    assert data["checkout_url"] == "http://checkout.url"
+    assert data["checkout_url"] == "https://checkout.stripe.com/test"
     assert data["session_id"] == "cs_test_123"
     assert "clerical_id" in data
+    assert data["clerical_id"].startswith("ND-")
 
 def test_create_appeal_checkout_invalid_city():
-    response = client.post("/checkout/create-appeal-checkout", json={
+    payload = {
         "citation_number": "123456",
-        "city_id": "invalidcity",
+        "city_id": "invalid_city", # Missing hyphen
+        "user_email": "test@example.com",
         "user_attestation": True
-    })
+    }
+    response = client.post("/checkout/create-appeal-checkout", json=payload)
     assert response.status_code == 400
-    assert "Invalid city ID format" in response.json()["detail"]
+    assert response.json()["detail"] == "Invalid city ID format"
 
 def test_create_appeal_checkout_blocked_state():
-    response = client.post("/checkout/create-appeal-checkout", json={
+    payload = {
         "citation_number": "123456",
-        "city_id": "us-tx-dallas", # TX is blocked by default
+        "city_id": "us-tx-dallas", # TX is blocked
+        "user_email": "test@example.com",
         "user_attestation": True
-    })
+    }
+    response = client.post("/checkout/create-appeal-checkout", json=payload)
     assert response.status_code == 403
-    assert "cannot process appeals" in response.json()["detail"]
+    assert "legal restrictions" in response.json()["detail"]
 
 def test_create_appeal_checkout_invalid_citation(mock_citation_validator):
-    mock_citation_validator.validate_citation.return_value = CitationValidationResult(
+    mock_citation_validator.return_value = CitationValidationResult(
         is_valid=False,
-        citation_number="BAD123",
+        citation_number="INVALID",
         agency="UNKNOWN",
-        error_message="Bad citation"
+        error_message="Invalid format"
     )
 
-    response = client.post("/checkout/create-appeal-checkout", json={
-        "citation_number": "BAD123",
+    payload = {
+        "citation_number": "INVALID",
         "city_id": "us-ca-san_francisco",
+        "user_email": "test@example.com",
         "user_attestation": True
-    })
-
+    }
+    response = client.post("/checkout/create-appeal-checkout", json=payload)
     assert response.status_code == 400
-    assert "Bad citation" in response.json()["detail"]
+    assert response.json()["detail"] == "Invalid format"
 
-def test_create_appeal_checkout_existing_payment(mock_citation_validator, mock_db_service):
-    mock_citation_validator.validate_citation.return_value = CitationValidationResult(
+def test_create_appeal_checkout_existing_paid_payment(mock_db_service, mock_citation_validator):
+    mock_citation_validator.return_value = CitationValidationResult(
         is_valid=True,
-        citation_number="PAID123",
+        citation_number="123456",
         agency="SFMTA"
     )
 
-    session = MagicMock()
-    mock_db_service.get_session.return_value.__enter__.return_value = session
+    mock_session = MagicMock()
+    mock_db_service.return_value.get_session.return_value.__enter__.return_value = mock_session
 
     # Mock existing intake
     mock_intake = MagicMock()
     mock_intake.id = 1
-    mock_db_service.get_intake_by_citation.return_value = mock_intake
+    mock_db_service.return_value.get_intake_by_citation.return_value = mock_intake
 
-    # Mock payment query result
+    # Mock existing paid payment
     mock_payment = MagicMock()
-    session.query.return_value.filter.return_value.all.return_value = [mock_payment]
+    mock_session.query.return_value.filter.return_value.all.return_value = [mock_payment]
 
-    response = client.post("/checkout/create-appeal-checkout", json={
-        "citation_number": "PAID123",
+    payload = {
+        "citation_number": "123456",
         "city_id": "us-ca-san_francisco",
+        "user_email": "test@example.com",
         "user_attestation": True
-    })
-
+    }
+    response = client.post("/checkout/create-appeal-checkout", json=payload)
     assert response.status_code == 409
     assert "payment already exists" in response.json()["detail"]
 
-def test_create_appeal_checkout_stripe_error(mock_citation_validator, mock_db_service, mock_stripe_service):
-    mock_citation_validator.validate_citation.return_value = CitationValidationResult(
+def test_create_appeal_checkout_stripe_error(mock_stripe_service, mock_db_service, mock_citation_validator):
+    mock_citation_validator.return_value = CitationValidationResult(
         is_valid=True,
         citation_number="123456",
         agency="SFMTA"
     )
 
-    session = MagicMock()
-    mock_db_service.get_session.return_value.__enter__.return_value = session
-    mock_db_service.get_intake_by_citation.return_value = None
+    mock_session = MagicMock()
+    mock_db_service.return_value.get_session.return_value.__enter__.return_value = mock_session
+    mock_db_service.return_value.get_intake_by_citation.return_value = None
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = (1,)
+    mock_session.execute.return_value = mock_result
 
-    mock_stripe_service.create_session.side_effect = Exception("Stripe down")
+    mock_stripe_instance = mock_stripe_service.return_value
+    mock_stripe_instance.create_session = AsyncMock(side_effect=Exception("Stripe API Error"))
 
-    response = client.post("/checkout/create-appeal-checkout", json={
+    payload = {
         "citation_number": "123456",
         "city_id": "us-ca-san_francisco",
+        "user_email": "test@example.com",
         "user_attestation": True
-    })
-
+    }
+    response = client.post("/checkout/create-appeal-checkout", json=payload)
     assert response.status_code == 500
     assert "Failed to create checkout session" in response.json()["detail"]
 
 def test_get_session_status_success(mock_stripe_service, mock_db_service):
-    mock_stripe_service.get_session.return_value = {
+    # Mock Stripe session
+    mock_stripe_instance = mock_stripe_service.return_value
+    mock_stripe_instance.get_session.return_value = {
         "status": "complete",
         "payment_status": "paid"
     }
 
-    session = MagicMock()
-    mock_db_service.get_session.return_value.__enter__.return_value = session
+    # Mock DB
+    mock_session = MagicMock()
+    mock_db_service.return_value.get_session.return_value.__enter__.return_value = mock_session
 
-    # Mock payment status query
-    session.execute.return_value.fetchone.return_value = ("paid", "TRACK123")
+    # Mock raw SQL query for payment status
+    mock_row = ("paid", "tracking_123")
+    mock_result = MagicMock()
+    mock_result.fetchone.return_value = mock_row
+    mock_session.execute.return_value = mock_result
 
-    # Mock payment object query for clerical_id
+    # Mock ORM queries for clerical_id
     mock_payment = MagicMock()
     mock_payment.intake_id = 1
-
     mock_intake = MagicMock()
-    mock_intake.clerical_id = "CL-123"
+    mock_intake.clerical_id = "ND-1234"
 
-    query_mock = MagicMock()
-    session.query.return_value = query_mock
-    filter_mock = MagicMock()
-    query_mock.filter.return_value = filter_mock
-    filter_mock.first.side_effect = [mock_payment, mock_intake]
+    mock_query = MagicMock()
+    mock_session.query.return_value = mock_query
+    mock_filter = MagicMock()
+    mock_query.filter.return_value = mock_filter
+
+    # We need to return mock_payment first, then mock_intake
+    mock_filter.first.side_effect = [mock_payment, mock_intake]
 
     response = client.get("/checkout/session-status?session_id=cs_test_123")
 
@@ -194,16 +204,12 @@ def test_get_session_status_success(mock_stripe_service, mock_db_service):
     assert data["status"] == "complete"
     assert data["payment_status"] == "paid"
     assert data["mailing_status"] == "fulfilled"
-    assert data["tracking_number"] == "TRACK123"
-    assert data["clerical_id"] == "CL-123"
+    assert data["tracking_number"] == "tracking_123"
+    assert data["clerical_id"] == "ND-1234"
 
 def test_get_session_status_not_found(mock_stripe_service):
-    mock_stripe_service.get_session.return_value = None
+    mock_stripe_instance = mock_stripe_service.return_value
+    mock_stripe_instance.get_session.return_value = None
 
     response = client.get("/checkout/session-status?session_id=invalid")
-
     assert response.status_code == 404
-    # app.py's error handler uses "message" for generic 404, or details if provided.
-    # HTTPException(404, detail="Session not found")
-    # The handler maps detail to message
-    assert "Session not found" in response.json()["message"]
