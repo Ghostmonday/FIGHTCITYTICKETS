@@ -64,7 +64,7 @@ class ApiClient {
   /**
    * Make API request with retries and timeout
    */
-  async request<T = any>(
+  async request<T = unknown>(
     endpoint: string,
     options: RequestInit = {},
     clientOptions?: ApiClientOptions
@@ -204,7 +204,7 @@ class ApiClient {
   /**
    * GET request
    */
-  async get<T = any>(
+  async get<T = unknown>(
     endpoint: string,
     options?: RequestInit,
     clientOptions?: ApiClientOptions
@@ -219,7 +219,7 @@ class ApiClient {
   /**
    * POST request
    */
-  async post<T = any>(
+  async post<T = unknown>(
     endpoint: string,
     body?: any,
     options?: RequestInit,
@@ -239,7 +239,7 @@ class ApiClient {
   /**
    * PUT request
    */
-  async put<T = any>(
+  async put<T = unknown>(
     endpoint: string,
     body?: any,
     options?: RequestInit,
@@ -259,7 +259,7 @@ class ApiClient {
   /**
    * DELETE request
    */
-  async delete<T = any>(
+  async delete<T = unknown>(
     endpoint: string,
     options?: RequestInit,
     clientOptions?: ApiClientOptions
@@ -274,7 +274,7 @@ class ApiClient {
   /**
    * Upload file with multipart form data
    */
-  async upload<T = any>(
+  async upload<T = unknown>(
     endpoint: string,
     file: File,
     additionalFields?: Record<string, string>,
