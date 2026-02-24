@@ -9,7 +9,7 @@ import hashlib
 import json
 import logging
 import os
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, model_validator
@@ -19,8 +19,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 
 from ..models import Draft, Intake, Payment, PaymentStatus
-from ..services.address_validator import get_address_validator
 from ..services.database import get_db_service
+from ..services.address_validator import get_address_validator
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -93,39 +93,10 @@ def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
     import secrets
     if not secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
         client_ip = request.client.host if request else os.getenv('REMOTE_ADDR', 'unknown')
-
-        # Log failed attempt to audit log
-        try:
-            with open(ADMIN_AUDIT_LOG, "a") as f:
-                from datetime import datetime
-                f.write(json.dumps({
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
-                    "action": "auth_failure",
-                    "ip": client_ip,
-                    "status": "failed",
-                    "reason": "invalid_secret"
-                }) + "\n")
-        except Exception:
-            pass
-
         logger.warning(
             f"Failed admin access attempt - Invalid admin secret provided. "
             f"IP: {client_ip}"
         )
-
-        # Log failed attempt
-        try:
-            with open(ADMIN_AUDIT_LOG, "a") as f:
-                from datetime import datetime
-                f.write(json.dumps({
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
-                    "action": "auth_failure",
-                    "ip": client_ip,
-                    "status": "failed",
-                }) + "\n")
-        except Exception:
-            pass
-
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid admin secret",
@@ -145,6 +116,25 @@ def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
                 detail="IP not authorized for admin access",
             )
     
+    return x_admin_secret
+        # Log failed attempt
+        try:
+            with open(ADMIN_AUDIT_LOG, "a") as f:
+                from datetime import datetime
+                f.write(json.dumps({
+                    "timestamp": datetime.utcnow().isoformat() + "Z",
+                    "action": "auth_failure",
+                    "ip": client_ip,
+                    "status": "failed",
+                }) + "\n")
+        except Exception:
+            pass
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid admin secret",
+        )
+
     logger.info(f"Admin access granted - IP: {os.getenv('REMOTE_ADDR', 'unknown')}")
     return x_admin_secret
 
@@ -464,10 +454,12 @@ def update_city_address(
 
     validator = get_address_validator()
 
-    # Prepare update data
-    new_address = payload.address_string
+    # Determine input for validator
+    new_address = None
     if payload.address_components:
         new_address = payload.address_components.dict()
+    else:
+        new_address = payload.address_string
 
     success = validator.update_city_address(
         city_id=payload.city_id,
