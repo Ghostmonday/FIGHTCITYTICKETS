@@ -16,8 +16,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .logging_config import setup_logging
-from .sentry_config import init_sentry
-from .middleware.request_id import RequestIDMiddleware, get_request_id
 from .middleware.errors import (
     APIError,
     ErrorCode,
@@ -25,24 +23,27 @@ from .middleware.errors import (
     error_response,
     unhandled_exception_handler,
 )
-from .middleware.resilience import CircuitOpenError
 from .middleware.rate_limit import (
-    get_rate_limiter,
-    _rate_limit_exceeded_handler,
     RateLimitExceeded,
+    _rate_limit_exceeded_handler,
+    get_rate_limiter,
 )
+from .middleware.request_id import RequestIDMiddleware, get_request_id
+from .middleware.resilience import CircuitOpenError
+from .middleware.security_headers import SecurityHeadersMiddleware
 from .routes.admin import router as admin_router
 from .routes.appeals import router as appeals_router
 from .routes.checkout import router as checkout_router
-from .routes.cities import router as cities_router
 from .routes.health import router as health_router
+from .routes.photos import router as photos_router
 from .routes.places import router as places_router
 from .routes.statement import router as statement_router
 from .routes.status import router as status_router
 from .routes.telemetry import router as telemetry_router
 from .routes.tickets import router as tickets_router
-from .routes.photos import router as photos_router
 from .routes.webhooks import router as webhooks_router
+from .scheduler import shutdown_scheduler, start_scheduler
+from .sentry_config import init_sentry
 from .services.database import get_db_service
 
 # Set up structured logging
@@ -103,14 +104,27 @@ async def lifespan(app: FastAPI):
         logger.error(f"❌ Startup error: {e}")
         # Continue startup - some features may work without database
 
+    # Start background scheduler
+    try:
+        start_scheduler()
+    except Exception:
+        logger.exception("❌ Scheduler startup error")
+
     yield
 
     # Shutdown - graceful cleanup
     logger.info("Shutting down Fight City Tickets API")
+
+    # Shutdown scheduler
+    try:
+        shutdown_scheduler()
+    except Exception as e:
+        logger.warning("Error shutting down scheduler: %s", e)
+
     try:
         # Close database connections gracefully
         db_service = get_db_service()
-        if hasattr(db_service, 'engine'):
+        if hasattr(db_service, "engine"):
             db_service.engine.dispose()
             logger.info("Database connections closed")
     except Exception as e:
@@ -160,8 +174,11 @@ app = FastAPI(
 # Request ID Middleware - adds unique ID to every request for tracking
 app.add_middleware(RequestIDMiddleware)
 
+# Security Headers Middleware - adds security headers to all responses
+app.add_middleware(SecurityHeadersMiddleware)
+
 # Metrics middleware - track request counts
-from .routes.health import increment_request_count, increment_error_count
+from .routes.health import increment_error_count, increment_request_count
 
 
 @app.middleware("http")
@@ -186,15 +203,13 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Note: This must be called after routers are included
 def _share_limiter():
     """Share limiter instance with route modules."""
-    from .routes import admin, checkout, cities, statement, status, tickets, webhooks
-
+    from .routes import admin, checkout, statement, status, tickets, webhooks
     checkout.limiter = limiter_instance
     webhooks.limiter = limiter_instance
     admin.limiter = limiter_instance
     tickets.limiter = limiter_instance
     statement.limiter = limiter_instance
     status.limiter = limiter_instance
-    cities.limiter = limiter_instance
 
 # Configure CORS
 app.add_middleware(
@@ -226,7 +241,6 @@ app.include_router(photos_router, prefix="/api", tags=["photos"])
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
 app.include_router(places_router, prefix="/places", tags=["places"])
-app.include_router(cities_router, prefix="/api/cities", tags=["cities"])
 # Appeal storage router for frontend persistence
 app.include_router(appeals_router, prefix="/api", tags=["appeals"])
 # Webhook router: nginx strips /api/, so mount at /webhook (not /api/webhook)
@@ -359,11 +373,15 @@ async def not_found_handler(request: Request, exc):
     request_id = get_request_id(request)
     logger.warning(f"404 Not Found [request_id={request_id}]: {request.url.path}")
 
+    message = "The requested resource was not found"
+    if hasattr(exc, "detail"):
+        message = exc.detail
+
     return JSONResponse(
         status_code=404,
         content=error_response(
             error_code=ErrorCode.NOT_FOUND,
-            message="The requested resource was not found",
+            message=message,
             status_code=404,
             request=request,
             details={"path": request.url.path},
