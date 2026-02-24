@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import secrets
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
@@ -26,6 +26,7 @@ from ..auth import (
     verify_admin_secret,
 )
 from ..models import Draft, Intake, Payment, PaymentStatus
+from ..services.address_validator import get_address_validator
 from ..services.database import get_db_service
 
 router = APIRouter()
@@ -78,6 +79,19 @@ class IntakeDetail(BaseModel):
 
 class LogResponse(BaseModel):
     logs: str
+
+
+class AddressOverrideRequest(BaseModel):
+    city_id: str
+    address_text: Optional[str] = None
+    address_components: Optional[Dict[str, str]] = None
+    section_id: Optional[str] = None
+
+
+class AddressOverrideResponse(BaseModel):
+    success: bool
+    city_id: str
+    message: str
 
 
 class LoginRequest(BaseModel):
@@ -361,3 +375,44 @@ def get_server_logs(
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return LogResponse(logs=f"Error reading log file: {str(e)}")
+
+
+@router.post("/address/override", response_model=AddressOverrideResponse)
+@limiter.limit("5/minute")
+def override_city_address(
+    request: Request,
+    payload: AddressOverrideRequest,
+    admin_secret: str = Depends(verify_admin_secret),
+):
+    """
+    Manually update a city's appeal mailing address.
+    Overrides the scraped address.
+    """
+    logger.info(f"Admin action: override_city_address (city_id={payload.city_id})")
+    log_admin_action("override_city_address", admin_secret, request, payload.model_dump())
+
+    if not payload.address_text and not payload.address_components:
+        raise HTTPException(
+            status_code=422,
+            detail="Either address_text or address_components must be provided",
+        )
+
+    validator = get_address_validator()
+
+    # Determine new address format
+    new_address = (
+        payload.address_components if payload.address_components else payload.address_text
+    )
+
+    success = validator.update_city_address(
+        payload.city_id, new_address, payload.section_id
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=400, detail="Failed to update address. Check city_id and logs."
+        )
+
+    return AddressOverrideResponse(
+        success=True, city_id=payload.city_id, message="Address updated successfully"
+    )
