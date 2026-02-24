@@ -6,6 +6,8 @@ import { Providers } from "./providers";
 import { config } from "./lib/config";
 import ThemeToggle from "../components/ThemeToggle";
 import Link from "next/link";
+import GoogleAnalytics from "../components/analytics/GoogleAnalytics";
+import Mixpanel from "../components/analytics/Mixpanel";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -87,6 +89,8 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
+        <GoogleAnalytics />
+        <Mixpanel />
         <Providers>
           {/* Header */}
           <header className="fixed top-0 left-0 right-0 z-50 theme-transition" style={{ backgroundColor: "var(--bg-page)" }}>

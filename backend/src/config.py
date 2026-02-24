@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     # Service Fees
     fightcity_service_fee: int = 1995  # $19.95 certified only
 
+    # Analytics Configuration
+    google_analytics_id: Optional[str] = None
+    mixpanel_token: Optional[str] = None
+    amplitude_api_key: Optional[str] = None
 
     # =========================================================================
     # PENDING ITEMS
@@ -79,10 +83,6 @@ class Settings(BaseSettings):
 
     #       - Prevent spam complaints
     #       - Improve deliverability
-    #
-
-    #       - Google Analytics ID
-    #       - Mixpanel/Amplitude for product analytics
     #
     # =========================================================================
 
