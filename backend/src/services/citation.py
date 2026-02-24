@@ -8,9 +8,6 @@ TODO: Remove SF/LA from available cities if following Tier 1-only strategy
       - CA markets have high UPL risk (bar association scrutiny)
       - Keep config files but filter in API response
 
-TODO: Add city eligibility endpoint: GET /api/cities?eligible=true
-      - Filter cities by business rules (digital signatures, no POA required)
-      - Block Tier 3 cities (Chicago, D.C., etc.)
 """
 
 import json
@@ -119,7 +116,6 @@ def _set_cached_citation(citation_number: str, result: Dict[str, Any]) -> None:
     logger.debug(f"Cached in memory: {citation_number}")
 
 try:
-    # Relative import works when module is imported correctly
     from .city_registry import (  # noqa: F401
         AppealMailAddress,  # noqa: F401
         AppealMailStatus,  # noqa: F401
@@ -130,9 +126,7 @@ try:
 
     CITY_REGISTRY_AVAILABLE = True
 except ImportError:
-    # Fallback when running as script without module context or dependencies missing
     CITY_REGISTRY_AVAILABLE = False
-    # Stubs already defined above
 
 
 class CitationAgency(Enum):

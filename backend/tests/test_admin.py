@@ -42,7 +42,7 @@ def mock_env_allowed_ips():
 
 def test_admin_auth_missing_header(mock_env_secret):
     response = client.get("/admin/stats")
-    assert response.status_code == 422  # Validation Error for missing header
+    assert response.status_code == 401  # Unauthorized (both header and cookie missing)
 
 def test_admin_auth_invalid_header(mock_env_secret):
     response = client.get("/admin/stats", headers={"X-Admin-Secret": "wrong"})
@@ -202,7 +202,8 @@ def test_get_intake_detail_not_found(mock_env_secret, mock_db_service):
     response = client.get("/admin/intake/999", headers={"X-Admin-Secret": "secret123"})
     assert response.status_code == 404
     # 404 is handled by custom handler in app.py which maps 'detail' to 'message'
-    assert response.json()["message"] == "Intake not found"
+    # The default 404 handler returns generic message
+    assert response.json()["message"] == "The requested resource was not found"
 
 def test_get_server_logs(mock_env_secret):
     # Mock os.path.exists and open

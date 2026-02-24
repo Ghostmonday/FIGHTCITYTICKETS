@@ -390,3 +390,62 @@ class StripeService:
             return False
         except Exception:
             return False
+
+    def verify_connect_webhook_signature(self, payload: bytes, signature: str) -> bool:
+        """
+        Verify Stripe Connect webhook signature.
+        Uses stripe_connect_webhook_secret if set, otherwise falls back to stripe_webhook_secret.
+        """
+        secret = settings.stripe_connect_webhook_secret or settings.stripe_webhook_secret
+        try:
+            stripe.Webhook.construct_event(
+                payload, signature, secret
+            )
+            return True
+        except stripe.error.SignatureVerificationError:
+            return False
+        except Exception:
+            return False
+
+    async def create_connected_account(self, email: str, country: str = "US") -> dict[str, Any]:
+        """
+        Create a Stripe Express account for a fleet (Async).
+        """
+        async def _create():
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, lambda: stripe.Account.create(
+                type="express",
+                country=country,
+                email=email,
+                capabilities={
+                    "card_payments": {"requested": True},
+                    "transfers": {"requested": True},
+                },
+                business_type="company",
+            ))
+
+        return await self._with_retry_async(_create)
+
+    async def create_account_link(self, account_id: str, refresh_url: str, return_url: str) -> dict[str, Any]:
+        """
+        Create an account link for onboarding (Async).
+        """
+        async def _create():
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, lambda: stripe.AccountLink.create(
+                account=account_id,
+                refresh_url=refresh_url,
+                return_url=return_url,
+                type="account_onboarding",
+            ))
+
+        return await self._with_retry_async(_create)
+
+    async def get_account(self, account_id: str) -> dict[str, Any]:
+        """
+        Retrieve a connected account (Async).
+        """
+        async def _get():
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, lambda: stripe.Account.retrieve(account_id))
+        return await self._with_retry_async(_get)

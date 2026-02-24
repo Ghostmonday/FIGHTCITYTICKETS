@@ -2,18 +2,24 @@
   "city_id": "us-md-baltimore",
   "name": "Baltimore",
   "jurisdiction": "city",
+  "status": "active",
   "citation_patterns": [
     {
       "regex": "^BAL\\d{7,9}$",
       "section_id": "transportation",
       "description": "Baltimore DOT parking citation",
-      "example_numbers": ["BAL1234567", "BAL9876543"]
+      "example_numbers": [
+        "BAL1234567",
+        "BAL9876543"
+      ]
     },
     {
       "regex": "^BPD\\d{6,8}$",
       "section_id": "police",
       "description": "Baltimore Police parking citation",
-      "example_numbers": ["BPD123456"]
+      "example_numbers": [
+        "BPD123456"
+      ]
     }
   ],
   "appeal_mail_address": {

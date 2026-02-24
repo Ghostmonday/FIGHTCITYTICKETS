@@ -4,17 +4,12 @@ Address Validation Service for Fight City Tickets.com
 Validates mailing addresses by scraping city websites in real-time using DeepSeek.
 Compares scraped addresses with stored addresses and updates database if they differ.
 
-
-      - If scraping fails 3x in a row, send admin alert
-      - City websites may have changed or blocked bots
-
-
-      - Admins can manually update addresses without scraping
-      - Needed when websites block bots or content changes
-
-
-      - Run daily for all configured cities
-      - Log results to monitoring system
+Features:
+Features:
+- Monitors URL availability and alerts admins on repeated failure (3x)
+- Admins can manually update addresses without scraping (Needed when websites block bots or content changes)
+- Run daily for all configured cities
+- Log results to monitoring system
 """
 
 import json

@@ -8,17 +8,25 @@ Protected by admin secret key header.
 import json
 import logging
 import os
-from typing import List, Optional
+import secrets
+from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 
-from ..auth import log_admin_action, verify_admin_secret
+from ..auth import (
+    ADMIN_COOKIE_NAME,
+    create_admin_token,
+    get_current_admin,
+    log_admin_action,
+    verify_admin_secret,
+)
 from ..models import Draft, Intake, Payment, PaymentStatus
+from ..services.address_validator import get_address_validator
 from ..services.database import get_db_service
 
 router = APIRouter()
@@ -73,13 +81,78 @@ class LogResponse(BaseModel):
     logs: str
 
 
+class AddressOverrideRequest(BaseModel):
+    city_id: str
+    address_text: Optional[str] = None
+    address_components: Optional[Dict[str, str]] = None
+    section_id: Optional[str] = None
+
+
+class AddressOverrideResponse(BaseModel):
+    success: bool
+    city_id: str
+    message: str
+
+
+class LoginRequest(BaseModel):
+    secret: str
+
+
 # Endpoints
+
+
+@router.post("/login")
+@limiter.limit("10/minute")
+def login(request: Request, response: Response, body: LoginRequest):
+    """
+    Admin login endpoint.
+    Verifies secret and sets httpOnly cookie.
+    """
+    admin_secret = os.getenv("ADMIN_SECRET")
+    if not admin_secret:
+        raise HTTPException(status_code=503, detail="Admin auth not configured")
+
+    # Verify secret
+    if not secrets.compare_digest(body.secret.encode(), admin_secret.encode()):
+        logger.warning(f"Failed login attempt from {request.client.host if request.client else 'unknown'}")
+        raise HTTPException(status_code=401, detail="Invalid secret")
+
+    # Generate token
+    token = create_admin_token({"sub": "admin"})
+
+    # Set secure cookie
+    # Only use secure=True in production to allow local dev/testing
+    is_production = os.getenv("APP_ENV", "dev") == "prod"
+
+    response.set_cookie(
+        key=ADMIN_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=is_production,
+        samesite="strict",
+        max_age=43200,  # 12 hours
+    )
+
+    return {"message": "Logged in successfully"}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """Logout by clearing the session cookie."""
+    response.delete_cookie(ADMIN_COOKIE_NAME)
+    return {"message": "Logged out successfully"}
+
+
+@router.get("/me")
+def get_me(admin_secret: str = Depends(get_current_admin)):
+    """Check authentication status."""
+    return {"authenticated": True, "method": "session" if admin_secret == "admin-session" else "header"}
 
 
 @router.get("/stats", response_model=SystemStats)
 @limiter.limit("5/minute")
 def get_system_stats(
-    request: Request, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, admin_secret: str = Depends(get_current_admin)
 ):
     """
     Get high-level system statistics.
@@ -128,7 +201,7 @@ def get_system_stats(
 @router.get("/activity", response_model=List[RecentActivity])
 @limiter.limit("5/minute")
 def get_recent_activity(
-    request: Request, limit: int = 50, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, limit: int = 50, admin_secret: str = Depends(get_current_admin)
 ):
     """
     Get recent intake activity.
@@ -192,7 +265,7 @@ def get_recent_activity(
 @router.get("/intake/{intake_id}", response_model=IntakeDetail)
 @limiter.limit("5/minute")
 def get_intake_detail(
-    request: Request, intake_id: int, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, intake_id: int, admin_secret: str = Depends(get_current_admin)
 ):
     """
     Get full details for a specific intake.
@@ -279,7 +352,7 @@ def get_intake_detail(
 @router.get("/logs", response_model=LogResponse)
 @limiter.limit("5/minute")
 def get_server_logs(
-    request: Request, lines: int = 100, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, lines: int = 100, admin_secret: str = Depends(get_current_admin)
 ):
     """
     Get recent server logs.
@@ -302,3 +375,44 @@ def get_server_logs(
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return LogResponse(logs=f"Error reading log file: {str(e)}")
+
+
+@router.post("/address/override", response_model=AddressOverrideResponse)
+@limiter.limit("5/minute")
+def override_city_address(
+    request: Request,
+    payload: AddressOverrideRequest,
+    admin_secret: str = Depends(verify_admin_secret),
+):
+    """
+    Manually update a city's appeal mailing address.
+    Overrides the scraped address.
+    """
+    logger.info(f"Admin action: override_city_address (city_id={payload.city_id})")
+    log_admin_action("override_city_address", admin_secret, request, payload.model_dump())
+
+    if not payload.address_text and not payload.address_components:
+        raise HTTPException(
+            status_code=422,
+            detail="Either address_text or address_components must be provided",
+        )
+
+    validator = get_address_validator()
+
+    # Determine new address format
+    new_address = (
+        payload.address_components if payload.address_components else payload.address_text
+    )
+
+    success = validator.update_city_address(
+        payload.city_id, new_address, payload.section_id
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=400, detail="Failed to update address. Check city_id and logs."
+        )
+
+    return AddressOverrideResponse(
+        success=True, city_id=payload.city_id, message="Address updated successfully"
+    )
