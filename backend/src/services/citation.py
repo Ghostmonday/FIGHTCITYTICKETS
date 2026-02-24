@@ -48,6 +48,7 @@ AppealMailStatus = Enum("AppealMailStatus", ["COMPLETE", "ROUTES_ELSEWHERE", "MI
 REDIS_URL = os.getenv("REDIS_URL", "")
 REDIS_CACHE_TTL = 3600  # 1 hour cache for citation validations
 _CITATION_CACHE: dict[str, tuple[Any, float]] = {}  # In-memory fallback cache
+_REDIS_CLIENT = None
 
 # Logger for caching operations
 logger = logging.getLogger(__name__)
@@ -55,10 +56,15 @@ logger = logging.getLogger(__name__)
 
 def _get_redis_client():
     """Get Redis client if available."""
+    global _REDIS_CLIENT
+    if _REDIS_CLIENT:
+        return _REDIS_CLIENT
+
     try:
         import redis
         if REDIS_URL:
-            return redis.Redis.from_url(REDIS_URL, decode_responses=True)
+            _REDIS_CLIENT = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+            return _REDIS_CLIENT
     except ImportError:
         pass
     return None
