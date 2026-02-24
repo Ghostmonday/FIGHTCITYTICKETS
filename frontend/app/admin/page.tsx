@@ -24,9 +24,6 @@ interface IntakeDetail {
 }
 
 export default function AdminPage() {
-  // SECURITY WARNING: Admin secret stored in client state is accessible via DevTools.
-  // TODO: Move to server-side session with httpOnly cookies for production.
-  // Current implementation is acceptable for development but should be hardened for production.
   const [adminKey, setAdminKey] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -40,11 +37,62 @@ export default function AdminPage() {
   const [selectedIntakeId, setSelectedIntakeId] = useState<number | null>(null);
   const [detailData, setDetailData] = useState<IntakeDetail | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Check authentication on load
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch(`${API_URL}/admin/me`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          setIsAuthenticated(true);
+        }
+      } catch (err) {
+        // Not authenticated, stay on login screen
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (adminKey.trim()) {
-      setIsAuthenticated(true);
-      fetchStats();
+      setLoading(true);
+      setError("");
+      try {
+        const res = await fetch(`${API_URL}/admin/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ secret: adminKey }),
+          credentials: "include",
+        });
+
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.detail || "Authentication failed");
+        }
+
+        setIsAuthenticated(true);
+        setAdminKey(""); // Clear secret from state
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/admin/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (e) {
+      console.error("Logout failed", e);
+    } finally {
+      setIsAuthenticated(false);
+      setActiveTab("dashboard");
     }
   };
 
@@ -53,14 +101,14 @@ export default function AdminPage() {
     setError("");
     try {
       const res = await fetch(`${API_URL}/admin/stats`, {
-        headers: { "X-Admin-Secret": adminKey },
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Authentication failed or server error");
       const data = await res.json();
       setStats(data);
     } catch (err: any) {
       setError(err.message);
-      setIsAuthenticated(false);
+      if (err.message.includes("Authentication")) setIsAuthenticated(false);
     } finally {
       setLoading(false);
     }
@@ -70,8 +118,9 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/admin/activity`, {
-        headers: { "X-Admin-Secret": adminKey },
+        credentials: "include",
       });
+      if (!res.ok) throw new Error("Failed to fetch activity");
       const data = await res.json();
       setActivity(data);
     } catch (err: any) {
@@ -85,8 +134,9 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/admin/logs?lines=200`, {
-        headers: { "X-Admin-Secret": adminKey },
+        credentials: "include",
       });
+      if (!res.ok) throw new Error("Failed to fetch logs");
       const data = await res.json();
       setLogs(data.logs);
     } catch (err: any) {
@@ -100,7 +150,7 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/admin/intake/${id}`, {
-        headers: { "X-Admin-Secret": adminKey },
+        credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to fetch details");
       const data = await res.json();
@@ -140,13 +190,15 @@ export default function AdminPage() {
               className="w-full p-3 border rounded mb-4 text-gray-900"
               value={adminKey}
               onChange={(e) => setAdminKey(e.target.value)}
+              disabled={loading}
             />
             {error && <p className="text-red-500 mb-4">{error}</p>}
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white p-3 rounded hover:bg-indigo-700"
+              className="w-full bg-indigo-600 text-white p-3 rounded hover:bg-indigo-700 disabled:opacity-50"
+              disabled={loading}
             >
-              Access Server
+              {loading ? "Authenticating..." : "Access Server"}
             </button>
           </form>
         </div>
@@ -193,7 +245,7 @@ export default function AdminPage() {
               Logs
             </button>
             <button
-              onClick={() => setIsAuthenticated(false)}
+              onClick={handleLogout}
               className="px-3 py-2 text-red-600 hover:bg-red-50 rounded"
             >
               Logout
