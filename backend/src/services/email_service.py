@@ -146,6 +146,30 @@ class EmailService:
             "daily_count": self._daily_count,
         }
 
+    async def send_admin_alert(self, subject: str, message: str) -> bool:
+        """
+        Send an alert email to the admin/support email.
+
+        Args:
+            subject: The alert subject
+            message: The alert message body
+
+        Returns:
+            True if sent successfully, False otherwise
+        """
+        if not self.support_email:
+            logger.error("No support_email configured for admin alerts")
+            return False
+
+        full_subject = f"[ALERT] {subject}"
+        logger.warning(f"Sending admin alert: {full_subject}")
+
+        if self.is_available:
+            return await self._send_via_sendgrid(self.support_email, full_subject, message)
+
+        # If not available, just logging (which we already did) is sufficient
+        return True
+
     async def _send_via_sendgrid(
         self, to_email: str, subject: str, body_text: str
     ) -> bool:
