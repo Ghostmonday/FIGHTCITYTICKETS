@@ -77,10 +77,6 @@ class Settings(BaseSettings):
     #       - Requires: Stripe Connect onboarding flow
     #
 
-    #       - Prevent spam complaints
-    #       - Improve deliverability
-    #
-
     #       - Google Analytics ID
     #       - Mixpanel/Amplitude for product analytics
     #

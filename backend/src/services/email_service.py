@@ -90,6 +90,20 @@ Questions? Reply to this email or contact {support_email}
 Legal Disclosure: We are not lawyers. We've helped you fulfill the procedural requirements of your appeal.
 """,
     },
+    "email_verification": {
+        "subject": "Verify your email for Fight City Tickets",
+        "body": """Please verify your email address.
+
+Click the link below to verify your email address:
+{verification_link}
+
+If you didn't request this, please ignore this email.
+
+Questions? Reply to this email or contact {support_email}
+
+- The FIGHTCITYTICKETS.com Team
+""",
+    },
 }
 
 
@@ -292,6 +306,40 @@ class EmailService:
         logger.info(
             f"Appeal mailed email to {email}: "
             f"Citation {citation_number}, Tracking {tracking_number}"
+        )
+
+        # Try to send via SendGrid if configured
+        if self.is_available:
+            success = await self._send_via_sendgrid(email, subject, body)
+            if success:
+                return True
+            logger.warning("SendGrid send failed, falling back to logged mode")
+
+        return True
+
+    async def send_verification_email(
+        self,
+        email: str,
+        verification_link: str,
+    ) -> bool:
+        """
+        Send email verification link.
+
+        Args:
+            email: User email address
+            verification_link: The full verification URL
+
+        Returns:
+            True if email was sent successfully (or logged in dev mode)
+        """
+        subject, body = await self._render_template(
+            "email_verification",
+            verification_link=verification_link,
+        )
+
+        # Always log
+        logger.info(
+            f"Verification email to {email}: Link {verification_link}"
         )
 
         # Try to send via SendGrid if configured

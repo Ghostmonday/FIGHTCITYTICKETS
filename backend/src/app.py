@@ -43,6 +43,7 @@ from .routes.telemetry import router as telemetry_router
 from .routes.tickets import router as tickets_router
 from .routes.photos import router as photos_router
 from .routes.webhooks import router as webhooks_router
+from .routes.verification import router as verification_router
 from .services.database import get_db_service
 
 # Set up structured logging
@@ -229,6 +230,7 @@ app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
 app.include_router(places_router, prefix="/places", tags=["places"])
 # Appeal storage router for frontend persistence
 app.include_router(appeals_router, prefix="/api", tags=["appeals"])
+app.include_router(verification_router, prefix="/verification", tags=["verification"])
 # Webhook router: nginx strips /api/, so mount at /webhook (not /api/webhook)
 app.include_router(webhooks_router, prefix="/webhook", tags=["webhooks"])
 app.include_router(status_router, prefix="/status", tags=["status"])
