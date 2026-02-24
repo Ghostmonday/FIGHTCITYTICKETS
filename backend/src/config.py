@@ -84,10 +84,12 @@ class Settings(BaseSettings):
     #       - Improve deliverability
     #
 
-    #       - Google Analytics ID
-    #       - Mixpanel/Amplitude for product analytics
-    #
     # =========================================================================
+
+    # Analytics Configuration
+    google_analytics_id: Optional[str] = None
+    mixpanel_token: Optional[str] = None
+    amplitude_api_key: Optional[str] = None
 
     @property
     def debug(self) -> bool:
