@@ -6,6 +6,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
 import { useAppeal } from "../../lib/appeal-context";
 import { extractTextFromImage } from "../../lib/ocr-helper";
+import { uploadPhoto } from "../../lib/s3-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,19 @@ interface OcrResult {
   citationNumber?: string;
   confidence: number;
   rawText: string;
+}
+
+// Helper to convert data URL to File
+function dataURLtoFile(dataurl: string, filename: string): File {
+  const arr = dataurl.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while(n--){
+      u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new File([u8arr], filename, {type:mime});
 }
 
 export default function CameraPage() {
@@ -61,35 +75,77 @@ export default function CameraPage() {
     handlePhotoCapture(base64);
   };
 
-  const handlePhotoCapture = async (base64: string) => {
+  const processAndUpload = async (file: File, base64Preview: string) => {
     setIsProcessing(true);
-    const newPhotos = [...photos, base64];
     let ocrResult: OcrResult = { confidence: 0, rawText: "" };
+
     try {
-      ocrResult = await extractTextFromImage(base64);
+      // Start upload and OCR in parallel
+      // If S3 configured, upload returns URL. Else null.
+      const uploadPromise = uploadPhoto(file, state.citationNumber);
+      const ocrPromise = extractTextFromImage(base64Preview).catch(e => {
+         console.warn("OCR failed:", e);
+         return { confidence: 0, rawText: "" } as OcrResult;
+      });
+
+      const [uploadedUrl, result] = await Promise.all([uploadPromise, ocrPromise]);
+      ocrResult = result;
+
+      // Use uploaded URL if available, else fallback to base64
+      const photoUrl = uploadedUrl || base64Preview;
+
+      // Use functional update to ensure we have latest state
+      setPhotos(prev => {
+        const newPhotos = [...prev, photoUrl];
+        updateState({ photos: newPhotos });
+        return newPhotos;
+      });
+
+      setOcrResults(prev => [...prev, ocrResult]);
+
     } catch (error) {
-      console.warn("OCR failed:", error);
+      console.error("Processing failed:", error);
+      // Fallback: still add the photo locally if upload failed completely (which shouldn't happen with uploadPhoto catching)
+      // But uploadPhoto re-throws unexpected errors.
+      // If it failed, we probably don't want to add it?
+      // Or fallback to base64?
+      // Let's fallback to base64 if we have it.
+      setPhotos(prev => {
+        const newPhotos = [...prev, base64Preview];
+        updateState({ photos: newPhotos });
+        return newPhotos;
+      });
+      setOcrResults(prev => [...prev, { confidence: 0, rawText: "" }]);
+    } finally {
+      setIsProcessing(false);
     }
-    setPhotos(newPhotos);
-    setOcrResults([...ocrResults, ocrResult]);
-    updateState({ photos: newPhotos });
-    setIsProcessing(false);
+  };
+
+  const handlePhotoCapture = async (base64: string) => {
+    const file = dataURLtoFile(base64, `camera_${Date.now()}.jpg`);
+    await processAndUpload(file, base64);
   };
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    setIsProcessing(true);
+
+    // Process sequentially to maintain order and not overwhelm
     for (const file of Array.from(files)) {
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = (event) => resolve(event.target?.result as string);
-        reader.onerror = () => reject(new Error("Failed to read file"));
-        reader.readAsDataURL(file);
-      });
-      await handlePhotoCapture(base64);
+      try {
+        const reader = new FileReader();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = (event) => resolve(event.target?.result as string);
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsDataURL(file);
+        });
+        await processAndUpload(file, base64);
+      } catch (e) {
+        console.error("Error reading file:", e);
+      }
     }
-    setIsProcessing(false);
+    // Reset input
+    e.target.value = "";
   };
 
   const removePhoto = (index: number) => {

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAppeal } from "./lib/appeal-context";
 import { apiClient } from "./lib/api-client";
 import LegalDisclaimer from "../components/LegalDisclaimer";
+import { uploadPhoto } from "./lib/s3-upload";
 
 // Force dynamic rendering
 export const dynamic = "force-dynamic";
@@ -117,27 +118,41 @@ export default function Home() {
       if (uploadedFile) {
         try {
           setIsValidating(true);
-          const uploadData = await apiClient.upload<{
-            photo_id: string;
-            filename: string;
-            size: number;
-          }>(
-            "/api/photos/upload",
-            uploadedFile,
-            {
-              citation_number: citationNumber,
-              city_id: selectedCity,
-            }
-          );
           
-          // Store photo ID in context for the appeal page
-          updateState({
-            citationNumber,
-            licensePlate,
-            cityId: selectedCity,
-            // Store photo ID reference (photos will be loaded from backend)
-            photos: [uploadData.photo_id],
-          });
+          // Try S3 upload first
+          const photoUrl = await uploadPhoto(uploadedFile, citationNumber);
+
+          if (photoUrl) {
+              updateState({
+                citationNumber,
+                licensePlate,
+                cityId: selectedCity,
+                photos: [photoUrl],
+              });
+          } else {
+             // Fallback to legacy upload
+              const uploadData = await apiClient.upload<{
+                photo_id: string;
+                filename: string;
+                size: number;
+              }>(
+                "/api/photos/upload",
+                uploadedFile,
+                {
+                  citation_number: citationNumber,
+                  city_id: selectedCity,
+                }
+              );
+
+              // Store photo ID in context for the appeal page
+              updateState({
+                citationNumber,
+                licensePlate,
+                cityId: selectedCity,
+                // Store photo ID reference (photos will be loaded from backend)
+                photos: [uploadData.photo_id],
+              });
+          }
         } catch (err) {
           console.error("Failed to upload photo:", err);
           // Continue anyway - user can re-upload in appeal flow
