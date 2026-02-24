@@ -1,120 +1,120 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import CameraPage from "./page";
-import { useAppeal } from "../../lib/appeal-context";
-import { extractTextFromImage } from "../../lib/ocr-helper";
-import { useRouter } from "next/navigation";
 
 // Mock dependencies
 jest.mock("next/navigation", () => ({
-  useRouter: jest.fn(),
+  useRouter: () => ({
+    push: jest.fn(),
+  }),
 }));
+
+const mockUpdateState = jest.fn();
 
 jest.mock("../../lib/appeal-context", () => ({
   useAppeal: () => ({
     state: { photos: [], citationNumber: "" },
-    updateState: jest.fn(),
+    updateState: mockUpdateState,
   }),
 }));
 
+// Mock OCR helper
+const mockExtractTextFromImage = jest.fn();
 jest.mock("../../lib/ocr-helper", () => ({
-  extractTextFromImage: jest.fn(),
+  extractTextFromImage: (...args: any[]) => mockExtractTextFromImage(...args),
 }));
 
 describe("CameraPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (useRouter as jest.Mock).mockReturnValue({ push: jest.fn() });
   });
-
-  const uploadFile = async (container: Element) => {
-    const fileInput = container.querySelector('input[type="file"]');
-    if (!fileInput) throw new Error("File input not found");
-    const file = new File(["(⌐□_□)"], "citation.png", { type: "image/png" });
-    await userEvent.upload(fileInput, file);
-    return file;
-  };
 
   it("displays an error message when OCR fails to detect a citation number", async () => {
-    // Mock OCR failure
-    (extractTextFromImage as jest.Mock).mockResolvedValue({
+    // Mock OCR returning no citation number
+    mockExtractTextFromImage.mockResolvedValue({
       citationNumber: undefined,
       confidence: 0,
-      rawText: "some random text",
+      rawText: "Some random text",
     });
 
     const { container } = render(<CameraPage />);
-    await uploadFile(container);
 
+    // Simulate file upload
+    const file = new File(["(⌐□_□)"], "test.png", { type: "image/png" });
+    const input = container.querySelector('input[type="file"]');
+
+    if (!input) throw new Error("File input not found");
+
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } });
+    });
+
+    // Wait for error to appear
     await waitFor(() => {
-      expect(screen.getByText(/Citation not detected/i)).toBeInTheDocument();
+        expect(screen.getByText(/Citation not detected/i)).toBeInTheDocument();
+        expect(screen.getByText(/Could not read citation number/i)).toBeInTheDocument();
     });
   });
 
-  it("allows user to retake photo when OCR fails", async () => {
-    (extractTextFromImage as jest.Mock).mockResolvedValue({
+  it("removes the photo when 'Retake Photo' is clicked after OCR failure", async () => {
+    mockExtractTextFromImage.mockResolvedValue({
       citationNumber: undefined,
       confidence: 0,
-      rawText: "some random text",
+      rawText: "Some random text",
     });
 
     const { container } = render(<CameraPage />);
-    await uploadFile(container);
 
-    await waitFor(() => {
-      expect(screen.getByText(/Citation not detected/i)).toBeInTheDocument();
+    const file = new File(["(⌐□_□)"], "test.png", { type: "image/png" });
+    const input = container.querySelector('input[type="file"]');
+
+    if (!input) throw new Error("File input not found");
+
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } });
     });
 
-    // Click "Retake Photo"
-    const retakeButton = screen.getByRole("button", { name: /Retake Photo/i });
-    fireEvent.click(retakeButton);
-
-    // Photo should be removed (Evidence 1 alt text gone)
     await waitFor(() => {
-      expect(screen.queryByAltText(/Evidence 1/i)).not.toBeInTheDocument();
+        expect(screen.getByText(/Retake Photo/i)).toBeInTheDocument();
     });
 
-    // Error message should be gone
-    expect(screen.queryByText(/Citation not detected/i)).not.toBeInTheDocument();
+    // Click Retake Photo
+    fireEvent.click(screen.getByText(/Retake Photo/i));
+
+    // Verify photo is removed (and thus the error message too)
+    await waitFor(() => {
+        expect(screen.queryByText(/Citation not detected/i)).not.toBeInTheDocument();
+        expect(screen.queryByAltText(/Evidence 1/i)).not.toBeInTheDocument();
+    });
   });
 
-  it("allows user to enter manually when OCR fails", async () => {
-    (extractTextFromImage as jest.Mock).mockResolvedValue({
+  it("shows manual input when 'Enter Manually' is clicked", async () => {
+    mockExtractTextFromImage.mockResolvedValue({
       citationNumber: undefined,
       confidence: 0,
-      rawText: "some random text",
+      rawText: "Some random text",
     });
 
     const { container } = render(<CameraPage />);
-    await uploadFile(container);
 
-    await waitFor(() => {
-      expect(screen.getByText(/Citation not detected/i)).toBeInTheDocument();
+    const file = new File(["(⌐□_□)"], "test.png", { type: "image/png" });
+    const input = container.querySelector('input[type="file"]');
+
+    if (!input) throw new Error("File input not found");
+
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } });
     });
 
-    // Manual input should not be visible initially (or rather, the input field itself)
-    // The "Enter citation number manually" button exists, but the input is hidden until clicked?
-    // Let's check the implementation.
-    // <button onClick={() => setShowManualInput(!showManualInput)}>...
-    // {showManualInput && ( <input ... /> )}
-
-    expect(screen.queryByPlaceholderText(/e.g., A12345678/i)).not.toBeInTheDocument();
-
-    // Click "Enter Manually" from the error block
-    const enterManuallyButton = screen.getAllByRole("button", { name: /Enter Manually/i }).find(
-      btn => btn.closest('.border-red-200') || btn.className.includes('hover:bg-gray-50') // Identify the one in error block
-    );
-
-    // Actually, "Enter Manually" text is unique to the error block button?
-    // The main button says "Enter citation number manually" (different text).
-    // So "Enter Manually" is unique.
-
-    const errorBlockButton = screen.getByRole("button", { name: /^Enter Manually$/i });
-    fireEvent.click(errorBlockButton);
-
-    // Manual input should now be visible
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/e.g., A12345678/i)).toBeInTheDocument();
+        expect(screen.getByText(/Enter Manually/i)).toBeInTheDocument();
     });
+
+    // Click Enter Manually
+    fireEvent.click(screen.getByText(/Enter Manually/i));
+
+    // Verify input is shown
+    // The placeholder is "e.g., A12345678"
+    expect(screen.getByPlaceholderText(/e.g., A12345678/i)).toBeInTheDocument();
   });
 });
