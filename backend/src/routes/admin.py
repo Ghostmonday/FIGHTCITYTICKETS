@@ -2,22 +2,26 @@
 Admin Routes for Fight City Tickets.com
 
 Provides endpoints for monitoring server status, viewing logs, and accessing recent activity.
-Protected by admin secret key header.
+Protected by admin secret key header or session cookie.
 """
 
 import hashlib
 import json
 import logging
 import os
+import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+import jwt
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 
+from ..config import settings
 from ..models import Draft, Intake, Payment, PaymentStatus
 from ..services.database import get_db_service
 
@@ -29,6 +33,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 # Audit logging for admin actions
 ADMIN_AUDIT_LOG = "admin_audit.log"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
 
 def log_admin_action(action: str, admin_id: str, request: Request, details: dict[str, Any] = None):
@@ -41,13 +46,11 @@ def log_admin_action(action: str, admin_id: str, request: Request, details: dict
         request: The original request
         details: Additional details to log
     """
-    from datetime import datetime
-
     # Securely hash the admin_id so we don't log secrets
-    hashed_id = hashlib.sha256(admin_id.encode()).hexdigest()[:8]
+    hashed_id = hashlib.sha256(str(admin_id).encode()).hexdigest()[:8]
 
     log_entry = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "action": action,
         "admin_id": f"admin-{hashed_id}",
         "ip": request.client.host if request.client else "unknown",
@@ -65,18 +68,17 @@ def log_admin_action(action: str, admin_id: str, request: Request, details: dict
 # Basic admin security (header check)
 ADMIN_SECRET_HEADER = "X-Admin-Secret"
 
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm="HS256")
+    return encoded_jwt
 
-def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
+def verify_admin_secret(request: Request, x_admin_secret: Optional[str] = Header(None)):
     """
-    Verify the admin secret header and optionally check IP allowlist.
+    Verify the admin secret via cookie or header.
     Requires explicit ADMIN_SECRET environment variable.
-    
-    Also logs all admin access attempts for security auditing.
-    
-    Security enhancements:
-    - Timing-safe secret comparison
-    - Optional IP allowlist (ADMIN_ALLOWED_IPS env var)
-    - Failed attempt logging
     """
     admin_secret = os.getenv("ADMIN_SECRET")
 
@@ -89,38 +91,54 @@ def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
             detail="Admin authentication not configured. Set ADMIN_SECRET environment variable.",
         )
 
-    import secrets
-    if not secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
-        client_ip = request.client.host if request else os.getenv('REMOTE_ADDR', 'unknown')
-        logger.warning(
-            f"Failed admin access attempt - Invalid admin secret provided. "
-            f"IP: {client_ip}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid admin secret",
-        )
-    
-    # IP allowlist check (comma-separated IPs in ADMIN_ALLOWED_IPS env var)
-    allowed_ips = os.getenv("ADMIN_ALLOWED_IPS", "").strip()
-    if allowed_ips:
-        client_ip = request.client.host if request else None
-        if client_ip and client_ip not in allowed_ips.split(","):
+    # 1. Check Session Cookie
+    token = request.cookies.get("admin_session")
+    if token:
+        try:
+            payload = jwt.decode(token, settings.secret_key, algorithms=["HS256"])
+            # Token is valid
+            return payload.get("sub", "admin_session")
+        except jwt.PyJWTError:
+            # Invalid token, continue to header check
+            pass
+
+    # 2. Check Header (Legacy/Script access)
+    if x_admin_secret:
+        if secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
+            # IP allowlist check (comma-separated IPs in ADMIN_ALLOWED_IPS env var)
+            allowed_ips = os.getenv("ADMIN_ALLOWED_IPS", "").strip()
+            if allowed_ips:
+                client_ip = request.client.host if request else None
+                if client_ip and client_ip not in allowed_ips.split(","):
+                    logger.warning(
+                        f"Failed admin access attempt - IP not in allowlist. "
+                        f"IP: {client_ip}, Allowed: {allowed_ips}"
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="IP not authorized for admin access",
+                    )
+
+            logger.info(f"Admin access granted (header) - IP: {request.client.host if request else 'unknown'}")
+            return x_admin_secret
+        else:
+            client_ip = request.client.host if request else os.getenv('REMOTE_ADDR', 'unknown')
             logger.warning(
-                f"Failed admin access attempt - IP not in allowlist. "
-                f"IP: {client_ip}, Allowed: {allowed_ips}"
+                f"Failed admin access attempt - Invalid admin secret provided in header. "
+                f"IP: {client_ip}"
             )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="IP not authorized for admin access",
-            )
-    
-    logger.info(f"Admin access granted - IP: {os.getenv('REMOTE_ADDR', 'unknown')}")
-    return x_admin_secret
+
+    # If we got here, neither cookie nor header was valid
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or missing authentication credentials",
+    )
 
 
 # Response Models
 
+class AdminLoginRequest(BaseModel):
+    secret: str
 
 class SystemStats(BaseModel):
     total_intakes: int
@@ -166,17 +184,72 @@ class LogResponse(BaseModel):
 
 # Endpoints
 
+@router.post("/login")
+@limiter.limit("5/minute")
+def login(login_request: AdminLoginRequest, response: Response, request: Request):
+    """
+    Authenticate admin and set session cookie.
+    """
+    admin_secret = os.getenv("ADMIN_SECRET")
+    if not admin_secret:
+        raise HTTPException(status_code=503, detail="Admin auth not configured")
+
+    if secrets.compare_digest(login_request.secret.encode(), admin_secret.encode()):
+        # IP allowlist check
+        allowed_ips = os.getenv("ADMIN_ALLOWED_IPS", "").strip()
+        if allowed_ips:
+            client_ip = request.client.host if request else None
+            if client_ip and client_ip not in allowed_ips.split(","):
+                raise HTTPException(status_code=403, detail="IP not authorized")
+
+        # Create session
+        access_token = create_access_token(data={"sub": "admin"})
+
+        # Set cookie
+        response.set_cookie(
+            key="admin_session",
+            value=access_token,
+            httponly=True,
+            max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            secure=settings.app_env == "prod",  # Only secure in prod (or if using https locally)
+            samesite="lax"
+        )
+
+        log_admin_action("login", "admin", request)
+        return {"message": "Login successful"}
+
+    log_admin_action("login_failed", "unknown", request)
+    raise HTTPException(status_code=401, detail="Invalid secret")
+
+
+@router.post("/logout")
+def logout(response: Response, request: Request):
+    """
+    Clear admin session cookie.
+    """
+    response.delete_cookie("admin_session")
+    log_admin_action("logout", "admin", request)
+    return {"message": "Logged out"}
+
+
+@router.get("/me")
+def check_auth(admin_id: str = Depends(verify_admin_secret)):
+    """
+    Check if current session/header is valid.
+    """
+    return {"authenticated": True}
+
 
 @router.get("/stats", response_model=SystemStats)
 @limiter.limit("5/minute")
 def get_system_stats(
-    request: Request, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, admin_id: str = Depends(verify_admin_secret)
 ):
     """
     Get high-level system statistics.
     """
     logger.info("Admin action: get_system_stats")
-    log_admin_action("get_system_stats", admin_secret, request)
+    log_admin_action("get_system_stats", admin_id, request)
     db = get_db_service()
 
     if not db.health_check():
@@ -219,13 +292,13 @@ def get_system_stats(
 @router.get("/activity", response_model=List[RecentActivity])
 @limiter.limit("5/minute")
 def get_recent_activity(
-    request: Request, limit: int = 50, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, limit: int = 50, admin_id: str = Depends(verify_admin_secret)
 ):
     """
     Get recent intake activity.
     """
     logger.info(f"Admin action: get_recent_activity (limit={limit})")
-    log_admin_action("get_recent_activity", admin_secret, request, {"limit": limit})
+    log_admin_action("get_recent_activity", admin_id, request, {"limit": limit})
     db = get_db_service()
 
     if not db.health_check():
@@ -283,13 +356,13 @@ def get_recent_activity(
 @router.get("/intake/{intake_id}", response_model=IntakeDetail)
 @limiter.limit("5/minute")
 def get_intake_detail(
-    request: Request, intake_id: int, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, intake_id: int, admin_id: str = Depends(verify_admin_secret)
 ):
     """
     Get full details for a specific intake.
     """
     logger.info(f"Admin action: get_intake_detail (intake_id={intake_id})")
-    log_admin_action("get_intake_detail", admin_secret, request, {"intake_id": intake_id})
+    log_admin_action("get_intake_detail", admin_id, request, {"intake_id": intake_id})
     db = get_db_service()
 
     with db.get_session() as session:
@@ -370,14 +443,14 @@ def get_intake_detail(
 @router.get("/logs", response_model=LogResponse)
 @limiter.limit("5/minute")
 def get_server_logs(
-    request: Request, lines: int = 100, admin_secret: str = Depends(verify_admin_secret)
+    request: Request, lines: int = 100, admin_id: str = Depends(verify_admin_secret)
 ):
     """
     Get recent server logs.
     Reads from 'server.log' if it exists.
     """
     logger.info(f"Admin action: get_server_logs (lines={lines})")
-    log_admin_action("get_server_logs", admin_secret, request, {"lines": lines})
+    log_admin_action("get_server_logs", admin_id, request, {"lines": lines})
     log_file = "server.log"
 
     if not os.path.exists(log_file):
