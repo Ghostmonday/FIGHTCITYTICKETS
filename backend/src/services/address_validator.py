@@ -16,14 +16,16 @@ import json
 import logging
 import re
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Union
 
 import httpx
 
 from ..config import settings
+from ..models import ScrapedPage
 from .city_registry import get_city_registry
+from .database import get_db_service
 from .email_service import get_email_service
 
 # Set up logger
@@ -109,8 +111,6 @@ class AddressValidator:
         # Cache key is based on (city_id + current date) to limit scraping to once per day per address
         self._scrape_cache: Dict[str, Tuple[str, date]] = {}
 
-        # Track consecutive failures for monitoring
-        self._failure_counts: Dict[str, int] = {}
 
     def _get_cache_key(self, city_id: str) -> str:
         """
@@ -265,11 +265,71 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
             logger.error(f"Error extracting address with DeepSeek: {e}")
             return None
 
-    async def _scrape_url(self, url: str) -> Optional[str]:
+    def _insert_scraped_page(
+        self,
+        city_id: str,
+        url: str,
+        status: str,
+        http_status: Optional[int] = None,
+        raw_html: Optional[str] = None,
+    ) -> Optional[int]:
+        """
+        INSERT a ScrapedPage audit row and return its id.
+        Returns None if the DB is unavailable — callers treat this as non-fatal.
+        """
+        try:
+            db = get_db_service()
+            expires = datetime.now(timezone.utc) + timedelta(days=90)
+            row = ScrapedPage(
+                city_id=city_id,
+                url=url,
+                http_status=http_status,
+                content_length=len(raw_html) if raw_html else None,
+                raw_html=raw_html,
+                status=status,
+                expires_at=expires,
+            )
+            with db.get_session() as session:
+                session.add(row)
+                session.commit()
+                session.refresh(row)
+                return row.id
+        except Exception as e:
+            logger.warning("Could not persist ScrapedPage for %s: %s", city_id, e)
+            return None
+
+    def _update_scraped_page(
+        self,
+        page_id: int,
+        status: str,
+        extracted_address: Optional[str] = None,
+    ) -> None:
+        """UPDATE an existing ScrapedPage row with the resolved status and extracted address."""
+        try:
+            db = get_db_service()
+            with db.get_session() as session:
+                row = session.query(ScrapedPage).filter(ScrapedPage.id == page_id).first()
+                if row:
+                    row.status = status
+                    row.extracted_address = extracted_address
+                    session.commit()
+        except Exception as e:
+            logger.warning("Could not update ScrapedPage %s: %s", page_id, e)
+
+    async def _scrape_url(self, url: str, city_id: str) -> Tuple[Optional[str], Optional[int]]:
         """
         Scrape raw text content from a URL.
 
-        Returns the raw text content or None if scraping fails.
+        Returns (html_text, scraped_page_id). Either value may be None:
+        - html_text is None on HTTP error, exception, or PDF content
+        - scraped_page_id is None only if the DB INSERT failed (non-fatal)
+
+        # TODO: RELIABILITY - Single User-Agent header is the only bot-evasion in place.
+        #       Cloudflare/JS challenge pages return HTTP 200 with challenge HTML that passes
+        #       raise_for_status() but causes DeepSeek to return NOT_FOUND silently.
+        #       JS-rendered addresses (React tabs, fetch-on-load) also produce empty shells.
+        #       Consider: check content-length against a per-city baseline, retry on 429/503,
+        #       or headless browser for JS-heavy cities.
         """
         try:
             async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
@@ -279,17 +339,29 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                 response = await client.get(url, headers=headers)
                 response.raise_for_status()
 
-                # For PDF files, we'd need special handling, but for now just return text
                 content_type = response.headers.get("content-type", "").lower()
                 if "pd" in content_type:
                     logger.warning(f"PDF file detected at {url} - PDF parsing not implemented")
-                    return None
+                    return None, None
 
-                return response.text
+                html = response.text
+                page_id = self._insert_scraped_page(
+                    city_id=city_id,
+                    url=url,
+                    status="pending",
+                    http_status=response.status_code,
+                    raw_html=html,
+                )
+                return html, page_id
 
         except Exception as e:
             logger.error(f"Error scraping URL {url}: {e}")
-            return None
+            page_id = self._insert_scraped_page(
+                city_id=city_id,
+                url=url,
+                status="fail",
+            )
+            return None, page_id
 
     def _get_stored_address_string(self, city_id: str, section_id: Optional[str] = None) -> Optional[str]:
         """
@@ -501,27 +573,32 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
         return parts
 
     async def _handle_scrape_success(self, city_id: str) -> None:
-        """
-        Handle successful scrape event.
-        Resets failure count for the city.
-        """
-        if city_id in self._failure_counts:
-            # Reset count on success
-            del self._failure_counts[city_id]
+        """No-op: success is recorded via ScrapedPage row status; no in-memory counter to reset."""
 
     async def _handle_scrape_failure(self, city_id: str, url: str) -> None:
         """
-        Handle scrape failure event.
-        Increments failure count and sends alert if threshold reached.
+        Send an alert when the last 3 scrapes (of any status) for this city are all failures.
+
+        Uses DB rows as the source of truth so the counter survives process restarts.
+        Alerts fire every time a new failure keeps the 3-row window all-fail, meaning a city
+        that fails continuously will alert on failure 3 and again on every subsequent failure.
         """
-        self._failure_counts[city_id] = self._failure_counts.get(city_id, 0) + 1
-        count = self._failure_counts[city_id]
+        logger.warning(f"Scrape failure for {city_id} ({url})")
 
-        logger.warning(f"Scrape failure #{count} for {city_id} ({url})")
+        try:
+            db = get_db_service()
+            with db.get_session() as session:
+                recent = (
+                    session.query(ScrapedPage)
+                    .filter(ScrapedPage.city_id == city_id)
+                    .order_by(ScrapedPage.scrape_timestamp.desc())
+                    .limit(3)
+                    .all()
+                )
 
-        if count == 3:
-            # Trigger alert on 3rd failure
-            try:
+            alert = len(recent) == 3 and all(r.status == "fail" for r in recent)
+
+            if alert:
                 email_service = get_email_service()
                 subject = f"Urgent: Address Scraping Failed for {city_id}"
                 message = (
@@ -532,11 +609,8 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                 )
                 await email_service.send_admin_alert(subject, message)
 
-                # Reset count to allow future alerts if problem persists
-                self._failure_counts[city_id] = 0
-
-            except Exception as e:
-                logger.error(f"Failed to send admin alert for {city_id}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to check/send admin alert for {city_id}: {e}")
 
     async def validate_address(self, city_id: str, section_id: Optional[str] = None) -> AddressValidationResult:
         """
@@ -568,11 +642,12 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
 
         # Check cache first - only scrape once per unique appeal office per day
         scraped_text = self._get_cached_scrape(city_id)
-        
+        scraped_page_id: Optional[int] = None
+
         if scraped_text is None:
             # Cache miss - scrape the URL
             logger.info(f"Cache miss for {city_id} - scraping URL")
-            scraped_text = await self._scrape_url(url)
+            scraped_text, scraped_page_id = await self._scrape_url(url, city_id)
             if not scraped_text:
                 await self._handle_scrape_failure(city_id, url)
                 return AddressValidationResult(
@@ -591,6 +666,8 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
         # Extract address from scraped text
         scraped_address = await self._extract_address_from_text(scraped_text, city_id)
         if not scraped_address:
+            if scraped_page_id is not None:
+                self._update_scraped_page(scraped_page_id, "not_found")
             return AddressValidationResult(
                 is_valid=False,
                 city_id=city_id,
@@ -602,6 +679,8 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
         addresses_match = self._addresses_match(stored_address, scraped_address)
 
         if addresses_match:
+            if scraped_page_id is not None:
+                self._update_scraped_page(scraped_page_id, "success", scraped_address)
             return AddressValidationResult(
                 is_valid=True,
                 city_id=city_id,
@@ -609,10 +688,12 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                 scraped_address=scraped_address
             )
 
-        # Addresses don't match - update the database
+        # Addresses don't match - update the city JSON
         logger.warning(
             f"Address mismatch for {city_id}: stored='{stored_address}', scraped='{scraped_address}'"
         )
+        if scraped_page_id is not None:
+            self._update_scraped_page(scraped_page_id, "mismatch", scraped_address)
 
         update_success = self.update_city_address(city_id, scraped_address, section_id)
 

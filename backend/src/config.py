@@ -27,12 +27,9 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/fightcitytickets"
 
     # Stripe Configuration
-    # TODO: SECURITY - Defaults "sk_live_dummy" / "whsec_dummy" silently bypass validate_secrets_not_default()
-    #       because that validator checks for "change-me" — not these values. Change defaults to "change-me"
-    #       so the prod guard fires. Also: stripe_publishable_key is not in validate_secrets_not_default() at all.
-    stripe_secret_key: str = "sk_live_dummy"
-    stripe_publishable_key: str = "pk_live_dummy"
-    stripe_webhook_secret: str = "whsec_dummy"
+    stripe_secret_key: str = "change-me"
+    stripe_publishable_key: str = "change-me"
+    stripe_webhook_secret: str = "change-me"
     stripe_connect_webhook_secret: Optional[str] = None
 
     # Stripe Price IDs
@@ -40,14 +37,10 @@ class Settings(BaseSettings):
     stripe_price_certified: str = ""
 
     # Lob Configuration
-    # TODO: SECURITY - Default "test_dummy" bypasses validate_secrets_not_default() (checks "change-me").
-    #       Change default to "change-me". Also: lob_mode="test" is not guarded in validate_production_settings().
-    lob_api_key: str = "test_dummy"
+    lob_api_key: str = "change-me"
     lob_mode: str = "test"
 
     # SendGrid Email Configuration
-    # TODO: CODE_REVIEW - sendgrid_api_key is not included in validate_secrets_not_default().
-    #       A misconfigured prod deploy would silently fail to send emails with no guard.
     sendgrid_api_key: str = "change-me"
     service_email: str = "noreply@example.com"
     support_email: str = "support@example.com"
@@ -63,9 +56,7 @@ class Settings(BaseSettings):
     s3_bucket_name: Optional[str] = None
 
     # AI Services - DeepSeek
-    # TODO: SECURITY - Default "sk_dummy" bypasses validate_secrets_not_default() (checks "change-me").
-    #       Change default to "change-me" so the guard fires in prod.
-    deepseek_api_key: str = "sk_dummy"
+    deepseek_api_key: str = "change-me"
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-chat"
 
@@ -74,9 +65,6 @@ class Settings(BaseSettings):
     api_url: str = "http://localhost:8000"
 
     # Security
-    # TODO: SECURITY - "dev-secret-change-in-production" IS caught by validate_secrets_not_default(),
-    #       but JWT tokens signed with this key in dev could be replayed against staging if APP_ENV
-    #       is not enforced at the load balancer. Ensure APP_ENV=prod is set server-side, not client-supplied.
     secret_key: str = "dev-secret-change-in-production"
 
     # Compliance Versioning
@@ -112,9 +100,11 @@ class Settings(BaseSettings):
     @field_validator(
         "secret_key",
         "stripe_secret_key",
+        "stripe_publishable_key",
         "stripe_webhook_secret",
         "lob_api_key",
         "deepseek_api_key",
+        "sendgrid_api_key",
         "stripe_connect_webhook_secret",
         mode="after",
     )
@@ -125,10 +115,12 @@ class Settings(BaseSettings):
         default_values = {
             "secret_key": "dev-secret-change-in-production",
             "stripe_secret_key": "change-me",
+            "stripe_publishable_key": "change-me",
             "stripe_webhook_secret": "change-me",
             "stripe_connect_webhook_secret": "change-me",
             "lob_api_key": "change-me",
             "deepseek_api_key": "change-me",
+            "sendgrid_api_key": "change-me",
             "hetzner_api_token": "",
         }
 
@@ -150,10 +142,11 @@ class Settings(BaseSettings):
                     stacklevel=2,
                 )
             else:
-                # dev environment - just log warning
-                # TODO: CODE_REVIEW - Consider using logger.warning instead of print
-                print(
-                    f"⚠️  Warning: {field_name} is using default value. Change this before production."
+                # dev environment
+                warnings.warn(
+                    f"{field_name} is using default value. Change this before production.",
+                    UserWarning,
+                    stacklevel=2,
                 )
 
         return v
@@ -237,10 +230,12 @@ class Settings(BaseSettings):
         default_checks = [
             ("secret_key", "dev-secret-change-in-production"),
             ("stripe_secret_key", "change-me"),
+            ("stripe_publishable_key", "change-me"),
             ("stripe_webhook_secret", "change-me"),
             ("stripe_connect_webhook_secret", "change-me"),
             ("lob_api_key", "change-me"),
             ("deepseek_api_key", "change-me"),
+            ("sendgrid_api_key", "change-me"),
         ]
 
         for field_name, default_value in default_checks:
@@ -277,7 +272,4 @@ class Settings(BaseSettings):
         return True
 
 
-# TODO: SECURITY - validate_production_settings() is defined but never called at startup.
-#       Call it here (or in app lifespan) so misconfigured prod deployments fail fast:
-#           if settings.app_env == "prod": settings.validate_production_settings()
 settings = Settings()

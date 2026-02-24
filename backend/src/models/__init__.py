@@ -290,6 +290,39 @@ class WebhookEvent(Base):
     )
 
 
+class ScrapedPage(Base):
+    """
+    Audit log of each city website scrape attempt.
+
+    Persists raw HTML and extracted addresses so there is a verifiable
+    record of what a city's public-facing page said on the day we scraped it.
+    Also serves as the durable failure counter (replacing the in-memory
+    _failure_counts dict in AddressValidator).
+    """
+
+    __tablename__ = "scraped_pages"
+
+    id = Column(Integer, primary_key=True)
+    city_id = Column(String, nullable=False, index=True)
+    url = Column(String, nullable=False)
+    scrape_timestamp = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    http_status = Column(Integer, nullable=True)
+    content_length = Column(Integer, nullable=True)
+    raw_html = Column(Text, nullable=True)
+    extracted_address = Column(String, nullable=True)
+    # "pending" | "success" | "mismatch" | "fail" | "not_found"
+    status = Column(String, nullable=False, default="pending")
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+
+    __table_args__ = (
+        Index("ix_scraped_pages_city_timestamp", "city_id", "scrape_timestamp"),
+    )
+
+
 # Helper function to create all tables
 def create_all_tables(engine):
     """Create all database tables."""

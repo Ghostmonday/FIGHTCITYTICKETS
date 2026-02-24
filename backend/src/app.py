@@ -86,6 +86,10 @@ async def lifespan(app: FastAPI):
     logger.info(f"App URL: {settings.app_url}")
     logger.info("=" * 60)
 
+    if settings.app_env == "prod":
+        settings.validate_production_settings()
+        logger.info("Production settings validated")
+
     try:
         # Initialize database service
         db_service = get_db_service()
@@ -177,7 +181,10 @@ async def metrics_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
         return response
-    # TODO: CODE_REVIEW - Could catch specific exceptions instead of broad Exception
+    # NOTE: Broad Exception is intentional here — this middleware must never swallow or
+    #       interfere with exceptions from route handlers; it re-raises unconditionally.
+    #       The only action is incrementing the error counter before the exception propagates.
+    #       Narrowing the type would risk missing error types and undercounting metrics.
     except Exception:
         increment_error_count()
         raise

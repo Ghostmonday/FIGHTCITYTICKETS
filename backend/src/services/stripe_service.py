@@ -11,7 +11,7 @@ from typing import Any, Optional
 import time
 import logging
 
-import stripe
+import stripee eeeeeeeee3ddddfffdd
 
 from ..config import settings
 from ..middleware.resilience import CircuitBreaker, create_stripe_circuit
@@ -39,7 +39,7 @@ class CheckoutRequest:
     citation_number: str
     user_name: str
     user_address_line1: str
-    
+
     # Optional fields with defaults
     appeal_type: str = "certified"
     user_address_line2: str | None = None
@@ -388,8 +388,8 @@ class StripeService:
             return True
         except stripe.error.SignatureVerificationError:
             return False
-        # TODO: CODE_REVIEW - Bare except; could log the error for debugging
-        except Exception:
+        except Exception as e:
+            logger.warning("Unexpected error verifying webhook signature: %s", e)
             return False
 
     def verify_connect_webhook_signature(self, payload: bytes, signature: str) -> bool:
@@ -405,8 +405,12 @@ class StripeService:
             return True
         except stripe.error.SignatureVerificationError:
             return False
-        # TODO: CODE_REVIEW - Bare except; could log the error for debugging
-        except Exception:
+        except Exception as e:
+            logger.warning(
+                "Unexpected error verifying Connect webhook signature (secret=%s): %s",
+                "connect" if settings.stripe_connect_webhook_secret else "fallback",
+                e,
+            )
             return False
 
     async def create_connected_account(self, email: str, country: str = "US") -> dict[str, Any]:
