@@ -252,7 +252,7 @@ class StripeService:
         Create a Stripe checkout session with explicit parameters.
         Uses circuit breaker and retry logic.
         """
-        def _create():
+        async def _create():
             args = {
                 "mode": "payment",
                 "payment_method_types": ["card"],
@@ -279,7 +279,9 @@ class StripeService:
                     "quantity": 1,
                 }]
 
-            return stripe.checkout.Session.create(**args)
+            # Offload the blocking Stripe API call to a thread pool
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, lambda: stripe.checkout.Session.create(**args))
 
         async def _create_with_retry():
             return await self._with_retry_async(_create)
