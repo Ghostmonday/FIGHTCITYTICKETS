@@ -9,17 +9,12 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-
+from ..middleware.rate_limit import limiter
 from ..services.database import get_db_service
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 
 class StatusLookupRequest(BaseModel):
