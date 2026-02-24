@@ -112,7 +112,7 @@ class CircuitBreaker:
             await self._on_failure(exc_val) if isinstance(exc_val, Exception) else None
         return False
     
-    async def _before_call(self) -> Optional[T]:
+    async def _before_call(self) -> None:
         """Check circuit state before making a call."""
         if self.metrics.state == CircuitState.OPEN:
             if self._should_attempt_reset():
@@ -121,10 +121,7 @@ class CircuitBreaker:
             else:
                 reason = f"Circuit {self.name} is OPEN. Retry after {self.config.timeout_seconds}s"
                 logger.warning(reason)
-                if self.fallback:
-                    return self.fallback()  # type: ignore
                 raise CircuitOpenError(reason)
-        return None
     
     def _should_attempt_reset(self) -> bool:
         """Check if enough time has passed to attempt reset."""
@@ -149,7 +146,12 @@ class CircuitBreaker:
             Original exception if circuit is closed
             CircuitOpenError if circuit is open
         """
-        await self._before_call()
+        try:
+            await self._before_call()
+        except CircuitOpenError:
+            if self.fallback:
+                return self.fallback()
+            raise
         
         try:
             result = await func(*args, **kwargs)
@@ -175,7 +177,12 @@ class CircuitBreaker:
             Original exception if circuit is closed
             CircuitOpenError if circuit is open
         """
-        await self._before_call()
+        try:
+            await self._before_call()
+        except CircuitOpenError:
+            if self.fallback:
+                return self.fallback()
+            raise
         
         try:
             result = func(*args, **kwargs)
