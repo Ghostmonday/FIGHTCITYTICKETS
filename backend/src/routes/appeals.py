@@ -232,6 +232,7 @@ async def get_appeal(
     Get an appeal/intake record by ID.
 
     Used to restore user progress from the database.
+    Protected against IDOR via verify_appeal_token dependency.
     """
     db_service = get_db_service()
 
