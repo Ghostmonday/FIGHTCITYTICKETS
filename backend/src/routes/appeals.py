@@ -17,6 +17,7 @@ from pydantic import BaseModel, EmailStr, validator
 from ..config import settings
 from ..models import Intake
 from ..services.database import get_db_service
+from ..services.email_service import get_email_service
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,11 @@ def verify_appeal_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication token",
         )
+
+
+class ResumeLinkRequest(BaseModel):
+    """Request model for sending resume link."""
+    email: EmailStr
 
 
 class AppealUpdateRequest(BaseModel):
@@ -322,4 +328,49 @@ async def create_appeal(data: AppealUpdateRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create intake: {str(e)}",
+        )
+
+
+@router.post("/appeals/{intake_id}/send-link")
+async def send_resume_link(
+    intake_id: int,
+    data: ResumeLinkRequest,
+    _auth: None = Depends(verify_appeal_token),
+):
+    """
+    Send a resume link to the user's email.
+    """
+    db_service = get_db_service()
+    email_service = get_email_service()
+
+    try:
+        intake = db_service.get_intake(intake_id)
+        if not intake:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Intake {intake_id} not found",
+            )
+
+        # Generate a fresh token
+        token = create_access_token(intake_id)
+
+        # Construct resume link
+        resume_link = f"{settings.app_url}/appeal/resume?token={token}&intake_id={intake_id}"
+
+        # Send email
+        await email_service.send_save_progress_link(
+            email=data.email,
+            citation_number=intake.citation_number or "Unknown",
+            resume_link=resume_link,
+        )
+
+        return {"message": "Resume link sent successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error sending resume link for intake {intake_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send resume link: {str(e)}",
         )

@@ -90,6 +90,22 @@ Questions? Reply to this email or contact {support_email}
 Legal Disclosure: We are not lawyers. We've helped you fulfill the procedural requirements of your appeal.
 """,
     },
+    "save_progress": {
+        "subject": "Resume Your Appeal - Citation {citation_number}",
+        "body": """Your appeal progress has been saved.
+
+Citation: {citation_number}
+
+Click the link below to resume your appeal where you left off:
+{resume_link}
+
+This link is valid for 24 hours.
+
+Questions? Reply to this email or contact {support_email}
+
+- The FIGHTCITYTICKETS.com Team
+""",
+    },
 }
 
 
@@ -251,6 +267,44 @@ class EmailService:
         logger.info(
             f"Payment confirmation email to {email}: "
             f"Citation {citation_number}, Amount {amount}, Type {appeal_type}"
+        )
+
+        # Try to send via SendGrid if configured
+        if self.is_available:
+            success = await self._send_via_sendgrid(email, subject, body)
+            if success:
+                return True
+            logger.warning("SendGrid send failed, falling back to logged mode")
+
+        return True
+
+    async def send_save_progress_link(
+        self,
+        email: str,
+        citation_number: str,
+        resume_link: str,
+    ) -> bool:
+        """
+        Send appeal progress save link.
+
+        Args:
+            email: Customer email address
+            citation_number: Citation number
+            resume_link: Resume link
+
+        Returns:
+            True if email was sent successfully (or logged in dev mode)
+        """
+        subject, body = await self._render_template(
+            "save_progress",
+            citation_number=citation_number,
+            resume_link=resume_link,
+        )
+
+        # Always log
+        logger.info(
+            f"Save progress email to {email}: "
+            f"Citation {citation_number}, Link {resume_link}"
         )
 
         # Try to send via SendGrid if configured
