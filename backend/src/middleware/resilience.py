@@ -150,7 +150,7 @@ class CircuitBreaker:
             await self._before_call()
         except CircuitOpenError:
             if self.fallback:
-                return self.fallback()  # type: ignore
+                return self.fallback()
             raise
         
         try:
@@ -181,7 +181,7 @@ class CircuitBreaker:
             await self._before_call()
         except CircuitOpenError:
             if self.fallback:
-                return self.fallback()  # type: ignore
+                return self.fallback()
             raise
         
         try:
