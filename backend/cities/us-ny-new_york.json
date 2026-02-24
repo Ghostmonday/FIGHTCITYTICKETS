@@ -1,5 +1,6 @@
 {
   "city_id": "us-ny-new_york",
+  "status": "active",
   "name": "New York City",
   "jurisdiction": "city",
   "status": "active",

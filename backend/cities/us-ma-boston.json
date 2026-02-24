@@ -1,5 +1,6 @@
 {
   "city_id": "us-ma-boston",
+  "status": "active",
   "name": "Boston",
   "jurisdiction": "city",
   "status": "active",

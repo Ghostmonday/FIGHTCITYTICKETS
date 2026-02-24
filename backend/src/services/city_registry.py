@@ -25,10 +25,6 @@ TIER 3 - BLOCKED (Do not enter):
 SCRIVENER DEFENSE:
   This service is a "document preparation service" only.
   We transcribe user facts onto municipal forms - NO legal advice.
-
-TODO: Add Boston (us-ma-boston)
-TODO: Add eligibility filter to get_all_cities()
-TODO: Add is_eligible_for_appeals(city_id) method
 """
 
 import json
@@ -45,6 +41,15 @@ logger = logging.getLogger(__name__)
 
 # Cache TTL for city configs (1 hour)
 CITY_CONFIG_CACHE_TTL = 3600
+
+
+class CityStatus(str, Enum):
+    """Status of city support."""
+
+    ACTIVE = "active"
+    BETA = "beta"
+    BLOCKED = "blocked"
+    COMING_SOON = "coming_soon"
 
 
 class AppealMailStatus(str, Enum):
@@ -86,14 +91,6 @@ class Jurisdiction(str, Enum):
     REGIONAL = "regional"
     SPECIAL_DISTRICT = "special_district"
     DISTRICT = "district"
-
-
-class CityStatus(str, Enum):
-    """Status of city support."""
-
-    ACTIVE = "active"
-    CAUTION = "caution"
-    BLOCKED = "blocked"
 
 
 @dataclass
@@ -185,36 +182,6 @@ class AppealMailAddress:
 
 
 @dataclass
-class SpecialRequirements:
-    """Special requirements for appeal submission."""
-
-    representative_checkbox_enabled: bool = False
-    agent_authorization_optional: bool = False
-    digital_signature_accepted: bool = False
-    digital_signature_notes: Optional[str] = None
-    requires_poa: bool = False
-    lockbox_city: bool = False
-    certified_mail_required: bool = False
-    notes: Optional[str] = None
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for API responses."""
-        result = {
-            "representative_checkbox_enabled": self.representative_checkbox_enabled,
-            "agent_authorization_optional": self.agent_authorization_optional,
-            "digital_signature_accepted": self.digital_signature_accepted,
-            "requires_poa": self.requires_poa,
-            "lockbox_city": self.lockbox_city,
-            "certified_mail_required": self.certified_mail_required,
-        }
-        if self.digital_signature_notes:
-            result["digital_signature_notes"] = self.digital_signature_notes
-        if self.notes:
-            result["notes"] = self.notes
-        return result
-
-
-@dataclass
 class PhoneConfirmationPolicy:
     """Phone confirmation policy for a city."""
 
@@ -301,7 +268,6 @@ class CitySection:
     appeal_mail_address: Optional[AppealMailAddress] = None
     routing_rule: RoutingRule = RoutingRule.DIRECT
     phone_confirmation_policy: Optional[PhoneConfirmationPolicy] = None
-    special_requirements: Optional[SpecialRequirements] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for API responses."""
@@ -316,8 +282,6 @@ class CitySection:
             result["phone_confirmation_policy"] = (  # type: ignore[assignment]
                 self.phone_confirmation_policy.to_dict()
             )
-        if self.special_requirements:
-            result["special_requirements"] = self.special_requirements.to_dict()  # type: ignore[assignment]
         return result
 
 
@@ -569,35 +533,12 @@ class CityRegistry:
                     phone_number_examples=policy_data.get("phone_number_examples"),
                 )
 
-            special_requirements = None
-            if "special_requirements" in section_data:
-                req_data = section_data["special_requirements"]
-                special_requirements = SpecialRequirements(
-                    representative_checkbox_enabled=req_data.get(
-                        "representative_checkbox_enabled", False
-                    ),
-                    agent_authorization_optional=req_data.get(
-                        "agent_authorization_optional", False
-                    ),
-                    digital_signature_accepted=req_data.get(
-                        "digital_signature_accepted", False
-                    ),
-                    digital_signature_notes=req_data.get("digital_signature_notes"),
-                    requires_poa=req_data.get("requires_poa", False),
-                    lockbox_city=req_data.get("lockbox_city", False),
-                    certified_mail_required=req_data.get(
-                        "certified_mail_required", False
-                    ),
-                    notes=req_data.get("notes"),
-                )
-
             section = CitySection(
                 section_id=section_id,
                 name=section_data["name"],
                 appeal_mail_address=appeal_mail_address,
                 routing_rule=RoutingRule(section_data.get("routing_rule", "direct")),
                 phone_confirmation_policy=phone_confirmation_policy,
-                special_requirements=special_requirements,
             )
             sections[section_id] = section
 
@@ -606,7 +547,6 @@ class CityRegistry:
             city_id=data["city_id"],
             name=data["name"],
             jurisdiction=Jurisdiction(data["jurisdiction"]),
-            status=CityStatus(data.get("status", "active")),
             citation_patterns=citation_patterns,
             appeal_mail_address=AppealMailAddress.from_dict(
                 data["appeal_mail_address"]
@@ -617,6 +557,7 @@ class CityRegistry:
             routing_rule=RoutingRule(data["routing_rule"]),
             sections=sections,
             verification_metadata=VerificationMetadata(**data["verification_metadata"]),
+            status=CityStatus(data.get("status", "active")),
             timezone=data.get("timezone", "America/Los_Angeles"),
             appeal_deadline_days=data.get("appeal_deadline_days", 21),
             online_appeal_available=data.get("online_appeal_available", False),
@@ -857,34 +798,37 @@ class CityRegistry:
 
         return config.routing_rule
 
-    def get_all_cities(
-        self, eligibility_filter: Optional[Union[CityStatus, List[CityStatus]]] = None
-    ) -> List[Dict[str, Any]]:
+    def is_eligible_for_appeals(self, city_id: str) -> bool:
         """
-        Get list of all loaded cities with basic info.
+        Check if city is eligible for appeals.
 
         Args:
-            eligibility_filter: Optional filter to return only cities with specific status(es).
-        """
-        # Normalize filter to a set of strings
-        allowed_statuses = set()
-        if eligibility_filter:
-            if isinstance(eligibility_filter, (CityStatus, str)):
-                allowed_statuses.add(
-                    eligibility_filter.value
-                    if isinstance(eligibility_filter, CityStatus)
-                    else eligibility_filter
-                )
-            elif isinstance(eligibility_filter, list):
-                for status in eligibility_filter:
-                    allowed_statuses.add(
-                        status.value if isinstance(status, CityStatus) else status
-                    )
+            city_id: City identifier
 
+        Returns:
+            True if city is ACTIVE or BETA, False otherwise
+        """
+        config = self.get_city_config(city_id)
+        if not config:
+            return False
+
+        return config.status in [CityStatus.ACTIVE, CityStatus.BETA]
+
+    def get_all_cities(
+        self, status: Optional[CityStatus] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Get list of all loaded cities with basic info, optionally filtered by status.
+
+        Args:
+            status: Optional status to filter by
+
+        Returns:
+            List of city summaries
+        """
         cities = []
         for city_id, config in self.city_configs.items():
-            # Apply filter if provided
-            if allowed_statuses and config.status.value not in allowed_statuses:
+            if status and config.status != status:
                 continue
 
             cities.append(
@@ -895,23 +839,9 @@ class CityRegistry:
                     "status": config.status.value,
                     "citation_pattern_count": len(config.citation_patterns),
                     "section_count": len(config.sections),
-                    "is_eligible": self.is_eligible_for_appeals(city_id),
                 }
             )
         return cities
-
-    def is_eligible_for_appeals(self, city_id: str) -> bool:
-        """
-        Check if a city is eligible for appeals.
-
-        A city is eligible if its status is ACTIVE or CAUTION.
-        BLOCKED cities are not eligible.
-        """
-        config = self.get_city_config(city_id)
-        if not config:
-            return False
-
-        return config.status in [CityStatus.ACTIVE, CityStatus.CAUTION]
 
     def validate_phone_for_city(
         self, city_id: str, phone_number: str, section_id: Optional[str] = None

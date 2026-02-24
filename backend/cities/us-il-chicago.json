@@ -1,5 +1,6 @@
 {
   "city_id": "us-il-chicago",
+  "status": "blocked",
   "name": "Chicago",
   "jurisdiction": "city",
   "status": "blocked",
