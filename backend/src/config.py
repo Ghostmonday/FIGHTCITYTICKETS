@@ -48,12 +48,6 @@ class Settings(BaseSettings):
     hetzner_api_token: str = ""
     hetzner_droplet_name: Optional[str] = None
 
-    # AWS S3 Configuration (Optional)
-    aws_access_key_id: Optional[str] = None
-    aws_secret_access_key: Optional[str] = None
-    aws_region: str = "us-east-1"
-    s3_bucket_name: Optional[str] = None
-
     # AI Services - DeepSeek
     deepseek_api_key: str = "sk_dummy"
     deepseek_base_url: str = "https://api.deepseek.com"
@@ -73,10 +67,6 @@ class Settings(BaseSettings):
     # Service Fees
     fightcity_service_fee: int = 1995  # $19.95 certified only
 
-    # Analytics Configuration
-    google_analytics_id: Optional[str] = None
-    mixpanel_token: Optional[str] = None
-    amplitude_api_key: Optional[str] = None
 
     # =========================================================================
     # PENDING ITEMS
@@ -87,8 +77,8 @@ class Settings(BaseSettings):
     #       - Requires: Stripe Connect onboarding flow
     #
 
-    #       - Prevent spam complaints
-    #       - Improve deliverability
+    #       - Google Analytics ID
+    #       - Mixpanel/Amplitude for product analytics
     #
     # =========================================================================
 

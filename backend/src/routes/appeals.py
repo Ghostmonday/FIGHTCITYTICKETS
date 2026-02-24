@@ -121,6 +121,7 @@ class AppealResponse(BaseModel):
     user_state: Optional[str]
     user_zip: Optional[str]
     user_email: Optional[str]
+    email_verified: bool = False
     appeal_reason: Optional[str]
     selected_evidence: Optional[list]
     signature_data: Optional[str]
@@ -268,6 +269,7 @@ async def get_appeal(
             "user_state": intake.user_state,
             "user_zip": intake.user_zip,
             "user_email": intake.user_email,
+            "email_verified": getattr(intake, "email_verified", False),
             "appeal_reason": intake.appeal_reason,
             "selected_evidence": intake.selected_evidence,
             "signature_data": intake.signature_data,

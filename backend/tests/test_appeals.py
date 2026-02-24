@@ -27,6 +27,7 @@ class MockIntake:
         self.user_state = "CA"
         self.user_zip = "94102"
         self.user_email = "test@example.com"
+        self.email_verified = False
         self.user_phone = "555-555-5555"
         self.appeal_reason = "Test reason"
         self.selected_evidence = []
@@ -94,10 +95,9 @@ def test_update_appeal_not_found(mock_db_service):
 
     assert response.status_code == 404
     # The application uses a custom error handler that returns "message" instead of "detail"
-    # and overrides the specific message with a generic one
     data = response.json()
     assert "message" in data
-    assert data["message"] == "The requested resource was not found"
+    assert data["message"] == f"Intake {intake_id} not found"
 
 def test_update_appeal_no_updates(mock_db_service):
     intake_id = 123

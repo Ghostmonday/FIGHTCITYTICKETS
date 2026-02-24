@@ -65,6 +65,7 @@ class Intake(Base):
     user_state = Column(String(2), nullable=False)
     user_zip = Column(String(10), nullable=False)
     user_email = Column(String(100), nullable=True, index=True)
+    email_verified = Column(Boolean, default=False)
     user_phone = Column(String(20), nullable=True)
 
     # Appeal details
