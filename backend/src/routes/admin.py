@@ -9,15 +9,19 @@ import hashlib
 import json
 import logging
 import os
+from datetime import datetime, timedelta, timezone
 from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+import jwt
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 
+from ..config import settings
 from ..models import Draft, Intake, Payment, PaymentStatus
 from ..services.database import get_db_service
 
@@ -29,6 +33,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 # Audit logging for admin actions
 ADMIN_AUDIT_LOG = "admin_audit.log"
+ADMIN_SESSION_COOKIE_NAME = "admin_session"
 
 
 def log_admin_action(action: str, admin_id: str, request: Request, details: dict[str, Any] = None):
@@ -62,22 +67,79 @@ def log_admin_action(action: str, admin_id: str, request: Request, details: dict
     except Exception as e:
         logger.warning(f"Failed to write admin audit log: {e}")
 
+
+def log_auth_failure(request: Request, reason: str):
+    """Log authentication failure to audit log."""
+    try:
+        client_ip = request.client.host if request.client else "unknown"
+        with open(ADMIN_AUDIT_LOG, "a") as f:
+            entry = {
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "action": "auth_failure",
+                "ip": client_ip,
+                "status": "failed",
+                "reason": reason
+            }
+            f.write(json.dumps(entry) + "\n")
+    except Exception:
+        pass
+
+
 # Basic admin security (header check)
 ADMIN_SECRET_HEADER = "X-Admin-Secret"
 
 
-def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
+def check_ip_allowlist(request: Request):
     """
-    Verify the admin secret header and optionally check IP allowlist.
+    Check if the request IP is in the allowlist.
+    Raises HTTPException(403) if blocked.
+    """
+    allowed_ips = os.getenv("ADMIN_ALLOWED_IPS", "").strip()
+    if allowed_ips:
+        client_ip = request.client.host if request.client else None
+        if client_ip and client_ip not in allowed_ips.split(","):
+            logger.warning(
+                f"Failed admin access attempt - IP not in allowlist. "
+                f"IP: {client_ip}, Allowed: {allowed_ips}"
+            )
+            log_auth_failure(request, "IP not allowed")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="IP not authorized for admin access",
+            )
+
+
+class LoginRequest(BaseModel):
+    secret: str
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    """Create a JWT access token for admin session."""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(hours=12)
+    to_encode.update({"exp": expire})
+    
+    # Use configured secret key
+    key = settings.secret_key
+    encoded_jwt = jwt.encode(to_encode, key, algorithm="HS256")
+    return encoded_jwt
+
+
+def verify_admin_secret(request: Request, x_admin_secret: Optional[str] = Header(None, alias="X-Admin-Secret")):
+    """
+    Verify the admin secret via session cookie OR header.
     Requires explicit ADMIN_SECRET environment variable.
     
-    Also logs all admin access attempts for security auditing.
-    
     Security enhancements:
-    - Timing-safe secret comparison
-    - Optional IP allowlist (ADMIN_ALLOWED_IPS env var)
+    - Session-based authentication (preferred)
+    - Timing-safe secret comparison (fallback)
+    - IP allowlist (ADMIN_ALLOWED_IPS env var)
     - Failed attempt logging
     """
+    check_ip_allowlist(request)
     admin_secret = os.getenv("ADMIN_SECRET")
 
     if not admin_secret:
@@ -89,53 +151,60 @@ def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
             detail="Admin authentication not configured. Set ADMIN_SECRET environment variable.",
         )
 
-    import secrets
-    if not secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
-        client_ip = request.client.host if request else os.getenv('REMOTE_ADDR', 'unknown')
-        logger.warning(
-            f"Failed admin access attempt - Invalid admin secret provided. "
-            f"IP: {client_ip}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid admin secret",
-        )
-    
-    # IP allowlist check (comma-separated IPs in ADMIN_ALLOWED_IPS env var)
-    allowed_ips = os.getenv("ADMIN_ALLOWED_IPS", "").strip()
-    if allowed_ips:
-        client_ip = request.client.host if request else None
-        if client_ip and client_ip not in allowed_ips.split(","):
-            logger.warning(
-                f"Failed admin access attempt - IP not in allowlist. "
-                f"IP: {client_ip}, Allowed: {allowed_ips}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="IP not authorized for admin access",
-            )
-    
-    return x_admin_secret
-        # Log failed attempt
+    # 1. Check for valid session cookie
+    session_cookie = request.cookies.get(ADMIN_SESSION_COOKIE_NAME)
+    if session_cookie:
         try:
-            with open(ADMIN_AUDIT_LOG, "a") as f:
-                from datetime import datetime
-                f.write(json.dumps({
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
-                    "action": "auth_failure",
-                    "ip": client_ip,
-                    "status": "failed",
-                }) + "\n")
-        except Exception:
+            # Verify JWT
+            key = settings.secret_key
+            payload = jwt.decode(session_cookie, key, algorithms=["HS256"])
+            if payload.get("sub") == "admin":
+                # Valid session
+                return "admin-session"
+        except jwt.PyJWTError as e:
+            logger.warning(f"Invalid admin session cookie: {e}")
+            log_auth_failure(request, f"Invalid cookie: {str(e)}")
+            # Continue to check header
             pass
 
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid admin secret",
-        )
+    # 2. Fallback: Check Header
+    if x_admin_secret:
+        import secrets
+        if secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
+            # Valid header - Check IP allowlist
+            allowed_ips = os.getenv("ADMIN_ALLOWED_IPS", "").strip()
+            if allowed_ips:
+                client_ip = request.client.host if request.client else None
+                if client_ip and client_ip not in allowed_ips.split(","):
+                    logger.warning(
+                        f"Failed admin access attempt - IP not in allowlist. "
+                        f"IP: {client_ip}, Allowed: {allowed_ips}"
+                    )
+                    log_auth_failure(request, "IP not allowed")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="IP not authorized for admin access",
+                    )
+            return x_admin_secret
+        else:
+            # Header present but invalid
+            client_ip = request.client.host if request.client else "unknown"
+            logger.warning(
+                f"Failed admin access attempt - Invalid admin secret provided. "
+                f"IP: {client_ip}"
+            )
+            log_auth_failure(request, "Invalid secret (header)")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid admin secret",
+            )
 
-    logger.info(f"Admin access granted - IP: {os.getenv('REMOTE_ADDR', 'unknown')}")
-    return x_admin_secret
+    # 3. Neither cookie nor header valid
+    log_auth_failure(request, "Missing credentials")
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required (Header or Cookie)",
+    )
 
 
 # Response Models
@@ -184,6 +253,65 @@ class LogResponse(BaseModel):
 
 
 # Endpoints
+
+
+@router.post("/login")
+@limiter.limit("5/minute")
+def login(request: Request, login_data: LoginRequest):
+    """
+    Admin login endpoint.
+    Exchanges admin secret for a secure session cookie.
+    """
+    check_ip_allowlist(request)
+    admin_secret = os.getenv("ADMIN_SECRET")
+    if not admin_secret:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Admin authentication not configured.",
+        )
+
+    import secrets
+    if not secrets.compare_digest(login_data.secret.encode(), admin_secret.encode()):
+        client_ip = request.client.host if request.client else "unknown"
+        logger.warning(f"Failed admin login attempt - IP: {client_ip}")
+        log_auth_failure(request, "Invalid secret (login)")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid admin secret",
+        )
+
+    # Create session token
+    access_token_expires = timedelta(hours=12)
+    access_token = create_access_token(
+        data={"sub": "admin"}, expires_delta=access_token_expires
+    )
+
+    response = JSONResponse(content={"message": "Login successful"})
+
+    # Set secure cookie
+    # Note: secure=True requires HTTPS, but localhost is exempt in modern browsers
+    response.set_cookie(
+        key=ADMIN_SESSION_COOKIE_NAME,
+        value=access_token,
+        httponly=True,
+        secure=True,
+        samesite="strict",
+        max_age=int(access_token_expires.total_seconds()),
+    )
+
+    logger.info(f"Admin login successful - IP: {request.client.host if request.client else 'unknown'}")
+    return response
+
+
+@router.post("/logout")
+def logout():
+    """
+    Admin logout endpoint.
+    Clears the session cookie.
+    """
+    response = JSONResponse(content={"message": "Logout successful"})
+    response.delete_cookie(ADMIN_SESSION_COOKIE_NAME)
+    return response
 
 
 @router.get("/stats", response_model=SystemStats)
