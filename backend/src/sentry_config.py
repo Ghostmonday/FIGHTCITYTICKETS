@@ -60,8 +60,10 @@ def init_sentry(dsn: Optional[str] = None, environment: str = "production") -> b
             before_send=lambda event, hint: event,  # Can add filtering here
         )
         return True
-    # TODO: CODE_REVIEW - Silent failure for Sentry (intentional, but could log at debug level)
-    except Exception:
-        # Fail silently if Sentry initialization fails
+    # NOTE: Silent failure is intentional — Sentry init must never crash the app.
+    # print() is used here intentionally to avoid a circular dependency if the logging
+    # config itself depends on Sentry being initialized first.
+    except Exception as e:
+        print(f"[WARNING] Sentry initialization failed: {e}. Error tracking is disabled.")
         return False
 

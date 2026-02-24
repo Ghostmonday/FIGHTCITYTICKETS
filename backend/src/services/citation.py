@@ -221,9 +221,7 @@ class CitationValidator:
             try:
                 self.city_registry = get_city_registry(self.cities_dir)
             except Exception as e:
-                # TODO: CODE_REVIEW - Replace print with proper logging
-                print(f"Warning: CityRegistry initialization failed: {e}")
-                print("   Falling back to SF-only validation.")
+                logger.warning("CityRegistry initialization failed: %s. Falling back to SF-only validation.", e)
 
     @classmethod
     def _get_default_validator(cls) -> "CitationValidator":

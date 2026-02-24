@@ -6,6 +6,7 @@
  */
 
 import { createWorker, Worker } from "tesseract.js";
+import { debug as logDebug, error as logError } from "../../lib/logger";
 
 // Citation number patterns by city
 const CITATION_PATTERNS: RegExp[] = [
@@ -53,8 +54,7 @@ class OcrHelper {
         this.worker = await createWorker("eng", 1, {
           logger: (m) => {
             if (process.env.NODE_ENV === "development") {
-              // TODO: CODE_REVIEW - Consider using logger.debug instead
-              console.log("OCR progress:", m);
+              logDebug("OCR progress:", m);
             }
           },
         });
@@ -206,8 +206,7 @@ class OcrHelper {
         rawText: rawText.trim(),
       };
     } catch (error) {
-      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
-      console.error("OCR extraction failed:", error);
+      logError("OCR extraction failed:", error);
       return {
         confidence: 0,
         rawText: "",

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useAppeal } from "./lib/appeal-context";
 import { apiClient } from "./lib/api-client";
 import { uploadPhoto } from "./lib/s3-upload";
+import { error as logError } from "../lib/logger";
 import LegalDisclaimer from "../components/LegalDisclaimer";
 
 // Force dynamic rendering
@@ -138,8 +139,7 @@ export default function Home() {
             photos: [photoRef],
           });
         } catch (err) {
-          // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
-          console.error("Failed to upload photo:", err);
+          logError("Failed to upload photo:", err);
           // Continue anyway - user can re-upload in appeal flow
           updateState({
             citationNumber,

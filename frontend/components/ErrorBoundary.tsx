@@ -2,6 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import Link from "next/link";
+import { error as logError } from "../lib/logger";
 
 interface Props {
   children: ReactNode;
@@ -38,9 +39,8 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
-    console.error("ErrorBoundary caught an error:", error);
-    console.error("Component stack:", errorInfo.componentStack);
+    logError("ErrorBoundary caught an error:", error);
+    logError("Component stack:", errorInfo.componentStack);
 
     // Call optional onError callback
     if (this.props.onError) {

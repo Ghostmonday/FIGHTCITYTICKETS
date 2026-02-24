@@ -26,9 +26,18 @@ SCRIVENER DEFENSE:
   This service is a "document preparation service" only.
   We transcribe user facts onto municipal forms - NO legal advice.
 
-TODO: Add Boston (us-ma-boston)
-TODO: Add eligibility filter to get_all_cities()
-TODO: Add is_eligible_for_appeals(city_id) method
+TODO: EXPANSION - Add Boston (us-ma-boston). Config is straightforward: digital signatures
+      accepted, no UPL risk, checkbox-style appeal form. Add city JSON, citation patterns,
+      and the appeal office address (2300 Washington St, Room 115, Roxbury MA 02119).
+      Also add to CITY_URL_MAPPING and EXPECTED_ADDRESSES in address_validator.py.
+
+TODO: API - Add eligibility filter to get_all_cities() so the frontend city picker only
+      shows cities the service actively supports. Currently all loaded cities are returned
+      regardless of whether their config is complete or their tier is blocked.
+
+TODO: API - Add is_eligible_for_appeals(city_id) method. Right now callers check city tier
+      and config completeness ad-hoc in multiple places. Centralise that logic here so a
+      TIER 3 city (Chicago, D.C.) can never accidentally be routed to the appeal flow.
 """
 
 import json

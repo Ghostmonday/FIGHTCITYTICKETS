@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { error as logError } from "../../lib/logger";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
@@ -89,8 +90,7 @@ export default function AdminPage() {
         credentials: "include",
       });
     } catch (e) {
-      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
-      console.error("Logout failed", e);
+      logError("Logout failed", e);
     } finally {
       setIsAuthenticated(false);
       setActiveTab("dashboard");

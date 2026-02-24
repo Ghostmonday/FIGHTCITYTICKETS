@@ -76,11 +76,8 @@ def _log_auth_failure(ip: str, reason: str) -> None:
         }
         with open(ADMIN_AUDIT_LOG, "a") as f:
             f.write(json.dumps(log_entry) + "\n")
-    # TODO: CODE_REVIEW - Inconsistency: _log_admin_action() above this uses logger.warning() on failure,
-    #       but this function silently swallows the exception with bare pass. Use logger.warning() here
-    #       too so auth failures that can't be persisted are still surfaced in log aggregation.
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("Failed to write auth failure audit log: %s", e)
 
 
 def create_admin_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

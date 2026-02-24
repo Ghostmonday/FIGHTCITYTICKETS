@@ -7,6 +7,7 @@ import LegalDisclaimer from "../../../components/LegalDisclaimer";
 import { useAppeal } from "../../lib/appeal-context";
 import { extractTextFromImage } from "../../lib/ocr-helper";
 import { uploadPhoto } from "../../lib/s3-upload";
+import { error as logError } from "../../../lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -37,8 +38,7 @@ export default function CameraPage() {
       if (videoRef.current) videoRef.current.srcObject = stream;
       setCameraActive(true);
     } catch (error) {
-      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
-      console.error("Failed to access camera:", error);
+      logError("Failed to access camera:", error);
       alert("Unable to access camera. Please use file upload instead.");
     }
   };
@@ -101,8 +101,7 @@ export default function CameraPage() {
       updateState({ photos: newPhotos });
 
     } catch (error) {
-      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
-      console.error("Processing failed:", error);
+      logError("Processing failed:", error);
       alert("Failed to process photo. Please try again.");
     } finally {
       setIsProcessing(false);
@@ -141,8 +140,7 @@ export default function CameraPage() {
         newOcrResultsList.push(ocrResult);
 
       } catch (error) {
-        // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
-        console.error("File processing failed:", error);
+        logError("File processing failed:", error);
       }
     }
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppeal } from "../../lib/appeal-context";
 import Link from "next/link";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
+import { error as logError } from "../../../lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -60,8 +61,7 @@ export default function ReviewPage() {
         updateState({ draftLetter: text });
       }
     } catch (e) {
-      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
-      console.error("Refinement failed:", e);
+      logError("Refinement failed:", e);
     } finally {
       setIsRefining(false);
     }
