@@ -2,18 +2,24 @@
   "city_id": "us-co-denver",
   "name": "Denver",
   "jurisdiction": "city",
+  "status": "active",
   "citation_patterns": [
     {
       "regex": "^DN\\d{7,9}$",
       "section_id": "parks",
       "description": "Denver Parks and Recreation parking citation",
-      "example_numbers": ["DN1234567", "DN9876543"]
+      "example_numbers": [
+        "DN1234567",
+        "DN9876543"
+      ]
     },
     {
       "regex": "^DPO\\d{6,8}$",
       "section_id": "police",
       "description": "Denver Police parking citation",
-      "example_numbers": ["DPO123456"]
+      "example_numbers": [
+        "DPO123456"
+      ]
     }
   ],
   "appeal_mail_address": {

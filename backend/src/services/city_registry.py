@@ -55,6 +55,15 @@ class AppealMailStatus(str, Enum):
     MISSING = "missing"
 
 
+class CityStatus(str, Enum):
+    """Status of city integration."""
+
+    ACTIVE = "active"
+    BETA = "beta"
+    CAUTION = "caution"
+    BLOCKED = "blocked"
+
+
 # Import SchemaAdapter for transforming non-Schema 4.3.0 files
 if TYPE_CHECKING:
     from .schema_adapter import SchemaAdapter as SchemaAdapterType
@@ -349,6 +358,7 @@ class CityConfiguration:
     routing_rule: RoutingRule
     sections: Dict[str, CitySection]
     verification_metadata: VerificationMetadata
+    status: CityStatus = CityStatus.BLOCKED  # Default to blocked for safety
     timezone: str = "America/Los_Angeles"
     appeal_deadline_days: int = 21
     online_appeal_available: bool = False
@@ -398,6 +408,7 @@ class CityConfiguration:
             "city_id": self.city_id,
             "name": self.name,
             "jurisdiction": self.jurisdiction.value,
+            "status": self.status.value,
             "citation_patterns": [p.to_dict() for p in self.citation_patterns],
             "appeal_mail_address": self.appeal_mail_address.to_dict(),
             "phone_confirmation_policy": self.phone_confirmation_policy.to_dict(),
@@ -637,6 +648,7 @@ class CityRegistry:
             routing_rule=RoutingRule(data["routing_rule"]),
             sections=sections,
             verification_metadata=VerificationMetadata(**data["verification_metadata"]),
+            status=CityStatus(data.get("status", "blocked")),
             timezone=data.get("timezone", "America/Los_Angeles"),
             appeal_deadline_days=data.get("appeal_deadline_days", 21),
             online_appeal_available=data.get("online_appeal_available", False),
@@ -877,16 +889,59 @@ class CityRegistry:
 
         return config.routing_rule
 
-    def get_all_cities(self, eligible_only: bool = False) -> List[Dict[str, Any]]:
+    def is_eligible_for_appeals(self, city_id: str) -> bool:
+        """
+        Check if a city is eligible for appeals.
+
+        Combines status check (must be ACTIVE or BETA)
+        and configuration check (must not have blocking requirements).
+
+        Args:
+            city_id: City identifier
+
+        Returns:
+            True if eligible, False otherwise
+        """
+        config = self.get_city_config(city_id)
+        if not config:
+            return False
+
+        # Status check - strict eligibility (Tier 1 strategy)
+        if config.status not in (CityStatus.ACTIVE, CityStatus.BETA):
+            return False
+
+        # Configuration check (POA, corporate blocks, etc.)
+        return config.is_eligible
+
+    def get_all_cities(
+        self,
+        eligible_only: bool = False,
+        eligibility_filter: Optional[Union[CityStatus, List[CityStatus]]] = None,
+    ) -> List[Dict[str, Any]]:
         """
         Get list of all loaded cities with basic info.
 
         Args:
-            eligible_only: If True, return only cities eligible for service.
+            eligible_only: If True, return only cities eligible for service (status check + rules).
+            eligibility_filter: Optional status(es) to filter by.
         """
         cities = []
+
+        # Prepare filter set if provided
+        filter_statuses = None
+        if eligibility_filter:
+            if isinstance(eligibility_filter, CityStatus):
+                filter_statuses = {eligibility_filter}
+            else:
+                filter_statuses = set(eligibility_filter)
+
         for city_id, config in self.city_configs.items():
-            if eligible_only and not config.is_eligible:
+            # Apply status filter if provided
+            if filter_statuses and config.status not in filter_statuses:
+                continue
+
+            # Apply legacy eligible_only flag (checks rules + status)
+            if eligible_only and not self.is_eligible_for_appeals(city_id):
                 continue
 
             cities.append(
@@ -894,6 +949,7 @@ class CityRegistry:
                     "city_id": city_id,
                     "name": config.name,
                     "jurisdiction": config.jurisdiction.value,
+                    "status": config.status.value,
                     "citation_pattern_count": len(config.citation_patterns),
                     "section_count": len(config.sections),
                     "is_eligible": config.is_eligible,

@@ -2,18 +2,24 @@
   "city_id": "us-pa-philadelphia",
   "name": "Philadelphia",
   "jurisdiction": "city",
+  "status": "active",
   "citation_patterns": [
     {
       "regex": "^PH\\d{7,9}$",
       "section_id": "baa",
       "description": "Philadelphia Bureau of Administrative Adjudication citation",
-      "example_numbers": ["PH1234567", "PH9876543"]
+      "example_numbers": [
+        "PH1234567",
+        "PH9876543"
+      ]
     },
     {
       "regex": "^PPA\\d{6,8}$",
       "section_id": "ppa",
       "description": "Philadelphia Parking Authority citation",
-      "example_numbers": ["PPA123456"]
+      "example_numbers": [
+        "PPA123456"
+      ]
     }
   ],
   "appeal_mail_address": {

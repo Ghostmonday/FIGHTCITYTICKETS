@@ -24,6 +24,11 @@ jest.mock("../../lib/ocr-helper", () => ({
   extractTextFromImage: (...args: any[]) => mockExtractTextFromImage(...args),
 }));
 
+// Mock S3 upload
+jest.mock("../../lib/s3-upload", () => ({
+  uploadPhoto: jest.fn().mockResolvedValue({ is_s3: false, url: "test-url" }),
+}));
+
 describe("CameraPage", () => {
   beforeEach(() => {
     jest.clearAllMocks();

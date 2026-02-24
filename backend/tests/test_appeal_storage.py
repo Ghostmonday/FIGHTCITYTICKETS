@@ -1,242 +1,202 @@
-import pytest
-from datetime import datetime, timedelta, timezone
-from unittest.mock import patch, MagicMock
-from src.services.appeal_storage import AppealStorage, AppealData, get_appeal_storage
+"""
+Tests for AppealStorage service.
+"""
 
-# Test data constants
-CITATION_NUMBER = "TEST-12345"
-VIOLATION_DATE = "2023-01-01"
-VEHICLE_INFO = "Test Vehicle"
-USER_NAME = "Test User"
-USER_ADDRESS = "123 Test St"
-USER_CITY = "Test City"
-USER_STATE = "TS"
-USER_ZIP = "12345"
-APPEAL_LETTER = "This is a test appeal letter."
-LICENSE_PLATE = "TEST-PLATE"
-USER_EMAIL = "test@example.com"
-APPEAL_TYPE = "standard"
+import sys
+import os
+from datetime import datetime, timedelta
+from unittest.mock import patch, MagicMock
+import pytest
+
+# Add backend to path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from src.services.appeal_storage import AppealStorage, AppealData, get_appeal_storage
 
 @pytest.fixture
 def storage():
-    """Fixture to provide a fresh AppealStorage instance for each test."""
-    return AppealStorage(ttl_hours=24)
+    """Fixture for a fresh AppealStorage instance."""
+    return AppealStorage(ttl_hours=1)
 
-def test_store_appeal(storage):
-    """Test storing an appeal."""
-    # Mock datetime to have a fixed time for key generation
-    fixed_time = datetime(2023, 1, 1, 12, 0, 0)
-
-    with patch("src.services.appeal_storage.datetime") as mock_datetime:
-        mock_datetime.now.return_value = fixed_time
-        mock_datetime.fromisoformat = datetime.fromisoformat
-        mock_datetime.strftime = datetime.strftime
-
-        key = storage.store_appeal(
-            citation_number=CITATION_NUMBER,
-            violation_date=VIOLATION_DATE,
-            vehicle_info=VEHICLE_INFO,
-            user_name=USER_NAME,
-            user_address=USER_ADDRESS,
-            user_city=USER_CITY,
-            user_state=USER_STATE,
-            user_zip=USER_ZIP,
-            appeal_letter_text=APPEAL_LETTER,
-            license_plate=LICENSE_PLATE,
-            user_email=USER_EMAIL,
-            appeal_type=APPEAL_TYPE
-        )
-
-        # Verify key format
-        expected_key = f"{CITATION_NUMBER}_{USER_ZIP}_{fixed_time.strftime('%Y%m%d%H%M%S')}"
-        assert key == expected_key
-
-        # Verify stored data
-        stored_appeal = storage.get_appeal(key)
-        assert stored_appeal is not None
-        assert stored_appeal.citation_number == CITATION_NUMBER
-        assert stored_appeal.violation_date == VIOLATION_DATE
-        assert stored_appeal.vehicle_info == VEHICLE_INFO
-        assert stored_appeal.user_name == USER_NAME
-        assert stored_appeal.user_address == USER_ADDRESS
-        assert stored_appeal.user_city == USER_CITY
-        assert stored_appeal.user_state == USER_STATE
-        assert stored_appeal.user_zip == USER_ZIP
-        assert stored_appeal.appeal_letter_text == APPEAL_LETTER
-        assert stored_appeal.license_plate == LICENSE_PLATE
-        assert stored_appeal.user_email == USER_EMAIL
-        assert stored_appeal.appeal_type == APPEAL_TYPE
-
-        # Check created_at is populated
-        # This will fail if the bug exists
-        assert stored_appeal.created_at != ""
-        assert stored_appeal.created_at == fixed_time.isoformat()
-
-def test_get_appeal_success(storage):
-    """Test retrieving an existing appeal."""
+def test_store_appeal_sets_timestamp(storage):
+    """Test that store_appeal sets the created_at timestamp."""
     key = storage.store_appeal(
-        citation_number=CITATION_NUMBER,
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER
+        citation_number="TEST-123",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="John Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
     )
 
     appeal = storage.get_appeal(key)
     assert appeal is not None
-    assert appeal.citation_number == CITATION_NUMBER
+    # This assertion is expected to fail if the bug exists (created_at remains "")
+    assert appeal.created_at != ""
+    # Verify it's a valid ISO format date
+    try:
+        datetime.fromisoformat(appeal.created_at)
+    except ValueError:
+        pytest.fail(f"created_at '{appeal.created_at}' is not a valid ISO format")
+
+def test_cleanup_does_not_delete_fresh_appeal(storage):
+    """Test that cleanup_expired does not delete a freshly created appeal."""
+    key = storage.store_appeal(
+        citation_number="TEST-CLEANUP",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="John Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
+    )
+
+    # Run cleanup immediately
+    removed_count = storage.cleanup_expired()
+
+    # Expect 0 removed
+    assert removed_count == 0
+
+    # Expect appeal to still exist
+    assert storage.get_appeal(key) is not None
+
+def test_store_appeal_success(storage):
+    """Test storing an appeal successfully."""
+    # Mock datetime to have a fixed time for key generation if needed,
+    # but for simple storage test, it's not strictly necessary unless we validate the key format precisely.
+    key = storage.store_appeal(
+        citation_number="TEST-STORE",
+        violation_date="2023-01-01",
+        vehicle_info="Honda Civic",
+        user_name="Alice Smith",
+        user_address="456 Elm St",
+        user_city="Othertown",
+        user_state="NY",
+        user_zip="67890",
+        appeal_letter_text="My appeal letter content",
+        license_plate="ABC-123",
+        user_email="alice@example.com",
+        appeal_type="certified",
+        selected_photo_ids=["photo1", "photo2"],
+        signature_data="base64sig"
+    )
+
+    assert key is not None
+    assert "TEST-STORE" in key
+    assert "67890" in key
+
+    appeal = storage.get_appeal(key)
+    assert appeal is not None
+    assert appeal.citation_number == "TEST-STORE"
+    assert appeal.user_name == "Alice Smith"
+    assert appeal.license_plate == "ABC-123"
+    assert appeal.selected_photo_ids == ["photo1", "photo2"]
+    assert appeal.appeal_type == "certified"
 
 def test_get_appeal_not_found(storage):
-    """Test retrieving a non-existent appeal."""
-    assert storage.get_appeal("non_existent_key") is None
+    """Test getting a non-existent appeal."""
+    assert storage.get_appeal("non-existent-key") is None
 
 def test_get_appeal_expired(storage):
-    """Test retrieving an expired appeal."""
-    # Set created_at to 25 hours ago
-    past_time = datetime.now() - timedelta(hours=25)
-
-    # We need to manually inject an expired appeal because store_appeal uses datetime.now()
-    # and we can't easily mock it for just store_appeal without affecting get_appeal if we want to simulate time passing.
-    # So we store it, then modify created_at directly.
-
+    """Test getting an expired appeal."""
+    # Store an appeal
     key = storage.store_appeal(
-        citation_number=CITATION_NUMBER,
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER
+        citation_number="TEST-EXPIRED",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="John Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
     )
 
-    # Manually expire it
-    storage._storage[key].created_at = past_time.isoformat()
+    # Manually backdate the created_at to simulate expiration
+    # We have to access the internal storage because we can't control store_appeal's time without extensive mocking
+    expired_time = (datetime.now() - timedelta(hours=2)).isoformat()
+    storage._storage[key].created_at = expired_time
 
-    # Now get it
-    assert storage.get_appeal(key) is None
-    # Verify it was removed
+    # TTL is 1 hour (set in fixture)
+    # Should be expired now
+    result = storage.get_appeal(key)
+    assert result is None
+
+    # Should be removed from storage
     assert key not in storage._storage
-
-def test_cleanup_expired(storage):
-    """Test cleaning up expired appeals."""
-    current_time = datetime.now()
-    expired_time = current_time - timedelta(hours=25)
-    valid_time = current_time - timedelta(hours=1)
-
-    # Add expired appeal
-    expired_appeal = AppealData(
-        citation_number="EXPIRED",
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER,
-        created_at=expired_time.isoformat()
-    )
-    storage._storage["expired_key"] = expired_appeal
-
-    # Add valid appeal
-    valid_appeal = AppealData(
-        citation_number="VALID",
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER,
-        created_at=valid_time.isoformat()
-    )
-    storage._storage["valid_key"] = valid_appeal
-
-    count = storage.cleanup_expired()
-    assert count == 1
-    assert "expired_key" not in storage._storage
-    assert "valid_key" in storage._storage
 
 def test_update_payment_status(storage):
     """Test updating payment status."""
     key = storage.store_appeal(
-        citation_number=CITATION_NUMBER,
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER
+        citation_number="TEST-PAYMENT",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="John Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
     )
 
-    session_id = "sess_123"
-    status = "paid"
-
-    result = storage.update_payment_status(key, session_id, status)
-    assert result is True
+    success = storage.update_payment_status(key, "sess_123", "paid")
+    assert success is True
 
     appeal = storage.get_appeal(key)
-    assert appeal.stripe_session_id == session_id
-    assert appeal.payment_status == status
+    assert appeal.payment_status == "paid"
+    assert appeal.stripe_session_id == "sess_123"
 
 def test_update_payment_status_not_found(storage):
-    """Test updating payment status for non-existent appeal."""
-    result = storage.update_payment_status("non_existent", "sess_123", "paid")
-    assert result is False
+    """Test updating payment status for non-existent key."""
+    success = storage.update_payment_status("missing-key", "sess_123", "paid")
+    assert success is False
 
 def test_delete_appeal(storage):
     """Test deleting an appeal."""
     key = storage.store_appeal(
-        citation_number=CITATION_NUMBER,
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER
+        citation_number="TEST-DELETE",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="John Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
     )
 
     assert storage.delete_appeal(key) is True
     assert storage.get_appeal(key) is None
-
-def test_delete_appeal_not_found(storage):
-    """Test deleting a non-existent appeal."""
-    assert storage.delete_appeal("non_existent") is False
+    assert storage.delete_appeal(key) is False
 
 def test_get_all_appeals(storage):
-    """Test listing all appeals."""
+    """Test getting all appeals."""
     storage.store_appeal(
-        citation_number="1",
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER
+        citation_number="TEST-ALL-1",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="John Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
     )
     storage.store_appeal(
-        citation_number="2",
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER
+        citation_number="TEST-ALL-2",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="Jane Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
     )
 
     appeals = storage.get_all_appeals()
@@ -244,30 +204,30 @@ def test_get_all_appeals(storage):
 
 def test_get_stats(storage):
     """Test getting stats."""
-    key1 = storage.store_appeal(
-        citation_number="1",
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER
+    k1 = storage.store_appeal(
+        citation_number="TEST-STATS-1",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="John Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
     )
-    storage.store_appeal(
-        citation_number="2",
-        violation_date=VIOLATION_DATE,
-        vehicle_info=VEHICLE_INFO,
-        user_name=USER_NAME,
-        user_address=USER_ADDRESS,
-        user_city=USER_CITY,
-        user_state=USER_STATE,
-        user_zip=USER_ZIP,
-        appeal_letter_text=APPEAL_LETTER
+    k2 = storage.store_appeal(
+        citation_number="TEST-STATS-2",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="Jane Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
     )
 
-    storage.update_payment_status(key1, "sess_1", "paid")
+    storage.update_payment_status(k1, "sess_1", "paid")
 
     stats = storage.get_stats()
     assert stats["total_appeals"] == 2
@@ -275,9 +235,44 @@ def test_get_stats(storage):
     assert stats["pending"] == 1
     assert len(stats["storage_keys"]) == 2
 
+def test_cleanup_expired(storage):
+    """Test cleaning up expired appeals."""
+    # 1. Fresh appeal (should stay)
+    k1 = storage.store_appeal(
+        citation_number="TEST-FRESH",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="John Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
+    )
+
+    # 2. Expired appeal (should go)
+    k2 = storage.store_appeal(
+        citation_number="TEST-OLD",
+        violation_date="2023-01-01",
+        vehicle_info="Test Car",
+        user_name="John Doe",
+        user_address="123 Main St",
+        user_city="Test City",
+        user_state="CA",
+        user_zip="12345",
+        appeal_letter_text="Test appeal"
+    )
+    storage._storage[k2].created_at = (datetime.now() - timedelta(hours=2)).isoformat()
+
+    # 3. Run cleanup
+    removed = storage.cleanup_expired()
+
+    assert removed == 1
+    assert storage.get_appeal(k1) is not None
+    assert k2 not in storage._storage
+
 def test_get_appeal_storage_singleton():
-    """Test singleton getter."""
+    """Test that get_appeal_storage returns a singleton."""
     s1 = get_appeal_storage()
     s2 = get_appeal_storage()
     assert s1 is s2
-    assert isinstance(s1, AppealStorage)

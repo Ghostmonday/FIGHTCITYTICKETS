@@ -2,18 +2,24 @@
   "city_id": "us-ca-san_diego",
   "name": "San Diego",
   "jurisdiction": "city",
+  "status": "active",
   "citation_patterns": [
     {
       "regex": "^SD\\d{7,9}$",
       "section_id": "police",
       "description": "San Diego Police parking citation",
-      "example_numbers": ["SD1234567", "SD9876543"]
+      "example_numbers": [
+        "SD1234567",
+        "SD9876543"
+      ]
     },
     {
       "regex": "^SDOT\\d{6,8}$",
       "section_id": "transportation",
       "description": "San Diego Transportation Department citation",
-      "example_numbers": ["SDOT123456"]
+      "example_numbers": [
+        "SDOT123456"
+      ]
     }
   ],
   "appeal_mail_address": {
