@@ -1,48 +1,63 @@
 import pytest
-from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
+from unittest.mock import MagicMock, patch
 from datetime import datetime, timezone
 import sys
 import os
 
 # Add backend to path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# --- Patch Rate Limiter BEFORE importing app ---
+limiter_patcher = patch("slowapi.Limiter")
+MockLimiter = limiter_patcher.start()
+MockLimiter.return_value.limit.side_effect = lambda *args, **kwargs: lambda func: func
 
 from src.app import app
 
 client = TestClient(app)
 
-# Helper classes for mocking
+# --- Mocks ---
+
+class MockStatus:
+    def __init__(self, value):
+        self.value = value
+
+class MockAppealType:
+    def __init__(self, value):
+        self.value = value
+
+class MockPayment:
+    def __init__(self, status="paid", is_fulfilled=False, amount_total=5000,
+                 appeal_type="standard", paid_at=None, fulfilled_at=None,
+                 lob_tracking_id=None):
+        self.status = MockStatus(status)
+        self.is_fulfilled = is_fulfilled
+        self.amount_total = amount_total
+        self.appeal_type = MockAppealType(appeal_type)
+        self.paid_at = paid_at
+        self.fulfilled_at = fulfilled_at
+        self.lob_tracking_id = lob_tracking_id
+        self.lob_mail_type = None
+
 class MockIntake:
-    def __init__(self, id=1, citation_number="123456"):
+    def __init__(self, id, citation_number, email="test@example.com"):
         self.id = id
         self.citation_number = citation_number
+        self.email = email
         self.user_address_line1 = "123 Main St"
         self.user_address_line2 = None
         self.user_city = "San Francisco"
         self.user_state = "CA"
-        self.user_zip = "94102"
-
-class MockPayment:
-    def __init__(
-        self,
-        status="pending",
-        is_fulfilled=False,
-        appeal_type="standard",
-        amount_total=1000,
-        paid_at=None,
-        fulfilled_at=None,
-        lob_tracking_id=None
-    ):
-        self.status = MagicMock()
-        self.status.value = status
-        self.is_fulfilled = is_fulfilled
-        self.appeal_type = MagicMock()
-        self.appeal_type.value = appeal_type
-        self.amount_total = amount_total
-        self.paid_at = paid_at
-        self.fulfilled_at = fulfilled_at
-        self.lob_tracking_id = lob_tracking_id
+        self.user_zip = "94105"
+        self.status = "submitted"
+        self.created_at = datetime.now(timezone.utc)
+        self.violation_date = "2023-01-01"
+        self.vehicle_info = "Toyota Camry"
+        self.user_name = "Test User"
+        self.user_phone = "555-555-5555"
+        self.drafts = []
+        self.payments = []
 
 @pytest.fixture
 def mock_db_service():
@@ -51,50 +66,42 @@ def mock_db_service():
         mock.return_value = service_mock
         yield service_mock
 
-@pytest.fixture(autouse=True)
-def disable_rate_limit():
-    """Disable rate limiting for these tests, and restore afterwards."""
-    from src.middleware.rate_limit import limiter
-    # Also need to handle app.state.limiter if it exists
-    app_limiter = None
-    if hasattr(app.state, "limiter"):
-        app_limiter = app.state.limiter
-
-    original_enabled = limiter.enabled
-    limiter.enabled = False
-    if app_limiter:
-        app_limiter.enabled = False
-
-    yield
-
-    limiter.enabled = original_enabled
-    if app_limiter:
-        app_limiter.enabled = original_enabled
+# --- Tests ---
 
 def test_lookup_success(mock_db_service):
-    """Test successful status lookup."""
-    # Setup mocks
-    mock_intake = MockIntake(citation_number="123456")
-    mock_payment = MockPayment(status="paid", appeal_type="standard", amount_total=2500, paid_at=datetime.now(timezone.utc))
-
-    mock_db_service.get_intake_by_email_and_citation.return_value = mock_intake
-    mock_db_service.get_latest_payment.return_value = mock_payment
-
-    response = client.post(
-        "/status/lookup",
-        json={"email": "test@example.com", "citation_number": "123456"}
+    """Test successful status lookup for standard mail, paid but not mailed."""
+    # Setup
+    intake = MockIntake(1, "12345", "test@example.com")
+    payment = MockPayment(
+        status="paid",
+        is_fulfilled=False,
+        amount_total=5000,
+        appeal_type="standard",
+        paid_at=datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        fulfilled_at=None
     )
 
+    mock_db_service.get_intake_by_email_and_citation.return_value = intake
+    mock_db_service.get_latest_payment.return_value = payment
+
+    # Execute
+    response = client.post(
+        "/status/lookup",
+        json={"email": "test@example.com", "citation_number": "12345"}
+    )
+
+    # Verify
     assert response.status_code == 200
     data = response.json()
-    assert data["citation_number"] == "123456"
+    assert data["citation_number"] == "12345"
     assert data["payment_status"] == "paid"
-    assert data["mailing_status"] == "processing" # paid but not fulfilled
-    assert data["amount_total"] == 2500
-    assert data["appeal_type"] == "standard"
-    assert data["payment_date"] is not None
-    assert data["mailed_date"] is None
+    assert data["mailing_status"] == "processing"
     assert data["tracking_number"] is None
+    assert data["expected_delivery"] is None
+    assert data["amount_total"] == 5000
+    assert data["appeal_type"] == "standard"
+    assert data["payment_date"] == "2023-01-01T12:00:00+00:00"
+    assert data["mailed_date"] is None
 
 def test_lookup_intake_not_found(mock_db_service):
     """Test lookup when intake is not found."""
@@ -102,93 +109,81 @@ def test_lookup_intake_not_found(mock_db_service):
 
     response = client.post(
         "/status/lookup",
-        json={"email": "notfound@example.com", "citation_number": "999999"}
+        json={"email": "notfound@example.com", "citation_number": "12345"}
     )
 
     assert response.status_code == 404
-    # Expecting standard FastAPI error response for HTTPException
-    data = response.json()
-    if "detail" in data:
-         # Standard FastAPI response
-         pass
-    elif "error" in data:
-         # Custom error response
-         assert data["status_code"] == 404
-    else:
-         pytest.fail(f"Unknown error format: {data}")
+    assert response.json()["error"] == "NOT_FOUND"
 
 def test_lookup_payment_not_found(mock_db_service):
-    """Test lookup when intake exists but payment is missing."""
-    mock_intake = MockIntake()
-    mock_db_service.get_intake_by_email_and_citation.return_value = mock_intake
+    """Test lookup when intake exists but payment is not found."""
+    intake = MockIntake(1, "12345")
+    mock_db_service.get_intake_by_email_and_citation.return_value = intake
     mock_db_service.get_latest_payment.return_value = None
 
     response = client.post(
         "/status/lookup",
-        json={"email": "test@example.com", "citation_number": "123456"}
+        json={"email": "test@example.com", "citation_number": "12345"}
     )
 
     assert response.status_code == 404
-    data = response.json()
-    assert "detail" in data or "error" in data
+    assert response.json()["error"] == "NOT_FOUND"
 
 def test_lookup_mailing_status_variations(mock_db_service):
     """Test different mailing statuses based on payment state."""
-    mock_intake = MockIntake()
-    mock_db_service.get_intake_by_email_and_citation.return_value = mock_intake
+    intake = MockIntake(1, "12345")
+    mock_db_service.get_intake_by_email_and_citation.return_value = intake
 
-    # Case 1: Pending Payment -> Pending Mailing
-    mock_payment_pending = MockPayment(status="pending", is_fulfilled=False)
-    mock_db_service.get_latest_payment.return_value = mock_payment_pending
+    # Case 1: Mailed (is_fulfilled=True)
+    payment_mailed = MockPayment(
+        status="paid",
+        is_fulfilled=True,
+        fulfilled_at=datetime(2023, 1, 2, 12, 0, 0, tzinfo=timezone.utc)
+    )
+    mock_db_service.get_latest_payment.return_value = payment_mailed
+
+    response = client.post("/status/lookup", json={"email": "t@e.com", "citation_number": "123"})
+    assert response.json()["mailing_status"] == "mailed"
+    assert response.json()["mailed_date"] == "2023-01-02T12:00:00+00:00"
+
+    # Case 2: Pending (not paid, not fulfilled)
+    payment_pending = MockPayment(status="unpaid", is_fulfilled=False)
+    mock_db_service.get_latest_payment.return_value = payment_pending
 
     response = client.post("/status/lookup", json={"email": "t@e.com", "citation_number": "123"})
     assert response.json()["mailing_status"] == "pending"
 
-    # Case 2: Paid Payment -> Processing Mailing
-    mock_payment_paid = MockPayment(status="paid", is_fulfilled=False)
-    mock_db_service.get_latest_payment.return_value = mock_payment_paid
-
-    response = client.post("/status/lookup", json={"email": "t@e.com", "citation_number": "123"})
-    assert response.json()["mailing_status"] == "processing"
-
-    # Case 3: Fulfilled Payment -> Mailed
-    mock_payment_fulfilled = MockPayment(
-        status="paid",
-        is_fulfilled=True,
-        fulfilled_at=datetime.now(timezone.utc)
-    )
-    mock_db_service.get_latest_payment.return_value = mock_payment_fulfilled
-
-    response = client.post("/status/lookup", json={"email": "t@e.com", "citation_number": "123"})
-    data = response.json()
-    assert data["mailing_status"] == "mailed"
-    assert data["mailed_date"] is not None
-
 def test_lookup_tracking_info(mock_db_service):
-    """Test tracking number visibility for certified vs standard mail."""
-    mock_intake = MockIntake()
-    mock_db_service.get_intake_by_email_and_citation.return_value = mock_intake
+    """Test that tracking number is returned only for certified mail."""
+    intake = MockIntake(1, "12345")
+    mock_db_service.get_intake_by_email_and_citation.return_value = intake
 
-    # Standard Mail -> No Tracking
-    mock_payment_std = MockPayment(appeal_type="standard", lob_tracking_id="TRACK123")
-    mock_db_service.get_latest_payment.return_value = mock_payment_std
-
-    response = client.post("/status/lookup", json={"email": "t@e.com", "citation_number": "123"})
-    assert response.json()["tracking_number"] is None
-
-    # Certified Mail -> Has Tracking
-    mock_payment_cert = MockPayment(appeal_type="certified", lob_tracking_id="TRACK123")
-    mock_db_service.get_latest_payment.return_value = mock_payment_cert
+    # Case 1: Certified Mail
+    payment_certified = MockPayment(
+        appeal_type="certified",
+        lob_tracking_id="TRACK123"
+    )
+    mock_db_service.get_latest_payment.return_value = payment_certified
 
     response = client.post("/status/lookup", json={"email": "t@e.com", "citation_number": "123"})
     assert response.json()["tracking_number"] == "TRACK123"
 
+    # Case 2: Standard Mail (should hide tracking even if present)
+    payment_standard = MockPayment(
+        appeal_type="standard",
+        lob_tracking_id="TRACK456" # Should be hidden
+    )
+    mock_db_service.get_latest_payment.return_value = payment_standard
+
+    response = client.post("/status/lookup", json={"email": "t@e.com", "citation_number": "123"})
+    assert response.json()["tracking_number"] is None
+
 def test_lookup_validation_error():
-    """Test validation for invalid inputs."""
-    # Invalid email
+    """Test validation errors for invalid input."""
+    # Invalid Email
     response = client.post(
         "/status/lookup",
-        json={"email": "not-an-email", "citation_number": "123456"}
+        json={"email": "invalid-email", "citation_number": "12345"}
     )
     assert response.status_code == 422
 
@@ -200,15 +195,18 @@ def test_lookup_validation_error():
     assert response.status_code == 422
 
 def test_lookup_internal_error(mock_db_service):
-    """Test handling of internal server errors."""
-    mock_db_service.get_intake_by_email_and_citation.side_effect = Exception("Database error")
+    """Test 500 error when DB service fails."""
+    mock_db_service.get_intake_by_email_and_citation.side_effect = Exception("DB Error")
 
     response = client.post(
         "/status/lookup",
-        json={"email": "test@example.com", "citation_number": "123456"}
+        json={"email": "test@example.com", "citation_number": "12345"}
     )
 
     assert response.status_code == 500
     data = response.json()
-    assert "detail" in data
-    assert data["detail"] == "Failed to lookup appeal status"
+    # Check for either standard FastAPI error (detail) or custom app error (error)
+    if "error" in data:
+        assert data["error"] == "INTERNAL_ERROR"
+    else:
+        assert data["detail"] == "Failed to lookup appeal status"
