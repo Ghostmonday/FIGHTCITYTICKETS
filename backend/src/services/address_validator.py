@@ -114,7 +114,7 @@ class AddressValidator:
         # Cache key is based on (city_id + current date) to limit scraping to once per day per address
         self._scrape_cache: Dict[str, Tuple[str, date]] = {}
 
-        # Track consecutive scrape failures per city: {city_id: failure_count}
+        # Track consecutive failures for monitoring
         self._failure_counts: Dict[str, int] = {}
 
     def _get_cache_key(self, city_id: str) -> str:
@@ -269,35 +269,6 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
         except Exception as e:
             logger.error(f"Error extracting address with DeepSeek: {e}")
             return None
-
-    async def _handle_scrape_failure(self, city_id: str, url: str) -> None:
-        """
-        Handle scraping failure for a city.
-
-        Increments failure count and triggers admin alert if threshold is reached.
-        """
-        count = self._failure_counts.get(city_id, 0) + 1
-        self._failure_counts[city_id] = count
-
-        logger.warning(f"Scrape failed for {city_id} (failure {count}/3)")
-
-        if count == 3:
-            logger.error(f"Scrape failure threshold reached for {city_id}. Sending admin alert.")
-            email_service = get_email_service()
-            await email_service.send_admin_alert(
-                subject=f"City Scraping Failed: {city_id}",
-                message=f"Scraping failed 3 times in a row for {city_id}.\nURL: {url}\n\nThis may indicate the city website has changed or is blocking our bots."
-            )
-
-    def _handle_scrape_success(self, city_id: str) -> None:
-        """
-        Handle scraping success for a city.
-
-        Resets failure count.
-        """
-        if city_id in self._failure_counts:
-            logger.info(f"Scrape succeeded for {city_id} after previous failures. Resetting count.")
-            del self._failure_counts[city_id]
 
     async def _scrape_url(self, url: str) -> Optional[str]:
         """
@@ -534,6 +505,44 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
 
         return parts
 
+    async def _handle_scrape_success(self, city_id: str) -> None:
+        """
+        Handle successful scrape event.
+        Resets failure count for the city.
+        """
+        if city_id in self._failure_counts:
+            # Reset count on success
+            del self._failure_counts[city_id]
+
+    async def _handle_scrape_failure(self, city_id: str, url: str) -> None:
+        """
+        Handle scrape failure event.
+        Increments failure count and sends alert if threshold reached.
+        """
+        self._failure_counts[city_id] = self._failure_counts.get(city_id, 0) + 1
+        count = self._failure_counts[city_id]
+
+        logger.warning(f"Scrape failure #{count} for {city_id} ({url})")
+
+        if count == 3:
+            # Trigger alert on 3rd failure
+            try:
+                email_service = get_email_service()
+                subject = f"Urgent: Address Scraping Failed for {city_id}"
+                message = (
+                    f"Address scraping has failed 3 times in a row for {city_id}.\n"
+                    f"URL: {url}\n\n"
+                    f"This may indicate the city website has changed or blocked our bot.\n"
+                    f"Please investigate immediately."
+                )
+                await email_service.send_admin_alert(subject, message)
+
+                # Reset count to allow future alerts if problem persists
+                self._failure_counts[city_id] = 0
+
+            except Exception as e:
+                logger.error(f"Failed to send admin alert for {city_id}: {e}")
+
     async def validate_address(self, city_id: str, section_id: Optional[str] = None) -> AddressValidationResult:
         """
         Validate the address for a city by scraping the website and comparing.
@@ -569,9 +578,7 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
             # Cache miss - scrape the URL
             logger.info(f"Cache miss for {city_id} - scraping URL")
             scraped_text = await self._scrape_url(url)
-
             if not scraped_text:
-                # Handle failure: increment count and potentially alert
                 await self._handle_scrape_failure(city_id, url)
                 return AddressValidationResult(
                     is_valid=False,
@@ -580,8 +587,8 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                     error_message=f"Failed to scrape URL: {url}"
                 )
 
-            # Handle success: reset count
-            self._handle_scrape_success(city_id)
+            # Scrape successful
+            await self._handle_scrape_success(city_id)
 
             # Store in cache for future requests today
             self._set_cached_scrape(city_id, scraped_text)
