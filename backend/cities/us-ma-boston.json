@@ -18,12 +18,12 @@
   ],
   "appeal_mail_address": {
     "status": "complete",
-    "department": "Parking Clerk - Administrative Appeals",
-    "address1": "2300 Washington Street",
-    "address2": "Room 115",
-    "city": "Roxbury",
+    "department": "Office of the Parking Clerk",
+    "address1": "P.O. Box 55800",
+    "address2": null,
+    "city": "Boston",
     "state": "MA",
-    "zip": "02119",
+    "zip": "02205",
     "country": "US"
   },
   "phone_confirmation_policy": {
@@ -40,12 +40,12 @@
       "name": "Boston Parking Commission",
       "appeal_mail_address": {
         "status": "complete",
-        "department": "Parking Clerk - Administrative Appeals",
-        "address1": "2300 Washington Street",
-        "address2": "Room 115",
-        "city": "Roxbury",
+        "department": "Office of the Parking Clerk",
+        "address1": "P.O. Box 55800",
+        "address2": null,
+        "city": "Boston",
         "state": "MA",
-        "zip": "02119",
+        "zip": "02205",
         "country": "US"
       },
       "routing_rule": "direct",
@@ -68,12 +68,12 @@
       "name": "Boston Police Department",
       "appeal_mail_address": {
         "status": "complete",
-        "department": "Parking Violations",
-        "address1": "354 Columbus Avenue",
+        "department": "Office of the Parking Clerk",
+        "address1": "P.O. Box 55800",
         "address2": null,
         "city": "Boston",
         "state": "MA",
-        "zip": "02116",
+        "zip": "02205",
         "country": "US"
       },
       "routing_rule": "direct",
@@ -91,13 +91,13 @@
     }
   },
   "verification_metadata": {
-    "last_updated": "2025-01-25",
-    "source": "https://www.boston.gov/departments/parking-clerk",
+    "last_updated": "2024-05-21",
+    "source": "https://www.boston.gov/departments/parking-clerk/how-appeal-parking-ticket",
     "confidence_score": 0.95,
     "notes": "DIGITAL SIGNATURES ENABLED per Massachusetts law. Easy entry, high volume target.",
-    "verified_by": "system",
-    "verification_date": "2026-01-25",
-    "verified_url": "https://www.boston.gov/departments/parking-clerk"
+    "verified_by": "jules",
+    "verification_date": "2024-05-21",
+    "verified_url": "https://www.boston.gov/departments/parking-clerk/how-appeal-parking-ticket"
   },
   "timezone": "America/New_York",
   "appeal_deadline_days": 21,
