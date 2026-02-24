@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     stripe_secret_key: str = "sk_live_dummy"
     stripe_publishable_key: str = "pk_live_dummy"
     stripe_webhook_secret: str = "whsec_dummy"
+    stripe_connect_webhook_secret: Optional[str] = None
 
     # Stripe Price IDs
     stripe_price_standard: str = ""
@@ -102,16 +103,18 @@ class Settings(BaseSettings):
         "stripe_webhook_secret",
         "lob_api_key",
         "deepseek_api_key",
+        "stripe_connect_webhook_secret",
         mode="after",
     )
     @classmethod
-    def validate_secrets_not_default(cls, v: str, info) -> str:
+    def validate_secrets_not_default(cls, v: str | None, info) -> str | None:
         """Validate that secrets are not using default/placeholder values."""
         field_name = info.field_name
         default_values = {
             "secret_key": "dev-secret-change-in-production",
             "stripe_secret_key": "change-me",
             "stripe_webhook_secret": "change-me",
+            "stripe_connect_webhook_secret": "change-me",
             "lob_api_key": "change-me",
             "deepseek_api_key": "change-me",
             "hetzner_api_token": "",
@@ -174,10 +177,13 @@ class Settings(BaseSettings):
             )
         return v
 
-    @field_validator("stripe_webhook_secret", mode="after")
+    @field_validator("stripe_webhook_secret", "stripe_connect_webhook_secret", mode="after")
     @classmethod
-    def validate_stripe_webhook_secret_format(cls, v: str) -> str:
+    def validate_stripe_webhook_secret_format(cls, v: str | None) -> str | None:
         """Validate Stripe webhook secret format."""
+        if v is None:
+            return v
+
         if v == "change-me":
             return v
 
@@ -219,6 +225,7 @@ class Settings(BaseSettings):
             ("secret_key", "dev-secret-change-in-production"),
             ("stripe_secret_key", "change-me"),
             ("stripe_webhook_secret", "change-me"),
+            ("stripe_connect_webhook_secret", "change-me"),
             ("lob_api_key", "change-me"),
             ("deepseek_api_key", "change-me"),
         ]
