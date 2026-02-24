@@ -115,7 +115,6 @@ def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
                 detail="IP not authorized for admin access",
             )
     
-
     logger.info(f"Admin access granted - IP: {os.getenv('REMOTE_ADDR', 'unknown')}")
     return x_admin_secret
 
