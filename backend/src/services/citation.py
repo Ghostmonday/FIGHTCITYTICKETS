@@ -9,13 +9,6 @@ TODO: Implement Boston city configuration (us-ma-boston)
       - Simple checkbox form for third-party appeals
       - Reference: https://www.boston.gov/parking/parking-tickets
 
-TODO: Remove SF/LA from available cities if following Tier 1-only strategy
-      - CA markets have high UPL risk (bar association scrutiny)
-      - Keep config files but filter in API response
-
-TODO: Add city eligibility endpoint: GET /api/cities?eligible=true
-      - Filter cities by business rules (digital signatures, no POA required)
-      - Block Tier 3 cities (Chicago, D.C., etc.)
 """
 
 import json

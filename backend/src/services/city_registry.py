@@ -27,7 +27,6 @@ SCRIVENER DEFENSE:
   We transcribe user facts onto municipal forms - NO legal advice.
 
 TODO: Add Boston (us-ma-boston)
-TODO: Add eligibility filter to get_all_cities()
 TODO: Add is_eligible_for_appeals(city_id) method
 """
 
@@ -45,6 +44,9 @@ logger = logging.getLogger(__name__)
 
 # Cache TTL for city configs (1 hour)
 CITY_CONFIG_CACHE_TTL = 3600
+
+# High-risk cities to filter out (Tier 1 strategy)
+BLOCKED_CITIES = {"us-ca-san_francisco", "us-ca-los_angeles"}
 
 
 class AppealMailStatus(str, Enum):
@@ -790,18 +792,31 @@ class CityRegistry:
 
         return config.routing_rule
 
-    def get_all_cities(self) -> List[Dict[str, Any]]:
-        """Get list of all loaded cities with basic info."""
-        return [
-            {
-                "city_id": city_id,
-                "name": config.name,
-                "jurisdiction": config.jurisdiction.value,
-                "citation_pattern_count": len(config.citation_patterns),
-                "section_count": len(config.sections),
-            }
-            for city_id, config in self.city_configs.items()
-        ]
+    def get_all_cities(self, eligible_only: bool = False) -> List[Dict[str, Any]]:
+        """
+        Get list of all loaded cities with basic info.
+
+        Args:
+            eligible_only: If True, filter out blocked/high-risk cities.
+
+        Returns:
+            List of city info dictionaries.
+        """
+        cities = []
+        for city_id, config in self.city_configs.items():
+            if eligible_only and city_id in BLOCKED_CITIES:
+                continue
+
+            cities.append(
+                {
+                    "city_id": city_id,
+                    "name": config.name,
+                    "jurisdiction": config.jurisdiction.value,
+                    "citation_pattern_count": len(config.citation_patterns),
+                    "section_count": len(config.sections),
+                }
+            )
+        return cities
 
     def validate_phone_for_city(
         self, city_id: str, phone_number: str, section_id: Optional[str] = None
