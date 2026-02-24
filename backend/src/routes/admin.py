@@ -13,19 +13,15 @@ from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel
-from slowapi import Limiter
-from slowapi.util import get_remote_address
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 
+from ..middleware.rate_limit import limiter
 from ..models import Draft, Intake, Payment, PaymentStatus
 from ..services.database import get_db_service
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
-
-# Rate limiter - shared instance from app.py
-limiter = Limiter(key_func=get_remote_address)
 
 # Audit logging for admin actions
 ADMIN_AUDIT_LOG = "admin_audit.log"

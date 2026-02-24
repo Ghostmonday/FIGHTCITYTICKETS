@@ -14,10 +14,10 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
-from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from ..config import settings
+from ..middleware.rate_limit import limiter
 from ..models import AppealType, PaymentStatus, WebhookEvent
 from ..services.database import get_db_service
 from ..services.email_service import get_email_service
@@ -28,9 +28,6 @@ from ..services.stripe_service import StripeService
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Rate limiter
-limiter = Limiter(key_func=get_remote_address)
 
 # Admin authentication
 ADMIN_SECRET_HEADER = "X-Admin-Secret"

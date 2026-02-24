@@ -184,19 +184,6 @@ limiter_instance = get_rate_limiter()
 app.state.limiter = limiter_instance
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Share limiter instance with route modules
-# Rate limiting - share limiter with all route modules
-# Note: This must be called after routers are included
-def _share_limiter():
-    """Share limiter instance with route modules."""
-    from .routes import checkout, webhooks, admin, tickets, statement, status
-    checkout.limiter = limiter_instance
-    webhooks.limiter = limiter_instance
-    admin.limiter = limiter_instance
-    tickets.limiter = limiter_instance
-    statement.limiter = limiter_instance
-    status.limiter = limiter_instance
-
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
@@ -235,10 +222,6 @@ app.include_router(status_router, prefix="/status", tags=["status"])
 app.include_router(admin_router, prefix="/admin", tags=["admin"])
 # OCR telemetry endpoint (opt-in) - nginx strips /api/ prefix
 app.include_router(telemetry_router, prefix="/telemetry", tags=["telemetry"])
-
-# Share limiter instance with route modules
-# BACKLOG PRIORITY 1: Rate limiting integration
-_share_limiter()
 
 
 @app.get("/")
