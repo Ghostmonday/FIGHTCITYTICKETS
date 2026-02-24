@@ -2,12 +2,16 @@
   "city_id": "us-dc-washington",
   "name": "Washington D.C.",
   "jurisdiction": "district",
+  "status": "blocked",
   "citation_patterns": [
     {
       "regex": "^DC\\d{7,9}$",
       "section_id": "dmv",
       "description": "DC DMV parking citation",
-      "example_numbers": ["DC1234567", "DC9876543"]
+      "example_numbers": [
+        "DC1234567",
+        "DC9876543"
+      ]
     }
   ],
   "appeal_mail_address": {

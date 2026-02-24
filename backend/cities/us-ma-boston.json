@@ -2,18 +2,24 @@
   "city_id": "us-ma-boston",
   "name": "Boston",
   "jurisdiction": "city",
+  "status": "active",
   "citation_patterns": [
     {
       "regex": "^BO\\d{7,9}$",
       "section_id": "parking",
       "description": "Boston Parking Commission citation",
-      "example_numbers": ["BO1234567", "BO9876543"]
+      "example_numbers": [
+        "BO1234567",
+        "BO9876543"
+      ]
     },
     {
       "regex": "^BPD\\d{6,8}$",
       "section_id": "police",
       "description": "Boston Police Department parking citation",
-      "example_numbers": ["BPD123456"]
+      "example_numbers": [
+        "BPD123456"
+      ]
     }
   ],
   "appeal_mail_address": {

@@ -2,18 +2,25 @@
   "city_id": "us-ca-san_francisco",
   "name": "San Francisco",
   "jurisdiction": "city",
+  "status": "caution",
   "citation_patterns": [
     {
       "regex": "^9\\d{8}$",
       "section_id": "sfmta",
       "description": "SFMTA parking citation",
-      "example_numbers": ["912345678", "923456789"]
+      "example_numbers": [
+        "912345678",
+        "923456789"
+      ]
     },
     {
       "regex": "^[A-Z]{2}\\d{5,7}$",
       "section_id": "sfpd",
       "description": "SF Police Department parking/traffic citation",
-      "example_numbers": ["AB1234567", "SF9876543"]
+      "example_numbers": [
+        "AB1234567",
+        "SF9876543"
+      ]
     }
   ],
   "appeal_mail_address": {

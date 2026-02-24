@@ -27,6 +27,7 @@ SCRIVENER DEFENSE:
   We transcribe user facts onto municipal forms - NO legal advice.
 
 TODO: Add Boston (us-ma-boston)
+TODO: Add eligibility filter to get_all_cities()
 TODO: Add is_eligible_for_appeals(city_id) method
 """
 
@@ -44,9 +45,6 @@ logger = logging.getLogger(__name__)
 
 # Cache TTL for city configs (1 hour)
 CITY_CONFIG_CACHE_TTL = 3600
-
-# High-risk cities to filter out (Tier 1 strategy)
-BLOCKED_CITIES = {"us-ca-san_francisco", "us-ca-los_angeles"}
 
 
 class AppealMailStatus(str, Enum):
@@ -88,6 +86,14 @@ class Jurisdiction(str, Enum):
     REGIONAL = "regional"
     SPECIAL_DISTRICT = "special_district"
     DISTRICT = "district"
+
+
+class CityStatus(str, Enum):
+    """Status of city support."""
+
+    ACTIVE = "active"
+    CAUTION = "caution"
+    BLOCKED = "blocked"
 
 
 @dataclass
@@ -321,6 +327,7 @@ class CityConfiguration:
     routing_rule: RoutingRule
     sections: Dict[str, CitySection]
     verification_metadata: VerificationMetadata
+    status: CityStatus = CityStatus.ACTIVE
     timezone: str = "America/Los_Angeles"
     appeal_deadline_days: int = 21
     online_appeal_available: bool = False
@@ -332,6 +339,7 @@ class CityConfiguration:
             "city_id": self.city_id,
             "name": self.name,
             "jurisdiction": self.jurisdiction.value,
+            "status": self.status.value,
             "citation_patterns": [p.to_dict() for p in self.citation_patterns],
             "appeal_mail_address": self.appeal_mail_address.to_dict(),
             "phone_confirmation_policy": self.phone_confirmation_policy.to_dict(),
@@ -542,6 +550,7 @@ class CityRegistry:
             city_id=data["city_id"],
             name=data["name"],
             jurisdiction=Jurisdiction(data["jurisdiction"]),
+            status=CityStatus(data.get("status", "active")),
             citation_patterns=citation_patterns,
             appeal_mail_address=AppealMailAddress.from_dict(
                 data["appeal_mail_address"]
@@ -792,19 +801,34 @@ class CityRegistry:
 
         return config.routing_rule
 
-    def get_all_cities(self, eligible_only: bool = False) -> List[Dict[str, Any]]:
+    def get_all_cities(
+        self, eligibility_filter: Optional[Union[CityStatus, List[CityStatus]]] = None
+    ) -> List[Dict[str, Any]]:
         """
         Get list of all loaded cities with basic info.
 
         Args:
-            eligible_only: If True, filter out blocked/high-risk cities.
-
-        Returns:
-            List of city info dictionaries.
+            eligibility_filter: Optional filter to return only cities with specific status(es).
         """
+        # Normalize filter to a set of strings
+        allowed_statuses = set()
+        if eligibility_filter:
+            if isinstance(eligibility_filter, (CityStatus, str)):
+                allowed_statuses.add(
+                    eligibility_filter.value
+                    if isinstance(eligibility_filter, CityStatus)
+                    else eligibility_filter
+                )
+            elif isinstance(eligibility_filter, list):
+                for status in eligibility_filter:
+                    allowed_statuses.add(
+                        status.value if isinstance(status, CityStatus) else status
+                    )
+
         cities = []
         for city_id, config in self.city_configs.items():
-            if eligible_only and city_id in BLOCKED_CITIES:
+            # Apply filter if provided
+            if allowed_statuses and config.status.value not in allowed_statuses:
                 continue
 
             cities.append(
@@ -812,11 +836,26 @@ class CityRegistry:
                     "city_id": city_id,
                     "name": config.name,
                     "jurisdiction": config.jurisdiction.value,
+                    "status": config.status.value,
                     "citation_pattern_count": len(config.citation_patterns),
                     "section_count": len(config.sections),
+                    "is_eligible": self.is_eligible_for_appeals(city_id),
                 }
             )
         return cities
+
+    def is_eligible_for_appeals(self, city_id: str) -> bool:
+        """
+        Check if a city is eligible for appeals.
+
+        A city is eligible if its status is ACTIVE or CAUTION.
+        BLOCKED cities are not eligible.
+        """
+        config = self.get_city_config(city_id)
+        if not config:
+            return False
+
+        return config.status in [CityStatus.ACTIVE, CityStatus.CAUTION]
 
     def validate_phone_for_city(
         self, city_id: str, phone_number: str, section_id: Optional[str] = None
