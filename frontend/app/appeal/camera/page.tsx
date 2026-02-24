@@ -37,6 +37,7 @@ export default function CameraPage() {
       if (videoRef.current) videoRef.current.srcObject = stream;
       setCameraActive(true);
     } catch (error) {
+      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
       console.error("Failed to access camera:", error);
       alert("Unable to access camera. Please use file upload instead.");
     }
@@ -100,6 +101,7 @@ export default function CameraPage() {
       updateState({ photos: newPhotos });
 
     } catch (error) {
+      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
       console.error("Processing failed:", error);
       alert("Failed to process photo. Please try again.");
     } finally {
@@ -139,6 +141,7 @@ export default function CameraPage() {
         newOcrResultsList.push(ocrResult);
 
       } catch (error) {
+        // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
         console.error("File processing failed:", error);
       }
     }

@@ -70,6 +70,7 @@ export async function uploadPhoto(
   } catch (error: any) {
     // If S3 is not implemented (501) or not configured, fall back to legacy upload
     // Also fall back if presigned URL generation fails
+    // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.warn
     console.warn("S3 upload failed or not configured, falling back to direct upload:", error);
 
     // Legacy direct upload

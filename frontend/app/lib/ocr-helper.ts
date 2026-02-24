@@ -53,6 +53,7 @@ class OcrHelper {
         this.worker = await createWorker("eng", 1, {
           logger: (m) => {
             if (process.env.NODE_ENV === "development") {
+              // TODO: CODE_REVIEW - Consider using logger.debug instead
               console.log("OCR progress:", m);
             }
           },
@@ -205,6 +206,7 @@ class OcrHelper {
         rawText: rawText.trim(),
       };
     } catch (error) {
+      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
       console.error("OCR extraction failed:", error);
       return {
         confidence: 0,

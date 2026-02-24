@@ -89,6 +89,7 @@ export default function AdminPage() {
         credentials: "include",
       });
     } catch (e) {
+      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
       console.error("Logout failed", e);
     } finally {
       setIsAuthenticated(false);

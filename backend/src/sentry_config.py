@@ -60,6 +60,7 @@ def init_sentry(dsn: Optional[str] = None, environment: str = "production") -> b
             before_send=lambda event, hint: event,  # Can add filtering here
         )
         return True
+    # TODO: CODE_REVIEW - Silent failure for Sentry (intentional, but could log at debug level)
     except Exception:
         # Fail silently if Sentry initialization fails
         return False

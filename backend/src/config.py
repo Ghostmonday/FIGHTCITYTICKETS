@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://postgres:postgres@db:5432/fightcitytickets"
 
     # Stripe Configuration
+    # TODO: CODE_REVIEW - Remove default secrets in production
     stripe_secret_key: str = "sk_live_dummy"
     stripe_publishable_key: str = "pk_live_dummy"
     stripe_webhook_secret: str = "whsec_dummy"
@@ -37,10 +38,12 @@ class Settings(BaseSettings):
     stripe_price_certified: str = ""
 
     # Lob Configuration
+    # TODO: CODE_REVIEW - Remove default secrets in production
     lob_api_key: str = "test_dummy"
     lob_mode: str = "test"
 
     # SendGrid Email Configuration
+    # TODO: CODE_REVIEW - Remove default secrets in production
     sendgrid_api_key: str = "change-me"
     service_email: str = "noreply@example.com"
     support_email: str = "support@example.com"
@@ -56,6 +59,7 @@ class Settings(BaseSettings):
     s3_bucket_name: Optional[str] = None
 
     # AI Services - DeepSeek
+    # TODO: CODE_REVIEW - Remove default secrets in production
     deepseek_api_key: str = "sk_dummy"
     deepseek_base_url: str = "https://api.deepseek.com"
     deepseek_model: str = "deepseek-chat"
@@ -65,6 +69,7 @@ class Settings(BaseSettings):
     api_url: str = "http://localhost:8000"
 
     # Security
+    # TODO: CODE_REVIEW - Remove default secret in production
     secret_key: str = "dev-secret-change-in-production"
 
     # Compliance Versioning
@@ -139,6 +144,7 @@ class Settings(BaseSettings):
                 )
             else:
                 # dev environment - just log warning
+                # TODO: CODE_REVIEW - Consider using logger.warning instead of print
                 print(
                     f"⚠️  Warning: {field_name} is using default value. Change this before production."
                 )

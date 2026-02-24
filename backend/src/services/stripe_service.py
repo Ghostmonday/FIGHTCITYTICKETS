@@ -388,6 +388,7 @@ class StripeService:
             return True
         except stripe.error.SignatureVerificationError:
             return False
+        # TODO: CODE_REVIEW - Bare except; could log the error for debugging
         except Exception:
             return False
 
@@ -404,6 +405,7 @@ class StripeService:
             return True
         except stripe.error.SignatureVerificationError:
             return False
+        # TODO: CODE_REVIEW - Bare except; could log the error for debugging
         except Exception:
             return False
 

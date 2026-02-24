@@ -41,6 +41,7 @@ export function loadBlogPosts(): BlogPost[] {
 
   // Only run on server side
   if (typeof window !== "undefined") {
+    // TODO: CODE_REVIEW - Consider using proper server-side logging
     console.warn("loadBlogPosts() can only be called on the server side");
     return [];
   }
@@ -58,6 +59,7 @@ export function loadBlogPosts(): BlogPost[] {
 
     // Check if file exists
     if (!fs.existsSync(csvPath)) {
+      // TODO: CODE_REVIEW - Consider using proper server-side logging
       console.warn(`Blog posts CSV not found at: ${csvPath}`);
       return [];
     }
@@ -75,6 +77,7 @@ export function loadBlogPosts(): BlogPost[] {
     );
     return blogPostsCache;
   } catch (error) {
+    // TODO: CODE_REVIEW - Consider using proper server-side logging
     console.error("Error loading blog posts:", error);
     return [];
   }
@@ -91,6 +94,7 @@ export function loadSearchPhrases(): SearchPhrase[] {
 
   // Only run on server side
   if (typeof window !== "undefined") {
+    // TODO: CODE_REVIEW - Consider using proper server-side logging
     console.warn("loadSearchPhrases() can only be called on the server side");
     return [];
   }
@@ -125,6 +129,7 @@ export function loadSearchPhrases(): SearchPhrase[] {
     );
     return searchPhrasesCache;
   } catch (error) {
+    // TODO: CODE_REVIEW - Consider using proper server-side logging
     console.error("Error loading search phrases:", error);
     return [];
   }

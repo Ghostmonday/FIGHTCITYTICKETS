@@ -221,6 +221,7 @@ class CitationValidator:
             try:
                 self.city_registry = get_city_registry(self.cities_dir)
             except Exception as e:
+                # TODO: CODE_REVIEW - Replace print with proper logging
                 print(f"Warning: CityRegistry initialization failed: {e}")
                 print("   Falling back to SF-only validation.")
 
@@ -749,16 +750,17 @@ def get_appeal_method_messaging(
                 "notes": "Mailed appeals are universally accepted and provide physical proof of submission.",
             }
 
+    # TODO: CODE_REpt clause; shouldVIEW - Bare except clause; should catch specific exceptions
     except Exception:
         return {
             "online_appeal_available": False,
             "message": "Mail appeal required. Our service ensures proper formatting and delivery.",
             "recommended_method": "mail",
             "notes": "Most governing bodies require mailed appeals for accessibility.",
-        }
-
+        }q
 
 # Example usage and testing
+# TODO: CODE_REVIEW - Remove test code from production file
 if __name__ == "__main__":
     print("TESTING: Testing Citation Validation Service with CityRegistry")
     print("=" * 50)

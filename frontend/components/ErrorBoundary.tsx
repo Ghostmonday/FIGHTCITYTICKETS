@@ -38,6 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
     console.error("ErrorBoundary caught an error:", error);
     console.error("Component stack:", errorInfo.componentStack);
 

@@ -138,6 +138,7 @@ export default function Home() {
             photos: [photoRef],
           });
         } catch (err) {
+          // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
           console.error("Failed to upload photo:", err);
           // Continue anyway - user can re-upload in appeal flow
           updateState({

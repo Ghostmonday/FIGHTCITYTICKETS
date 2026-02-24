@@ -177,6 +177,7 @@ async def metrics_middleware(request: Request, call_next):
     try:
         response = await call_next(request)
         return response
+    # TODO: CODE_REVIEW - Could catch specific exceptions instead of broad Exception
     except Exception:
         increment_error_count()
         raise

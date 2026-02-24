@@ -60,6 +60,7 @@ export default function ReviewPage() {
         updateState({ draftLetter: text });
       }
     } catch (e) {
+      // TODO: CODE_REVIEW - Use logger from lib/logger.ts instead of console.error
       console.error("Refinement failed:", e);
     } finally {
       setIsRefining(false);

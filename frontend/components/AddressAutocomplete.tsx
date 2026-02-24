@@ -6,17 +6,17 @@
  * Provides Google Places autocomplete for user address input.
  * Falls back to manual entry if API is unavailable or disabled.
  *
- * TODO: Implement cost tracking for Google Places API
+ * TODO: CODE_REVIEW - Implement cost tracking for Google Places API
  *       - Monitor request volume per session
  *       - Alert if usage exceeds budget
  *       - Consider Lob Address Verification as backup
  *
- * TODO: Add Lob address verification option
+ * TODO: CODE_REVIEW - Add Lob address verification option
  *       - When Google Places quota exceeded or disabled
  *       - Lob provides more accurate mailing address validation
  *       - Good for: "Verify with Lob" button alternative
  *
- * TODO: Implement address normalization
+ * TODO: CODE_REVIEW - Implement address normalization
  *       - Standardize abbreviations (St → Street)
  *       - Add ZIP+4 lookup for mail quality
  */

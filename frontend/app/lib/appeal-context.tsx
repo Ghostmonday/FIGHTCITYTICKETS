@@ -11,12 +11,12 @@
  * - Consider: Offload photos to S3/Blob storage for large appeals
  * - Consider: IndexedDB for larger local storage
  *
- * TODO: Implement S3 photo upload for large appeals
+ * TODO: CODE_REVIEW - Implement S3 photo upload for large appeals
  *       - sessionStorage has ~5MB limit
  *       - Photos quickly exceed this
  *       - Upload to S3, store reference in state
  *
- * TODO: Add multi-step progress saving
+ * TODO: CODE_REVIEW - Add multi-step progress saving
  *       - Save after each major step
  *       - Enable "continue where you left off" via email
  */

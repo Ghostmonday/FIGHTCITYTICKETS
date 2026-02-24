@@ -76,6 +76,7 @@ def _log_auth_failure(ip: str, reason: str) -> None:
         }
         with open(ADMIN_AUDIT_LOG, "a") as f:
             f.write(json.dumps(log_entry) + "\n")
+    # TODO: CODE_REVIEW - Silent failure for audit logging (intentional, but should log at debug level)
     except Exception:
         pass
 
