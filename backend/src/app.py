@@ -34,6 +34,7 @@ from .middleware.rate_limit import (
 from .routes.admin import router as admin_router
 from .routes.appeals import router as appeals_router
 from .routes.checkout import router as checkout_router
+from .routes.cities import router as cities_router
 from .routes.health import router as health_router
 from .routes.places import router as places_router
 from .routes.statement import router as statement_router
@@ -185,13 +186,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Note: This must be called after routers are included
 def _share_limiter():
     """Share limiter instance with route modules."""
-    from .routes import checkout, webhooks, admin, tickets, statement, status
+    from .routes import checkout, webhooks, admin, tickets, statement, status, cities
+
     checkout.limiter = limiter_instance
     webhooks.limiter = limiter_instance
     admin.limiter = limiter_instance
     tickets.limiter = limiter_instance
     statement.limiter = limiter_instance
     status.limiter = limiter_instance
+    cities.limiter = limiter_instance
 
 # Configure CORS
 app.add_middleware(
@@ -223,6 +226,7 @@ app.include_router(photos_router, prefix="/api", tags=["photos"])
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
 app.include_router(places_router, prefix="/places", tags=["places"])
+app.include_router(cities_router, prefix="/cities", tags=["cities"])
 # Appeal storage router for frontend persistence
 app.include_router(appeals_router, prefix="/api", tags=["appeals"])
 # Webhook router: nginx strips /api/, so mount at /webhook (not /api/webhook)
