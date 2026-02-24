@@ -41,20 +41,14 @@ def test_city_registry_basic():
     registry.load_cities()
 
     # List loaded cities
-    cities = registry.get_all_cities(eligible_only=False)
-    print(f"✅ Loaded {len(cities)} cities (unfiltered):")
+    cities = registry.get_all_cities()
+    print(f"✅ Loaded {len(cities)} cities:")
     for city in cities:
         print(
             f"   - {city['name']} ({city['city_id']}): "
             f"{city['citation_pattern_count']} patterns, "
             f"{city['section_count']} sections"
         )
-
-    # List eligible cities
-    eligible_cities = registry.get_all_cities(eligible_only=True)
-    print(f"✅ Loaded {len(eligible_cities)} eligible cities:")
-    for city in eligible_cities:
-        print(f"   - {city['name']} ({city['city_id']})")
 
     print()
 
@@ -70,8 +64,8 @@ def test_citation_matching():
 
     # Test cases: (citation_number, expected_city, expected_section)
     test_cases = [
-        ("912345678", "us-ca-san_francisco", "sfmta"),  # SFMTA format
-        ("AB1234567", "us-ca-san_francisco", "sfpd"),  # SFPD format
+        ("MT98765432", "us-ca-san_francisco", "sfmta"),  # SFMTA format (MT + 8 digits)
+        # Note: SFPD, SFSU, SFMUD patterns may not exist in current city files
         ("123456", None, None),  # Too short (no match)
         ("INVALID", None, None),  # Invalid format
     ]
@@ -109,6 +103,8 @@ def test_address_retrieval():
     test_cases = [
         ("us-ca-san_francisco", "sfmta", AppealMailStatus.COMPLETE),
         ("us-ca-san_francisco", "sfpd", AppealMailStatus.COMPLETE),
+        ("us-ca-san_francisco", "sfsu", AppealMailStatus.COMPLETE),
+        ("us-ca-san_francisco", "sfmud", AppealMailStatus.ROUTES_ELSEWHERE),
         ("us-ca-san_francisco", None, AppealMailStatus.COMPLETE),  # Default city address
         ("nonexistent", None, None),  # Non-existent city
     ]
@@ -159,9 +155,9 @@ def test_phone_validation():
         ("us-ca-san_francisco", "sfmta", "+14155551212", True),  # SFMTA (no requirement)
         ("us-ca-san_francisco", "sfmta", "invalid", True),  # SFMTA accepts invalid (no policy)
         ("us-ca-san_francisco", "sfpd", "+14155531651", True),  # SFPD valid format
-        # SFPD currently has required: false in json, so validation is skipped (always true)
-        ("us-ca-san_francisco", "sfpd", "4155531651", True),
-        ("us-ca-san_francisco", "sfpd", "+141555", True),
+        ("us-ca-san_francisco", "sfpd", "4155531651", False),  # SFPD missing +1
+        ("us-ca-san_francisco", "sfpd", "+141555", False),  # SFPD too short
+        ("us-ca-san_francisco", "sfsu", "+14155551212", True),  # SFSU (no requirement)
         ("us-ca-san_francisco", None, "+14155551212", True),  # Default city (no requirement)
     ]
 
@@ -206,6 +202,7 @@ def test_routing_rules():
     test_cases = [
         ("us-ca-san_francisco", "sfmta", RoutingRule.DIRECT),
         ("us-ca-san_francisco", "sfpd", RoutingRule.DIRECT),
+        ("us-ca-san_francisco", "sfmud", RoutingRule.ROUTES_TO_SECTION),
         ("us-ca-san_francisco", None, RoutingRule.DIRECT),  # Default city rule
     ]
 

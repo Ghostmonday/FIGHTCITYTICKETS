@@ -27,7 +27,6 @@ SCRIVENER DEFENSE:
   We transcribe user facts onto municipal forms - NO legal advice.
 
 TODO: Add Boston (us-ma-boston)
-TODO: Add eligibility filter to get_all_cities()
 TODO: Add is_eligible_for_appeals(city_id) method
 """
 
@@ -46,13 +45,8 @@ logger = logging.getLogger(__name__)
 # Cache TTL for city configs (1 hour)
 CITY_CONFIG_CACHE_TTL = 3600
 
-# Tier 1 Exclusion List (CA markets)
-TIER_1_EXCLUDED_CITIES = {
-    "us-ca-san_francisco",
-    "us-ca-los_angeles",
-    "s",  # Legacy SF ID
-    "la",  # Legacy LA ID
-}
+# High-risk cities to filter out (Tier 1 strategy)
+BLOCKED_CITIES = {"us-ca-san_francisco", "us-ca-los_angeles"}
 
 
 class AppealMailStatus(str, Enum):
@@ -798,16 +792,19 @@ class CityRegistry:
 
         return config.routing_rule
 
-    def get_all_cities(self, eligible_only: bool = True) -> List[Dict[str, Any]]:
+    def get_all_cities(self, eligible_only: bool = False) -> List[Dict[str, Any]]:
         """
         Get list of all loaded cities with basic info.
 
         Args:
-            eligible_only: If True, exclude cities not eligible for current strategy (e.g. Tier 1)
+            eligible_only: If True, filter out blocked/high-risk cities.
+
+        Returns:
+            List of city info dictionaries.
         """
         cities = []
         for city_id, config in self.city_configs.items():
-            if eligible_only and city_id in TIER_1_EXCLUDED_CITIES:
+            if eligible_only and city_id in BLOCKED_CITIES:
                 continue
 
             cities.append(

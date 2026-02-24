@@ -18,7 +18,6 @@ from .config import settings
 from .logging_config import setup_logging
 from .sentry_config import init_sentry
 from .middleware.request_id import RequestIDMiddleware, get_request_id
-from .middleware.security_headers import SecurityHeadersMiddleware
 from .middleware.errors import (
     APIError,
     ErrorCode,
@@ -161,9 +160,6 @@ app = FastAPI(
 # Request ID Middleware - adds unique ID to every request for tracking
 app.add_middleware(RequestIDMiddleware)
 
-# Security Headers Middleware - adds security headers to all responses
-app.add_middleware(SecurityHeadersMiddleware)
-
 # Metrics middleware - track request counts
 from .routes.health import increment_request_count, increment_error_count
 
@@ -190,7 +186,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Note: This must be called after routers are included
 def _share_limiter():
     """Share limiter instance with route modules."""
-    from .routes import checkout, webhooks, admin, tickets, statement, status, cities
+    from .routes import admin, checkout, cities, statement, status, tickets, webhooks
 
     checkout.limiter = limiter_instance
     webhooks.limiter = limiter_instance
@@ -223,7 +219,6 @@ app.add_middleware(
 # NOTE: Nginx strips /api/ prefix, so routes mounted at /api/* should be registered without /api/
 app.include_router(health_router, prefix="/health", tags=["health"])
 app.include_router(tickets_router, prefix="/tickets", tags=["tickets"])
-app.include_router(cities_router, prefix="/cities", tags=["cities"])
 app.include_router(statement_router, prefix="/statement", tags=["statement"])
 app.include_router(photos_router, prefix="/api", tags=["photos"])
 
@@ -231,6 +226,7 @@ app.include_router(photos_router, prefix="/api", tags=["photos"])
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
 app.include_router(places_router, prefix="/places", tags=["places"])
+app.include_router(cities_router, prefix="/api/cities", tags=["cities"])
 # Appeal storage router for frontend persistence
 app.include_router(appeals_router, prefix="/api", tags=["appeals"])
 # Webhook router: nginx strips /api/, so mount at /webhook (not /api/webhook)
@@ -363,15 +359,11 @@ async def not_found_handler(request: Request, exc):
     request_id = get_request_id(request)
     logger.warning(f"404 Not Found [request_id={request_id}]: {request.url.path}")
 
-    message = "The requested resource was not found"
-    if hasattr(exc, "detail"):
-        message = exc.detail
-
     return JSONResponse(
         status_code=404,
         content=error_response(
             error_code=ErrorCode.NOT_FOUND,
-            message=message,
+            message="The requested resource was not found",
             status_code=404,
             request=request,
             details={"path": request.url.path},

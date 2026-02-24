@@ -1,33 +1,27 @@
-"""
-Cities Configuration Routes
+"""City routes."""
 
-Provides access to available city configurations and eligibility status.
-"""
+from typing import Any, Dict, List, Optional
 
-import logging
-from typing import List, Dict, Any
-
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
 from ..services.city_registry import get_city_registry
 
-logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
+# Rate limiter - will be set from app.py after app initialization
+limiter: Optional[object] = None
 
-@router.get("")
-def list_cities(eligible: bool = Query(True, description="Filter by eligibility (e.g. Tier 1 strategy)")) -> List[Dict[str, Any]]:
+
+@router.get("", response_model=List[Dict[str, Any]])
+async def list_cities(
+    request: Request,
+    eligible: bool = Query(True, description="Filter by eligibility"),
+):
     """
     List available cities.
 
-    Args:
-        eligible: If True, returns only cities eligible for the current strategy.
-                 If False, returns all configured cities.
+    By default, returns only eligible cities (Tier 1 strategy).
+    Set eligible=False to see all configured cities.
     """
-    try:
-        registry = get_city_registry()
-        return registry.get_all_cities(eligible_only=eligible)
-    except Exception as e:
-        logger.error(f"Failed to list cities: {e}")
-        return []
+    registry = get_city_registry()
+    return registry.get_all_cities(eligible_only=eligible)
