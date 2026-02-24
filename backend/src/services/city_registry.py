@@ -790,18 +790,30 @@ class CityRegistry:
 
         return config.routing_rule
 
-    def get_all_cities(self) -> List[Dict[str, Any]]:
-        """Get list of all loaded cities with basic info."""
-        return [
-            {
+    def get_all_cities(self, eligible_only: bool = True) -> List[Dict[str, Any]]:
+        """
+        Get list of all loaded cities with basic info.
+
+        Args:
+            eligible_only: If True, exclude cities not in Tier 1 strategy (e.g. SF/LA)
+        """
+        # Cities excluded in Tier 1 strategy due to UPL risk
+        excluded_cities = {"us-ca-san_francisco", "us-ca-los_angeles", "s", "la"}
+
+        cities = []
+        for city_id, config in self.city_configs.items():
+            if eligible_only and city_id in excluded_cities:
+                continue
+
+            cities.append({
                 "city_id": city_id,
                 "name": config.name,
                 "jurisdiction": config.jurisdiction.value,
                 "citation_pattern_count": len(config.citation_patterns),
                 "section_count": len(config.sections),
-            }
-            for city_id, config in self.city_configs.items()
-        ]
+            })
+
+        return cities
 
     def validate_phone_for_city(
         self, city_id: str, phone_number: str, section_id: Optional[str] = None

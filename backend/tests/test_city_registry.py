@@ -33,7 +33,7 @@ def test_city_registry_basic():
     print("=" * 60)
 
     # Initialize registry with cities directory
-    cities_dir = Path(__file__).parent.parent.parent / "cities"
+    cities_dir = Path(__file__).parent.parent / "cities"
     registry = CityRegistry(cities_dir)
 
     # Load cities
@@ -58,7 +58,7 @@ def test_citation_matching():
     print("🔍 Testing Citation Matching")
     print("-" * 40)
 
-    cities_dir = Path(__file__).parent.parent.parent / "cities"
+    cities_dir = Path(__file__).parent.parent / "cities"
     registry = CityRegistry(cities_dir)
     registry.load_cities()
 
@@ -95,7 +95,7 @@ def test_address_retrieval():
     print("📫 Testing Address Retrieval")
     print("-" * 40)
 
-    cities_dir = Path(__file__).parent.parent.parent / "cities"
+    cities_dir = Path(__file__).parent.parent / "cities"
     registry = CityRegistry(cities_dir)
     registry.load_cities()
 
@@ -146,7 +146,7 @@ def test_phone_validation():
     print("📞 Testing Phone Validation")
     print("-" * 40)
 
-    cities_dir = Path(__file__).parent.parent.parent / "cities"
+    cities_dir = Path(__file__).parent.parent / "cities"
     registry = CityRegistry(cities_dir)
     registry.load_cities()
 
@@ -194,7 +194,7 @@ def test_routing_rules():
     print("🔄 Testing Routing Rules")
     print("-" * 40)
 
-    cities_dir = Path(__file__).parent.parent.parent / "cities"
+    cities_dir = Path(__file__).parent.parent / "cities"
     registry = CityRegistry(cities_dir)
     registry.load_cities()
 
@@ -324,7 +324,7 @@ def test_json_loading():
     print("📄 Testing JSON Configuration Loading")
     print("-" * 40)
 
-    cities_dir = Path(__file__).parent.parent.parent / "cities"
+    cities_dir = Path(__file__).parent.parent / "cities"
     sf_json_path = cities_dir / "us-ca-san_francisco.json"
 
     if not sf_json_path.exists():

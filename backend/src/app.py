@@ -35,6 +35,7 @@ from .middleware.rate_limit import (
 from .routes.admin import router as admin_router
 from .routes.appeals import router as appeals_router
 from .routes.checkout import router as checkout_router
+from .routes.cities import router as cities_router
 from .routes.health import router as health_router
 from .routes.places import router as places_router
 from .routes.statement import router as statement_router
@@ -226,6 +227,7 @@ app.include_router(photos_router, prefix="/api", tags=["photos"])
 
 # Updated routes with database-first approach
 app.include_router(checkout_router, prefix="/checkout", tags=["checkout"])
+app.include_router(cities_router, prefix="/cities", tags=["cities"])
 app.include_router(places_router, prefix="/places", tags=["places"])
 # Appeal storage router for frontend persistence
 app.include_router(appeals_router, prefix="/api", tags=["appeals"])
