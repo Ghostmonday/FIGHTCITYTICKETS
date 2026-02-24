@@ -18,6 +18,7 @@ from .config import settings
 from .logging_config import setup_logging
 from .sentry_config import init_sentry
 from .middleware.request_id import RequestIDMiddleware, get_request_id
+from .middleware.security_headers import SecurityHeadersMiddleware
 from .middleware.errors import (
     APIError,
     ErrorCode,
@@ -157,6 +158,9 @@ app = FastAPI(
 
 # Request ID Middleware - adds unique ID to every request for tracking
 app.add_middleware(RequestIDMiddleware)
+
+# Security Headers Middleware - adds security headers to all responses
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Metrics middleware - track request counts
 from .routes.health import increment_request_count, increment_error_count
