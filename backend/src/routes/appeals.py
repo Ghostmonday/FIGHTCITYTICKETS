@@ -120,7 +120,7 @@ class AppealResponse(BaseModel):
 
 
 @router.put("/appeals/{intake_id}")
-async def update_appeal(
+def update_appeal(
     intake_id: int,
     data: AppealUpdateRequest,
     _auth: None = Depends(verify_appeal_token),
