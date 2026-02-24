@@ -23,7 +23,7 @@ import re
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 import httpx
 
@@ -238,9 +238,9 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.post(
-                    "{self.base_url}/v1/chat/completions",
+                    f"{self.base_url}/v1/chat/completions",
                     headers={
-                        "Authorization": "Bearer {self.api_key}",
+                        "Authorization": f"Bearer {self.api_key}",
                         "Content-Type": "application/json",
                     },
                     json={
@@ -263,7 +263,7 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
             return extracted.strip()
 
         except Exception as e:
-            logger.error("Error extracting address with DeepSeek: {e}")
+            logger.error(f"Error extracting address with DeepSeek: {e}")
             return None
 
     async def _scrape_url(self, url: str) -> Optional[str]:
@@ -289,7 +289,7 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                 return response.text
 
         except Exception as e:
-            logger.error("Error scraping URL {url}: {e}")
+            logger.error(f"Error scraping URL {url}: {e}")
             return None
 
     def _get_stored_address_string(self, city_id: str, section_id: Optional[str] = None) -> Optional[str]:
@@ -336,15 +336,21 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
         # Exact match after normalization
         return normalized_stored == normalized_scraped
 
-    def _update_city_json(self, city_id: str, new_address: str, section_id: Optional[str] = None) -> bool:
+    def update_city_address(self, city_id: str, new_address: Union[str, Dict[str, Any]], section_id: Optional[str] = None) -> bool:
         """
         Update the city JSON file with the new address.
 
-        Returns True if update was successful, False otherwise.
+        Args:
+            city_id: City identifier
+            new_address: New address string (will be parsed) or dictionary of components
+            section_id: Optional section identifier
+
+        Returns:
+            True if update was successful, False otherwise.
         """
         try:
             # Find the JSON file for this city
-            json_files = list(self.cities_dir.glob("{city_id}.json"))
+            json_files = list(self.cities_dir.glob(f"{city_id}.json"))
             if not json_files:
                 # Try alternative naming
                 city_name_map = {
@@ -367,7 +373,7 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                     json_files = list(self.cities_dir.glob(alt_name))
 
             if not json_files:
-                logger.error("Could not find JSON file for city_id: {city_id}")
+                logger.error(f"Could not find JSON file for city_id: {city_id}")
                 return False
 
             json_file = json_files[0]
@@ -376,9 +382,17 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
             with open(json_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
 
-            # Parse the new address to extract components
-            # This is a simplified parser - in production you might want more robust parsing
-            address_parts = self._parse_address_string(new_address)
+            # Determine address components
+            if isinstance(new_address, dict):
+                address_parts = new_address
+            else:
+                # Parse the new address to extract components
+                # This is a simplified parser - in production you might want more robust parsing
+                address_parts = self._parse_address_string(new_address)
+
+            # Helper to safely get value from parts or empty string
+            def get_part(key: str) -> str:
+                return str(address_parts.get(key, "")).strip()
 
             # Update the address in the JSON structure
             if section_id and section_id in data.get("sections", {}):
@@ -387,13 +401,13 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                 if "appeal_mail_address" in section:
                     section["appeal_mail_address"].update({
                         "status": "complete",
-                        "department": address_parts.get("department", ""),
-                        "attention": address_parts.get("attention", ""),
-                        "address1": address_parts.get("address1", ""),
-                        "address2": address_parts.get("address2", ""),
-                        "city": address_parts.get("city", ""),
-                        "state": address_parts.get("state", ""),
-                        "zip": address_parts.get("zip", ""),
+                        "department": get_part("department"),
+                        "attention": get_part("attention"),
+                        "address1": get_part("address1"),
+                        "address2": get_part("address2"),
+                        "city": get_part("city"),
+                        "state": get_part("state"),
+                        "zip": get_part("zip"),
                         "country": address_parts.get("country", "US"),
                     })
             else:
@@ -401,13 +415,13 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                 if "appeal_mail_address" in data:
                     data["appeal_mail_address"].update({
                         "status": "complete",
-                        "department": address_parts.get("department", ""),
-                        "attention": address_parts.get("attention", ""),
-                        "address1": address_parts.get("address1", ""),
-                        "address2": address_parts.get("address2", ""),
-                        "city": address_parts.get("city", ""),
-                        "state": address_parts.get("state", ""),
-                        "zip": address_parts.get("zip", ""),
+                        "department": get_part("department"),
+                        "attention": get_part("attention"),
+                        "address1": get_part("address1"),
+                        "address2": get_part("address2"),
+                        "city": get_part("city"),
+                        "state": get_part("state"),
+                        "zip": get_part("zip"),
                         "country": address_parts.get("country", "US"),
                     })
 
@@ -415,7 +429,7 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
             with open(json_file, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
 
-            logger.info("Updated address in {json_file} for city_id: {city_id}")
+            logger.info(f"Updated address in {json_file} for city_id: {city_id}")
 
             # Reload the city registry to pick up changes
             self.city_registry.load_cities()
@@ -423,7 +437,7 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
             return True
 
         except Exception as e:
-            logger.error("Error updating city JSON for {city_id}: {e}")
+            logger.error(f"Error updating city JSON for {city_id}: {e}")
             return False
 
     def _parse_address_string(self, address: str) -> Dict[str, str]:
@@ -502,7 +516,7 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
             return AddressValidationResult(
                 is_valid=False,
                 city_id=city_id,
-                error_message="No URL mapping found for city_id: {city_id}"
+                error_message=f"No URL mapping found for city_id: {city_id}"
             )
 
         url = CITY_URL_MAPPING[city_id]
@@ -512,7 +526,7 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
             return AddressValidationResult(
                 is_valid=False,
                 city_id=city_id,
-                error_message="No stored address found for city_id: {city_id}"
+                error_message=f"No stored address found for city_id: {city_id}"
             )
 
         # Check cache first - only scrape once per unique appeal office per day
@@ -527,7 +541,7 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
                     is_valid=False,
                     city_id=city_id,
                     stored_address=stored_address,
-                    error_message="Failed to scrape URL: {url}"
+                    error_message=f"Failed to scrape URL: {url}"
                 )
             # Store in cache for future requests today
             self._set_cached_scrape(city_id, scraped_text)
@@ -555,10 +569,10 @@ Return ONLY the mailing address as it appears on the page, or "NOT_FOUND" if no 
 
         # Addresses don't match - update the database
         logger.warning(
-            "Address mismatch for {city_id}: stored='{stored_address}', scraped='{scraped_address}'"
+            f"Address mismatch for {city_id}: stored='{stored_address}', scraped='{scraped_address}'"
         )
 
-        update_success = self._update_city_json(city_id, scraped_address, section_id)
+        update_success = self.update_city_address(city_id, scraped_address, section_id)
 
         return AddressValidationResult(
             is_valid=False,

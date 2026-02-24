@@ -9,10 +9,10 @@ import hashlib
 import json
 import logging
 import os
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import func
@@ -20,6 +20,7 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from ..models import Draft, Intake, Payment, PaymentStatus
 from ..services.database import get_db_service
+from ..services.address_validator import get_address_validator
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -181,6 +182,30 @@ class IntakeDetail(BaseModel):
 
 class LogResponse(BaseModel):
     logs: str
+
+
+class AddressComponents(BaseModel):
+    department: Optional[str] = ""
+    attention: Optional[str] = ""
+    address1: str
+    address2: Optional[str] = ""
+    city: str
+    state: str
+    zip: str
+    country: str = "US"
+
+
+class UpdateAddressRequest(BaseModel):
+    city_id: str
+    address_string: Optional[str] = None
+    address_components: Optional[AddressComponents] = None
+    section_id: Optional[str] = None
+
+    @model_validator(mode='after')
+    def check_one_present(self):
+        if not self.address_string and not self.address_components:
+            raise ValueError('Either address_string or address_components must be provided')
+        return self
 
 
 # Endpoints
@@ -412,3 +437,40 @@ def get_server_logs(
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return LogResponse(logs=f"Error reading log file: {str(e)}")
+
+
+@router.post("/address/update")
+@limiter.limit("5/minute")
+def update_city_address(
+    request: Request,
+    payload: UpdateAddressRequest,
+    admin_secret: str = Depends(verify_admin_secret)
+):
+    """
+    Manually update a city's appeal mailing address.
+    """
+    logger.info(f"Admin action: update_city_address (city_id={payload.city_id})")
+    log_admin_action("update_city_address", admin_secret, request, payload.dict())
+
+    validator = get_address_validator()
+
+    # Determine input for validator
+    new_address = None
+    if payload.address_components:
+        new_address = payload.address_components.dict()
+    else:
+        new_address = payload.address_string
+
+    success = validator.update_city_address(
+        city_id=payload.city_id,
+        new_address=new_address,
+        section_id=payload.section_id
+    )
+
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to update address for city {payload.city_id}"
+        )
+
+    return {"status": "success", "message": f"Address updated for {payload.city_id}"}
