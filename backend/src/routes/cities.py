@@ -37,7 +37,7 @@ def get_registry() -> CityRegistry:
 async def get_cities(
     request: Request,
     eligible: bool = Query(
-        False,
+        True,
         description="Filter only eligible cities (no POA required, no corporate block)",
     ),
 ) -> List[Dict[str, Any]]:
