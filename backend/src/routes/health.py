@@ -11,6 +11,7 @@ from typing import Any, Optional
 import httpx
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
+from sqlalchemy import func
 
 from ..config import settings
 from ..middleware.resilience import CircuitBreaker
@@ -320,15 +321,18 @@ _START_TIME = time.time()
 
 
 def _get_business_metrics_sync() -> dict:
-    """Fetch business metrics synchronously."""
+    """
+    Get business metrics synchronously.
+    Designed to be run in a separate thread.
+    """
+    business_metrics = {}
     try:
+        from ..models import Intake, Payment, PaymentStatus
         from ..services.database import get_db_service
+
         db = get_db_service()
         if db.health_check():
             with db.get_session() as session:
-                from sqlalchemy import func
-                from ..models import Intake, Payment, PaymentStatus
-
                 total_intakes = session.query(func.count(Intake.id)).scalar() or 0
                 total_payments = session.query(func.count(Payment.id)).scalar() or 0
                 successful_payments = (
@@ -337,14 +341,15 @@ def _get_business_metrics_sync() -> dict:
                     .scalar()
                     or 0
                 )
-                return {
+                business_metrics = {
                     "total_intakes": total_intakes,
                     "total_payments": total_payments,
                     "successful_payments": successful_payments,
                 }
     except Exception as e:
         logger.warning(f"Could not fetch business metrics: {e}")
-    return {}
+
+    return business_metrics
 
 
 @router.get("/metrics")
@@ -363,13 +368,8 @@ async def metrics():
     # Calculate uptime
     uptime_seconds = time.time() - _START_TIME
 
-    # Get business metrics from database if available
-    # Run in thread pool to avoid blocking the event loop
-    try:
-        business_metrics = await asyncio.to_thread(_get_business_metrics_sync)
-    except Exception as e:
-        logger.warning(f"Could not fetch business metrics: {e}")
-        business_metrics = {}
+    # Get business metrics from database if available (run in thread pool)
+    business_metrics = await asyncio.to_thread(_get_business_metrics_sync)
 
     # Return Prometheus-format metrics
     return {
