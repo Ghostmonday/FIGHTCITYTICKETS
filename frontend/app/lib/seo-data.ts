@@ -10,7 +10,7 @@
 import fs from "fs";
 import path from "path";
 import { parse } from "csv-parse/sync";
-import { warn as logWarn, error as logError } from "../../lib/logger";
+import { warn as logWarn, error as logError } from "@/lib/logger";
 
 export interface BlogPost {
   title: string;

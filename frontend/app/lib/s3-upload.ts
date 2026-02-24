@@ -1,5 +1,5 @@
 import { apiClient } from "./api-client";
-import { warn as logWarn } from "../../lib/logger";
+import { warn as logWarn } from "@/lib/logger";
 
 interface PresignedUrlResponse {
   upload_url: string;

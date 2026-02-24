@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useAppeal } from "./lib/appeal-context";
 import { apiClient } from "./lib/api-client";
 import { uploadPhoto } from "./lib/s3-upload";
-import { error as logError } from "../lib/logger";
+import { error as logError } from "@/lib/logger";
 import LegalDisclaimer from "../components/LegalDisclaimer";
 
 // Force dynamic rendering

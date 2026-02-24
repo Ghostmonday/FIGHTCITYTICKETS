@@ -2,7 +2,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import Link from "next/link";
-import { error as logError } from "../lib/logger";
+import { error as logError } from "@/lib/logger";
 
 interface Props {
   children: ReactNode;

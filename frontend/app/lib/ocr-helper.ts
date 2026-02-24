@@ -6,7 +6,7 @@
  */
 
 import { createWorker, Worker } from "tesseract.js";
-import { debug as logDebug, error as logError } from "../../lib/logger";
+import { debug as logDebug, error as logError } from "@/lib/logger";
 
 // Citation number patterns by city
 const CITATION_PATTERNS: RegExp[] = [

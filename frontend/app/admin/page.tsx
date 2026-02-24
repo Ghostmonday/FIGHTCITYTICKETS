@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { error as logError } from "../../lib/logger";
+import { error as logError } from "@/lib/logger";
 
 const API_URL = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 

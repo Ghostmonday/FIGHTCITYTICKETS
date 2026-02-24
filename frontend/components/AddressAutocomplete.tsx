@@ -22,7 +22,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { error as logError } from "../lib/logger";
+import { error as logError } from "@/lib/logger";
 
 // Type declaration for Google Maps API
 declare global {

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppeal } from "../../lib/appeal-context";
 import Link from "next/link";
 import LegalDisclaimer from "../../../components/LegalDisclaimer";
-import { error as logError } from "../../../lib/logger";
+import { error as logError } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 

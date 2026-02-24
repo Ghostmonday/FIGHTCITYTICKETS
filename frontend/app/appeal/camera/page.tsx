@@ -7,7 +7,7 @@ import LegalDisclaimer from "../../../components/LegalDisclaimer";
 import { useAppeal } from "../../lib/appeal-context";
 import { extractTextFromImage } from "../../lib/ocr-helper";
 import { uploadPhoto } from "../../lib/s3-upload";
-import { error as logError } from "../../../lib/logger";
+import { error as logError } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 

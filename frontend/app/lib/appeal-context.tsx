@@ -29,7 +29,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { debug, info, error as logError } from "../../lib/logger";
+import { debug, info, error as logError } from "@/lib/logger";
 
 export interface UserInfo {
   name: string;
