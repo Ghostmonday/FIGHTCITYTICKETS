@@ -7,17 +7,15 @@ Includes in-memory idempotency cache to prevent duplicate processing.
 """
 
 import logging
-import os
-import secrets
 import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
+from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from ..config import settings
-from ..middleware.rate_limit import limiter
+from ..auth import verify_admin_secret
 from ..models import AppealType, PaymentStatus, WebhookEvent
 from ..services.database import get_db_service
 from ..services.email_service import get_email_service
@@ -29,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Admin authentication
-ADMIN_SECRET_HEADER = "X-Admin-Secret"
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 # Webhook idempotency cache
 # Format: {event_id: {processed: bool, timestamp: float, result: dict}}
@@ -153,32 +151,6 @@ def _cleanup_expired_entries() -> int:
     for key in expired_keys:
         del _WEBHOOK_CACHE[key]
     return len(expired_keys)
-
-
-def verify_admin_secret(
-    request: Request,
-    x_admin_secret: str = Header(...),
-) -> str:
-    """Verify admin secret for protected endpoints."""
-    admin_secret = os.getenv("ADMIN_SECRET")
-
-    if not admin_secret:
-        logger.error("ADMIN_SECRET environment variable not set")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Admin authentication not configured.",
-        )
-
-    if not secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
-        client_ip = get_remote_address(request)
-        logger.warning("Failed admin access attempt from IP: %s", client_ip)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid admin secret",
-        )
-
-    logger.info("Admin access granted")
-    return x_admin_secret
 
 
 async def handle_checkout_session_completed(session: dict[str, Any]) -> dict[str, Any]:

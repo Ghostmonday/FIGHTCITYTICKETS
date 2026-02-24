@@ -1,73 +1,84 @@
-
 import os
 import pytest
-from fastapi.testclient import TestClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, mock_open, MagicMock
+from fastapi import HTTPException, Request, status
 
-# Set environment variables before importing app
-os.environ["ADMIN_SECRET"] = "test-secret"
-os.environ["SECRET_KEY"] = "test-jwt-secret"
-
-from src.app import app
-from src.routes import admin
+# Import from src.auth
+from src.auth import verify_admin_secret, log_admin_action
 
 @pytest.fixture
-def client():
-    return TestClient(app)
+def mock_request():
+    request = MagicMock(spec=Request)
+    request.client.host = "1.2.3.4"
+    request.url.path = "/test"
+    request.method = "GET"
+    return request
 
-@pytest.fixture
-def mock_db_service():
-    with patch("src.routes.admin.get_db_service") as mock:
-        mock_instance = MagicMock()
-        mock_instance.health_check.return_value = True
-        mock.return_value = mock_instance
-        yield mock_instance
+class TestAdminAuth:
 
-def test_admin_login_success(client):
-    response = client.post("/admin/login", json={"secret": "test-secret"})
-    assert response.status_code == 200
-    assert "admin_session" in response.cookies
-    assert response.json()["message"] == "Login successful"
+    @patch("src.auth.os.getenv")
+    @patch("src.auth.secrets.compare_digest")
+    def test_verify_admin_secret_success(self, mock_compare, mock_getenv, mock_request):
+        mock_getenv.side_effect = lambda k, d=None: "correct-secret" if k == "ADMIN_SECRET" else d
+        mock_compare.return_value = True
 
-def test_admin_login_failure(client):
-    response = client.post("/admin/login", json={"secret": "wrong-secret"})
-    assert response.status_code == 401
+        result = verify_admin_secret(mock_request, "correct-secret")
+        assert result == "correct-secret"
+        mock_compare.assert_called()
 
-def test_admin_me_endpoint_with_cookie(client, mock_db_service):
-    # First login to get cookie
-    login_response = client.post("/admin/login", json={"secret": "test-secret"})
-    assert login_response.status_code == 200
-    cookie = login_response.cookies["admin_session"]
+    @patch("src.auth.os.getenv")
+    @patch("src.auth.secrets.compare_digest")
+    def test_verify_admin_secret_failure(self, mock_compare, mock_getenv, mock_request):
+        mock_getenv.side_effect = lambda k, d=None: "correct-secret" if k == "ADMIN_SECRET" else d
+        mock_compare.return_value = False
 
-    # Then access /me
-    response = client.get("/admin/me", cookies={"admin_session": cookie})
-    assert response.status_code == 200
-    assert response.json()["authenticated"] is True
+        with pytest.raises(HTTPException) as excinfo:
+            verify_admin_secret(mock_request, "wrong-secret")
 
-def test_admin_me_endpoint_without_cookie(client):
-    response = client.get("/admin/me")
-    # Should fail if no header and no cookie
-    assert response.status_code == 401 or response.status_code == 503
+        assert excinfo.value.status_code == 401
+        assert excinfo.value.detail == "Invalid admin secret"
 
-def test_admin_logout(client):
-    # Login
-    client.post("/admin/login", json={"secret": "test-secret"})
+    @patch("src.auth.os.getenv")
+    @patch("src.auth.secrets.compare_digest")
+    def test_verify_admin_secret_ip_allowed(self, mock_compare, mock_getenv, mock_request):
+        def getenv_side_effect(key, default=None):
+            if key == "ADMIN_SECRET":
+                return "correct-secret"
+            if key == "ADMIN_ALLOWED_IPS":
+                return "1.2.3.4,5.6.7.8"
+            return default
 
-    # Logout
-    response = client.post("/admin/logout")
-    assert response.status_code == 200
-    assert "admin_session" not in response.cookies or response.cookies["admin_session"] == ""
+        mock_getenv.side_effect = getenv_side_effect
+        mock_compare.return_value = True
+        mock_request.client.host = "1.2.3.4"
 
-def test_protected_route_with_cookie(client, mock_db_service):
-    # Login
-    login_res = client.post("/admin/login", json={"secret": "test-secret"})
-    cookie = login_res.cookies["admin_session"]
+        result = verify_admin_secret(mock_request, "correct-secret")
+        assert result == "correct-secret"
 
-    # Access protected route
-    response = client.get("/admin/stats", cookies={"admin_session": cookie})
-    assert response.status_code == 200
+    @patch("src.auth.os.getenv")
+    @patch("src.auth.secrets.compare_digest")
+    def test_verify_admin_secret_ip_forbidden(self, mock_compare, mock_getenv, mock_request):
+        def getenv_side_effect(key, default=None):
+            if key == "ADMIN_SECRET":
+                return "correct-secret"
+            if key == "ADMIN_ALLOWED_IPS":
+                return "5.6.7.8,9.10.11.12"
+            return default
 
-def test_protected_route_with_header_fallback(client, mock_db_service):
-    # Access with header (legacy)
-    response = client.get("/admin/stats", headers={"X-Admin-Secret": "test-secret"})
-    assert response.status_code == 200
+        mock_getenv.side_effect = getenv_side_effect
+        mock_compare.return_value = True
+        mock_request.client.host = "1.2.3.4"
+
+        with pytest.raises(HTTPException) as excinfo:
+            verify_admin_secret(mock_request, "correct-secret")
+
+        assert excinfo.value.status_code == 403
+        assert excinfo.value.detail == "IP not authorized for admin access"
+
+    @patch("builtins.open", new_callable=mock_open)
+    def test_log_admin_action(self, mock_file, mock_request):
+        log_admin_action("test_action", "secret", mock_request, {"foo": "bar"})
+
+        mock_file.assert_called_with("admin_audit.log", "a")
+        handle = mock_file()
+        handle.write.assert_called()
