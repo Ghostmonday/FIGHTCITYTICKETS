@@ -138,6 +138,7 @@ class AppealStorage:
             appeal_type=appeal_type,
             selected_photo_ids=selected_photo_ids,
             signature_data=signature_data,
+            created_at=datetime.now().isoformat(),
         )
 
         self._storage[storage_key] = appeal
