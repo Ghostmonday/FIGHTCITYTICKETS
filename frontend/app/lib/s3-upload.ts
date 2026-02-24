@@ -1,60 +1,95 @@
 import { apiClient } from "./api-client";
 
+interface PresignedUrlResponse {
+  upload_url: string;
+  key: string;
+  public_url: string;
+  photo_id: string;
+}
+
+interface UploadPhotoResult {
+  photo_id: string;
+  url: string;
+  is_s3: boolean;
+}
+
 /**
- * Uploads a photo to S3 if configured.
- *
- * @param file The file to upload
- * @param citationNumber Optional citation number for organization
- * @returns The public URL of the uploaded file, or null if S3 is not configured.
- * @throws Error if upload fails (network error, etc)
+ * Get a presigned URL for S3 upload
+ */
+export async function getPresignedUrl(
+  file: File,
+  citationNumber?: string
+): Promise<PresignedUrlResponse> {
+  return apiClient.post<PresignedUrlResponse>("/api/photos/presigned-url", {
+    filename: file.name,
+    content_type: file.type,
+    citation_number: citationNumber,
+  });
+}
+
+/**
+ * Upload a file to S3 using a presigned URL
+ */
+export async function uploadToS3(
+  file: File,
+  uploadUrl: string
+): Promise<void> {
+  const response = await fetch(uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: {
+      "Content-Type": file.type,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`S3 upload failed: ${response.statusText}`);
+  }
+}
+
+/**
+ * Upload a photo, attempting S3 first, then falling back to direct server upload
  */
 export async function uploadPhoto(
   file: File,
-  citationNumber?: string
-): Promise<string | null> {
+  citationNumber?: string,
+  cityId?: string
+): Promise<UploadPhotoResult> {
   try {
-    // 1. Try to get presigned URL
-    // This will throw 501 if S3 is not configured
-    const presigned = await apiClient.post<{
-      upload_url: string;
-      key: string;
-      public_url: string;
-      photo_id: string;
-    }>("/api/photos/presigned-url", {
-      filename: file.name,
-      content_type: file.type,
-      citation_number: citationNumber,
-    });
+    // Try to get S3 presigned URL
+    const presigned = await getPresignedUrl(file, citationNumber);
 
-    // 2. Upload to S3
-    // Use standard fetch to avoid custom headers from apiClient
-    const uploadResponse = await fetch(presigned.upload_url, {
-      method: "PUT",
-      body: file,
-      headers: {
-        "Content-Type": file.type,
-      },
-    });
+    // Upload to S3
+    await uploadToS3(file, presigned.upload_url);
 
-    if (!uploadResponse.ok) {
-      throw new Error(`S3 upload failed: ${uploadResponse.statusText}`);
-    }
-
-    return presigned.public_url;
+    return {
+      photo_id: presigned.photo_id,
+      url: presigned.public_url,
+      is_s3: true,
+    };
   } catch (error: any) {
-    // Check if S3 is not configured (501 Not Implemented)
-    // The apiClient throws an object that might have status property
-    if (error.status === 501 || error.message?.includes("not configured")) {
-      console.warn("S3 not configured, falling back to local storage");
-      return null;
-    }
+    // If S3 is not implemented (501) or not configured, fall back to legacy upload
+    // Also fall back if presigned URL generation fails
+    console.warn("S3 upload failed or not configured, falling back to direct upload:", error);
 
-    // Check for 400 (Bad Request) which might mean invalid file type
-    if (error.status === 400) {
-      throw new Error(error.message || "Invalid file");
-    }
+    // Legacy direct upload
+    const uploadData = await apiClient.upload<{
+      photo_id: string;
+      filename: string;
+      size: number;
+    }>(
+      "/api/photos/upload",
+      file,
+      {
+        citation_number: citationNumber || "",
+        city_id: cityId || "",
+      }
+    );
 
-    console.error("Photo upload failed:", error);
-    throw error;
+    return {
+      photo_id: uploadData.photo_id,
+      url: uploadData.photo_id, // Fallback: ID is used, but image won't load from URL
+      is_s3: false,
+    };
   }
 }

@@ -16,19 +16,6 @@ interface OcrResult {
   rawText: string;
 }
 
-// Helper to convert data URL to File
-function dataURLtoFile(dataurl: string, filename: string): File {
-  const arr = dataurl.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while(n--){
-      u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new File([u8arr], filename, {type:mime});
-}
-
 export default function CameraPage() {
   const router = useRouter();
   const { state, updateState } = useAppeal();
@@ -75,77 +62,91 @@ export default function CameraPage() {
     handlePhotoCapture(base64);
   };
 
-  const processAndUpload = async (file: File, base64Preview: string) => {
+  const base64ToFile = (base64: string, filename: string): File => {
+    const arr = base64.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
+  const handlePhotoCapture = async (base64: string) => {
     setIsProcessing(true);
     let ocrResult: OcrResult = { confidence: 0, rawText: "" };
 
     try {
-      // Start upload and OCR in parallel
-      // If S3 configured, upload returns URL. Else null.
-      const uploadPromise = uploadPhoto(file, state.citationNumber);
-      const ocrPromise = extractTextFromImage(base64Preview).catch(e => {
-         console.warn("OCR failed:", e);
-         return { confidence: 0, rawText: "" } as OcrResult;
-      });
+      // 1. Start upload
+      const file = base64ToFile(base64, `photo_${Date.now()}.jpg`);
+      const uploadPromise = uploadPhoto(file, state.citationNumber || undefined, state.cityId);
 
-      const [uploadedUrl, result] = await Promise.all([uploadPromise, ocrPromise]);
-      ocrResult = result;
+      // 2. Start OCR (parallel)
+      const ocrPromise = extractTextFromImage(base64);
 
-      // Use uploaded URL if available, else fallback to base64
-      const photoUrl = uploadedUrl || base64Preview;
+      // Wait for both
+      const [uploadResult, ocr] = await Promise.all([uploadPromise, ocrPromise]);
+      ocrResult = ocr;
 
-      // Use functional update to ensure we have latest state
-      setPhotos(prev => {
-        const newPhotos = [...prev, photoUrl];
-        updateState({ photos: newPhotos });
-        return newPhotos;
-      });
+      // 3. Update state with URL
+      // If S3 upload succeeded, use the URL. If fallback (local), use base64 for display so it works in dev
+      const photoUrl = uploadResult.is_s3 ? uploadResult.url : base64;
 
-      setOcrResults(prev => [...prev, ocrResult]);
+      const newPhotos = [...photos, photoUrl];
+      setPhotos(newPhotos);
+      setOcrResults([...ocrResults, ocrResult]);
+      updateState({ photos: newPhotos });
 
     } catch (error) {
       console.error("Processing failed:", error);
-      // Fallback: still add the photo locally if upload failed completely (which shouldn't happen with uploadPhoto catching)
-      // But uploadPhoto re-throws unexpected errors.
-      // If it failed, we probably don't want to add it?
-      // Or fallback to base64?
-      // Let's fallback to base64 if we have it.
-      setPhotos(prev => {
-        const newPhotos = [...prev, base64Preview];
-        updateState({ photos: newPhotos });
-        return newPhotos;
-      });
-      setOcrResults(prev => [...prev, { confidence: 0, rawText: "" }]);
+      alert("Failed to process photo. Please try again.");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handlePhotoCapture = async (base64: string) => {
-    const file = dataURLtoFile(base64, `camera_${Date.now()}.jpg`);
-    await processAndUpload(file, base64);
-  };
-
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
+    setIsProcessing(true);
 
-    // Process sequentially to maintain order and not overwhelm
+    const newPhotosList = [...photos];
+    const newOcrResultsList = [...ocrResults];
+
     for (const file of Array.from(files)) {
       try {
+        // Read for OCR
         const reader = new FileReader();
         const base64 = await new Promise<string>((resolve, reject) => {
           reader.onload = (event) => resolve(event.target?.result as string);
           reader.onerror = () => reject(new Error("Failed to read file"));
           reader.readAsDataURL(file);
         });
-        await processAndUpload(file, base64);
-      } catch (e) {
-        console.error("Error reading file:", e);
+
+        // Start upload
+        const uploadPromise = uploadPhoto(file, state.citationNumber || undefined, state.cityId);
+
+        // Start OCR
+        const ocrPromise = extractTextFromImage(base64);
+
+        const [uploadResult, ocrResult] = await Promise.all([uploadPromise, ocrPromise]);
+
+        const photoUrl = uploadResult.is_s3 ? uploadResult.url : base64;
+
+        newPhotosList.push(photoUrl);
+        newOcrResultsList.push(ocrResult);
+
+      } catch (error) {
+        console.error("File processing failed:", error);
       }
     }
-    // Reset input
-    e.target.value = "";
+
+    setPhotos(newPhotosList);
+    setOcrResults(newOcrResultsList);
+    updateState({ photos: newPhotosList });
+    setIsProcessing(false);
   };
 
   const removePhoto = (index: number) => {
@@ -251,41 +252,6 @@ export default function CameraPage() {
               )
             )}
             <p style={{ color: "#065F46", fontSize: "0.75rem", marginTop: "0.5rem" }}>Please verify the detected citation number.</p>
-          </div>
-        )}
-
-        {/* OCR Failed */}
-        {ocrResults.some((r: OcrResult, i: number) => !r.citationNumber && photos[i]) && (
-          <div className="p-4 rounded-lg mb-6 bg-red-50 border border-red-100">
-            <h3 className="font-semibold mb-2 text-red-800">Citation not detected</h3>
-            {ocrResults.map((result: OcrResult, i: number) =>
-              !result.citationNumber && photos[i] && (
-                <div key={i} className="flex flex-col gap-2 mt-2 p-3 rounded bg-white border border-red-200">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-red-800">Photo {i + 1}</span>
-                    <span className="text-xs text-red-700">Could not read citation number</span>
-                  </div>
-
-                  <div className="flex gap-2 mt-1">
-                    <button
-                      onClick={() => removePhoto(i)}
-                      className="text-sm px-3 py-1.5 rounded border border-red-500 text-red-700 bg-red-50 transition-colors hover:bg-red-100"
-                    >
-                      Retake Photo
-                    </button>
-                    <button
-                      onClick={() => setShowManualInput(true)}
-                      className="text-sm px-3 py-1.5 rounded border border-gray-300 text-gray-700 bg-gray-50 transition-colors hover:bg-gray-100"
-                    >
-                      Enter Manually
-                    </button>
-                  </div>
-                </div>
-              )
-            )}
-            <p className="text-xs text-red-800 mt-3">
-              Please ensure the photo is clear and the citation number is visible.
-            </p>
           </div>
         )}
 

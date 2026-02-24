@@ -1,107 +1,76 @@
 """
-Storage Service for S3 interactions.
-
-Handles generating presigned URLs for file uploads and retrievals.
+Storage Service for handling S3 uploads and file management.
 """
-
 import logging
-from typing import Any
-
 import boto3
 from botocore.exceptions import ClientError
-
+from typing import Optional, Dict, Any
 from ..config import settings
 
 logger = logging.getLogger(__name__)
 
-
 class StorageService:
-    """Service for managing S3 storage."""
-
     def __init__(self):
-        """Initialize Storage service with AWS credentials."""
         self.bucket_name = settings.s3_bucket_name
         self.region = settings.aws_region
 
-        # Check if S3 is configured
-        self.is_configured = bool(
-            settings.aws_access_key_id
-            and settings.aws_secret_access_key
-            and settings.s3_bucket_name
-            and settings.s3_bucket_name != "change-me"
-        )
-
-        if self.is_configured:
-            try:
-                self.s3_client = boto3.client(
-                    "s3",
-                    aws_access_key_id=settings.aws_access_key_id,
-                    aws_secret_access_key=settings.aws_secret_access_key,
-                    region_name=settings.aws_region,
-                )
-            except Exception:
-                logger.exception("Failed to initialize S3 client")
-                self.is_configured = False
-        else:
-            logger.warning(
-                "AWS S3 credentials not configured. Storage service disabled."
+        if settings.aws_access_key_id and settings.aws_secret_access_key:
+            self.s3_client = boto3.client(
+                's3',
+                aws_access_key_id=settings.aws_access_key_id,
+                aws_secret_access_key=settings.aws_secret_access_key,
+                region_name=self.region
             )
+            self.is_configured = True
+        else:
+            self.s3_client = None
+            self.is_configured = False
+            logger.warning("AWS S3 credentials not configured. S3 storage disabled.")
 
     def generate_presigned_url(
-        self, object_name: str, file_type: str, expiration: int = 3600
-    ) -> dict[str, Any] | None:
+        self,
+        object_name: str,
+        file_type: str,
+        expiration: int = 3600
+    ) -> Optional[Dict[str, Any]]:
         """
-        Generate a presigned URL to share an S3 object.
+        Generate a presigned URL to upload an S3 object.
 
-        Args:
-            object_name: The name of the key to use in S3
-            file_type: The content type of the file (e.g., 'image/jpeg')
-            expiration: Time in seconds for the presigned URL to remain valid
-
-        Returns:
-            Dictionary with upload URL and fields, or None if error/not configured.
-            Using generate_presigned_url for PUT requests.
+        :param object_name: string
+        :param file_type: string (MIME type)
+        :param expiration: Time in seconds for the presigned URL to remain valid
+        :return: Dictionary with upload_url and key, or None if error
         """
-        if not self.is_configured:
-            logger.warning(
-                "Storage service not configured, cannot generate presigned URL"
-            )
+        if not self.is_configured or not self.bucket_name:
+            logger.error("S3 not configured, cannot generate presigned URL")
             return None
 
         try:
-            # Generate a presigned URL for the S3 client to invoke an action
-            # on your behalf.
-            url = self.s3_client.generate_presigned_url(
-                ClientMethod="put_object",
+            # Generate a presigned URL for the S3 object
+            # For PUT uploads (simpler for single file upload from frontend)
+            response = self.s3_client.generate_presigned_url(
+                'put_object',
                 Params={
-                    "Bucket": self.bucket_name,
-                    "Key": object_name,
-                    "ContentType": file_type,
+                    'Bucket': self.bucket_name,
+                    'Key': object_name,
+                    'ContentType': file_type
                 },
-                ExpiresIn=expiration,
+                ExpiresIn=expiration
             )
 
-            # Return the URL and the key (for reference)
-            public_url = (
-                f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/"
-                f"{object_name}"
-            )
+            # For PUT, the response is just the string URL
             return {
-                "upload_url": url,
+                "upload_url": response,
                 "key": object_name,
-                "public_url": public_url,
+                # Note: public_url assumes public access or that we will generate a GET URL later
+                "public_url": f"https://{self.bucket_name}.s3.{self.region}.amazonaws.com/{object_name}"
             }
-        except ClientError:
-            logger.exception("Error generating presigned URL")
+        except ClientError as e:
+            logger.error(f"Error generating presigned URL: {e}")
             return None
-        except Exception:
-            logger.exception("Unexpected error in storage service")
-            return None
-
 
 # Global service instance
 _storage_service = None
-
 
 def get_storage_service() -> StorageService:
     """Get the global Storage service instance."""
