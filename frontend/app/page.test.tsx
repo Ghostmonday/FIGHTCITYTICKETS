@@ -43,10 +43,10 @@ describe("Homepage", () => {
       expect(screen.getByText(/What's the/i)).toBeInTheDocument();
     });
 
-    it("renders the subtitle about citation number", () => {
+    it("renders the subtitle", () => {
       render(<Home />);
       expect(
-        screen.getByText(/Found on your parking ticket or notice/i)
+        screen.getByText(/A parking citation is a procedural document/i)
       ).toBeInTheDocument();
     });
 
@@ -68,7 +68,7 @@ describe("Homepage", () => {
       render(<Home />);
 
       const submitButton = screen.getByRole("button", {
-        name: /Next →/i,
+        name: /Submit Appeal →/i,
       });
       fireEvent.click(submitButton);
 
@@ -82,7 +82,7 @@ describe("Homepage", () => {
 
       const citySelect = screen.getByRole("combobox");
       const submitButton = screen.getByRole("button", {
-        name: /Next →/i,
+        name: /Submit Appeal →/i,
       });
 
       // Button is disabled until city is selected
@@ -117,7 +117,7 @@ describe("Homepage", () => {
   describe("Legal Disclaimer", () => {
     it("renders the legal disclaimer component", () => {
       render(<Home />);
-      const disclaimers = screen.getAllByText(/Document preparation only/i);
+      const disclaimers = screen.getAllByText(/We aren't lawyers/i);
       expect(disclaimers.length).toBeGreaterThan(0);
     });
   });
