@@ -46,6 +46,9 @@ logger = logging.getLogger(__name__)
 # Cache TTL for city configs (1 hour)
 CITY_CONFIG_CACHE_TTL = 3600
 
+# Cache for CityRegistry instances
+_registry_cache: Dict[Path, "CityRegistry"] = {}
+
 
 class AppealMailStatus(str, Enum):
     """Status of appeal mail address."""
@@ -825,10 +828,23 @@ class CityRegistry:
 
 
 # Helper function for easy import
-def get_city_registry(cities_dir: Optional[Path] = None) -> CityRegistry:
+def get_city_registry(cities_dir: Optional[Union[str, Path]] = None) -> CityRegistry:
     """Get a configured CityRegistry instance."""
-    registry = CityRegistry(cities_dir)
+    if cities_dir is None:
+        target_path = Path(__file__).parent.parent.parent / "cities"
+    elif isinstance(cities_dir, str):
+        target_path = Path(cities_dir)
+    else:
+        target_path = cities_dir
+
+    resolved_path = target_path.resolve()
+
+    if resolved_path in _registry_cache:
+        return _registry_cache[resolved_path]
+
+    registry = CityRegistry(resolved_path)
     registry.load_cities()
+    _registry_cache[resolved_path] = registry
     return registry
 
 
