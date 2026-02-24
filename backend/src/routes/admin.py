@@ -5,19 +5,19 @@ Provides endpoints for monitoring server status, viewing logs, and accessing rec
 Protected by admin secret key header.
 """
 
-import hashlib
 import json
 import logging
 import os
-from typing import Any, List, Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload, selectinload
 
+from ..auth import log_admin_action, verify_admin_secret
 from ..models import Draft, Intake, Payment, PaymentStatus
 from ..services.database import get_db_service
 
@@ -26,116 +26,6 @@ logger = logging.getLogger(__name__)
 
 # Rate limiter - shared instance from app.py
 limiter = Limiter(key_func=get_remote_address)
-
-# Audit logging for admin actions
-ADMIN_AUDIT_LOG = "admin_audit.log"
-
-
-def log_admin_action(action: str, admin_id: str, request: Request, details: dict[str, Any] = None):
-    """
-    Log admin actions for security auditing.
-
-    Args:
-        action: The admin action being performed
-        admin_id: Identifier for the admin (secret or IP)
-        request: The original request
-        details: Additional details to log
-    """
-    from datetime import datetime
-
-    # Securely hash the admin_id so we don't log secrets
-    hashed_id = hashlib.sha256(admin_id.encode()).hexdigest()[:8]
-
-    log_entry = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "action": action,
-        "admin_id": f"admin-{hashed_id}",
-        "ip": request.client.host if request.client else "unknown",
-        "path": request.url.path,
-        "method": request.method,
-        "details": details or {},
-    }
-
-    try:
-        with open(ADMIN_AUDIT_LOG, "a") as f:
-            f.write(json.dumps(log_entry) + "\n")
-    except Exception as e:
-        logger.warning(f"Failed to write admin audit log: {e}")
-
-# Basic admin security (header check)
-ADMIN_SECRET_HEADER = "X-Admin-Secret"
-
-
-def verify_admin_secret(request: Request, x_admin_secret: str = Header(...)):
-    """
-    Verify the admin secret header and optionally check IP allowlist.
-    Requires explicit ADMIN_SECRET environment variable.
-    
-    Also logs all admin access attempts for security auditing.
-    
-    Security enhancements:
-    - Timing-safe secret comparison
-    - Optional IP allowlist (ADMIN_ALLOWED_IPS env var)
-    - Failed attempt logging
-    """
-    admin_secret = os.getenv("ADMIN_SECRET")
-
-    if not admin_secret:
-        logger.error(
-            "ADMIN_SECRET environment variable not set - admin routes disabled"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Admin authentication not configured. Set ADMIN_SECRET environment variable.",
-        )
-
-    import secrets
-    if not secrets.compare_digest(x_admin_secret.encode(), admin_secret.encode()):
-        client_ip = request.client.host if request else os.getenv('REMOTE_ADDR', 'unknown')
-        logger.warning(
-            f"Failed admin access attempt - Invalid admin secret provided. "
-            f"IP: {client_ip}"
-        )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid admin secret",
-        )
-    
-    # IP allowlist check (comma-separated IPs in ADMIN_ALLOWED_IPS env var)
-    allowed_ips = os.getenv("ADMIN_ALLOWED_IPS", "").strip()
-    if allowed_ips:
-        client_ip = request.client.host if request else None
-        if client_ip and client_ip not in allowed_ips.split(","):
-            logger.warning(
-                f"Failed admin access attempt - IP not in allowlist. "
-                f"IP: {client_ip}, Allowed: {allowed_ips}"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="IP not authorized for admin access",
-            )
-    
-    return x_admin_secret
-        # Log failed attempt
-        try:
-            with open(ADMIN_AUDIT_LOG, "a") as f:
-                from datetime import datetime
-                f.write(json.dumps({
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
-                    "action": "auth_failure",
-                    "ip": client_ip,
-                    "status": "failed",
-                }) + "\n")
-        except Exception:
-            pass
-
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid admin secret",
-        )
-
-    logger.info(f"Admin access granted - IP: {os.getenv('REMOTE_ADDR', 'unknown')}")
-    return x_admin_secret
 
 
 # Response Models
