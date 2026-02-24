@@ -119,7 +119,6 @@ def _set_cached_citation(citation_number: str, result: Dict[str, Any]) -> None:
     logger.debug(f"Cached in memory: {citation_number}")
 
 try:
-    # Strategy 1: Relative import (works when module is imported)
     from .city_registry import (  # noqa: F401
         AppealMailAddress,  # noqa: F401
         AppealMailStatus,  # noqa: F401
@@ -130,28 +129,7 @@ try:
 
     CITY_REGISTRY_AVAILABLE = True
 except ImportError:
-    try:
-        # Strategy 2: Absolute import from src.services (works in script mode)
-        import sys
-        from pathlib import Path
-
-        # Add parent directory to path
-        src_dir = Path(__file__).parent.parent
-        if str(src_dir) not in sys.path:
-            sys.path.insert(0, str(src_dir))
-        from services.city_registry import (  # noqa: F401
-            AppealMailAddress,  # noqa: F401
-            AppealMailStatus,  # noqa: F401
-            CityRegistry,  # noqa: F401
-            PhoneConfirmationPolicy,  # noqa: F401
-            get_city_registry,
-        )
-
-        CITY_REGISTRY_AVAILABLE = True
-    except ImportError:
-        # Strategy 3: Use stubs (fallback)
-        CITY_REGISTRY_AVAILABLE = False
-        # Stubs already defined above
+    CITY_REGISTRY_AVAILABLE = False
 
 
 class CitationAgency(Enum):
