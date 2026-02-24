@@ -254,6 +254,41 @@ export default function CameraPage() {
           </div>
         )}
 
+        {/* OCR Failed */}
+        {ocrResults.some((r: OcrResult, i: number) => !r.citationNumber && photos[i]) && (
+          <div className="p-4 rounded-lg mb-6 bg-red-50 border border-red-100">
+            <h3 className="font-semibold mb-2 text-red-800">Citation not detected</h3>
+            {ocrResults.map((result: OcrResult, i: number) =>
+              !result.citationNumber && photos[i] && (
+                <div key={i} className="flex flex-col gap-2 mt-2 p-3 rounded bg-white border border-red-200">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-red-800">Photo {i + 1}</span>
+                    <span className="text-xs text-red-700">Could not read citation number</span>
+                  </div>
+
+                  <div className="flex gap-2 mt-1">
+                    <button
+                      onClick={() => removePhoto(i)}
+                      className="text-sm px-3 py-1.5 rounded border border-red-500 text-red-700 bg-red-50 transition-colors hover:bg-red-100"
+                    >
+                      Retake Photo
+                    </button>
+                    <button
+                      onClick={() => setShowManualInput(true)}
+                      className="text-sm px-3 py-1.5 rounded border border-gray-300 text-gray-700 bg-gray-50 transition-colors hover:bg-gray-100"
+                    >
+                      Enter Manually
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+            <p className="text-xs text-red-800 mt-3">
+              Please ensure the photo is clear and the citation number is visible.
+            </p>
+          </div>
+        )}
+
         {/* Photo Preview */}
         {photos.length > 0 && (
           <div className="card-step p-6 mb-6">
