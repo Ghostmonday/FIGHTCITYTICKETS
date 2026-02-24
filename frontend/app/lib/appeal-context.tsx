@@ -62,6 +62,7 @@ export interface AppealState {
   intakeId?: number;
   draftId?: number;
   lastSaved?: string;
+  token?: string;
   // Optional features
   telemetryEnabled?: boolean;
 }
@@ -71,7 +72,9 @@ interface AppealContextType {
   updateState: (updates: Partial<AppealState>) => void;
   resetState: () => void;
   saveToDatabase: () => Promise<boolean>;
-  loadFromDatabase: (intakeId: number) => Promise<boolean>;
+  loadFromDatabase: (intakeId: number, token?: string) => Promise<boolean>;
+  createInDatabase: () => Promise<boolean>;
+  sendResumeLink: (email: string) => Promise<boolean>;
   markForPersistence: () => void;
 }
 
@@ -104,6 +107,7 @@ const defaultState: AppealState = {
   intakeId: undefined,
   draftId: undefined,
   lastSaved: undefined,
+  token: undefined,
   telemetryEnabled: undefined,
 };
 
@@ -134,6 +138,7 @@ export function AppealProvider({ children }: { children: ReactNode }) {
           sectionId: parsed.sectionId || prev.sectionId,
           intakeId: parsed.intakeId || prev.intakeId,
           draftId: parsed.draftId || prev.draftId,
+          token: parsed.token || prev.token,
           // Don't restore userInfo, photos, signature, or other PII from storage
         }));
       }
@@ -159,6 +164,7 @@ export function AppealProvider({ children }: { children: ReactNode }) {
           sectionId: state.sectionId,
           intakeId: state.intakeId,
           draftId: state.draftId,
+          token: state.token,
           // Explicitly exclude: userInfo, photos, signature, draftLetter, transcript
         };
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(safeState));
@@ -187,14 +193,19 @@ export function AppealProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      if (state.token) {
+        headers["X-Appeal-Token"] = state.token;
+      }
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || ""}/api/appeals/${state.intakeId
-        }`,
+        `${process.env.NEXT_PUBLIC_API_BASE || ""}/api/appeals/${state.intakeId}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers,
           body: JSON.stringify({
             citation_number: state.citationNumber,
             violation_date: state.violationDate,
@@ -231,14 +242,85 @@ export function AppealProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
+  const createInDatabase = useCallback(async (): Promise<boolean> => {
+    if (state.intakeId) return true;
+
+    // Need at least citation number to create
+    if (!state.citationNumber) return false;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE || ""}/api/appeals`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            citation_number: state.citationNumber,
+            violation_date: state.violationDate,
+            vehicle_info: state.vehicleInfo,
+            license_plate: state.licensePlate,
+            city: state.cityId,
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const timestamp = new Date().toISOString();
+        setState((prev) => ({
+          ...prev,
+          intakeId: data.intake_id,
+          token: data.token,
+          lastSaved: timestamp
+        }));
+        info(`Created appeal in database: ${data.intake_id}`);
+        return true;
+      } else {
+        logError("Failed to create appeal:", response.statusText);
+        return false;
+      }
+    } catch (error) {
+      logError("Error creating appeal:", error);
+      return false;
+    }
+  }, [state.citationNumber, state.violationDate, state.vehicleInfo, state.licensePlate, state.cityId, state.intakeId]);
+
+  const sendResumeLink = useCallback(async (email: string): Promise<boolean> => {
+    if (!state.intakeId || !state.token) return false;
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE || ""}/api/appeals/${state.intakeId}/send-link`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Appeal-Token": state.token,
+          },
+          body: JSON.stringify({ email }),
+        }
+      );
+
+      return response.ok;
+    } catch (error) {
+      logError("Error sending resume link:", error);
+      return false;
+    }
+  }, [state.intakeId, state.token]);
+
   // Auto-save to database when needed
-  // NOTE: saveToDatabase uses useCallback with proper dependencies, so we include it here
   useEffect(() => {
-    if (needsDatabaseSync && state.intakeId && isInitialized) {
-      saveToDatabase();
+    if (needsDatabaseSync && isInitialized) {
+      if (state.intakeId) {
+        saveToDatabase();
+      } else if (state.citationNumber) {
+        createInDatabase();
+      }
       setNeedsDatabaseSync(false);
     }
-  }, [needsDatabaseSync, state.intakeId, isInitialized, saveToDatabase]);
+  }, [needsDatabaseSync, state.intakeId, state.citationNumber, isInitialized, saveToDatabase, createInDatabase]);
 
   const updateState = useCallback((updates: Partial<AppealState>) => {
     setState((prev) => {
@@ -259,10 +341,16 @@ export function AppealProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadFromDatabase = useCallback(
-    async (intakeId: number): Promise<boolean> => {
+    async (intakeId: number, token?: string): Promise<boolean> => {
       try {
+        const headers: Record<string, string> = {};
+        if (token) {
+          headers["X-Appeal-Token"] = token;
+        }
+
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE || ""}/api/appeals/${intakeId}`
+          `${process.env.NEXT_PUBLIC_API_BASE || ""}/api/appeals/${intakeId}`,
+          { headers }
         );
 
         if (response.ok) {
@@ -271,6 +359,7 @@ export function AppealProvider({ children }: { children: ReactNode }) {
           // Map database fields to state
           const newState: Partial<AppealState> = {
             intakeId: data.id,
+            token: token,
             citationNumber: data.citation_number,
             violationDate: data.violation_date || "",
             vehicleInfo: data.vehicle_info || "",
@@ -321,6 +410,8 @@ export function AppealProvider({ children }: { children: ReactNode }) {
         resetState,
         saveToDatabase,
         loadFromDatabase,
+        createInDatabase,
+        sendResumeLink,
         markForPersistence,
       }}
     >

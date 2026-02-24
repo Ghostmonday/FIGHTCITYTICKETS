@@ -90,14 +90,16 @@ Questions? Reply to this email or contact {support_email}
 Legal Disclosure: We are not lawyers. We've helped you fulfill the procedural requirements of your appeal.
 """,
     },
-    "email_verification": {
-        "subject": "Verify your email for Fight City Tickets",
-        "body": """Please verify your email address.
+    "save_progress": {
+        "subject": "Resume Your Appeal - Citation {citation_number}",
+        "body": """Your appeal progress has been saved.
 
-Click the link below to verify your email address:
-{verification_link}
+Citation: {citation_number}
 
-If you didn't request this, please ignore this email.
+Click the link below to resume your appeal where you left off:
+{resume_link}
+
+This link is valid for 24 hours.
 
 Questions? Reply to this email or contact {support_email}
 
@@ -159,30 +161,6 @@ class EmailService:
             "total_calls": self._circuit_breaker.metrics.total_calls,
             "daily_count": self._daily_count,
         }
-
-    async def send_admin_alert(self, subject: str, message: str) -> bool:
-        """
-        Send an alert email to the admin/support email.
-
-        Args:
-            subject: The alert subject
-            message: The alert message body
-
-        Returns:
-            True if sent successfully, False otherwise
-        """
-        if not self.support_email:
-            logger.error("No support_email configured for admin alerts")
-            return False
-
-        full_subject = f"[ALERT] {subject}"
-        logger.warning(f"Sending admin alert: {full_subject}")
-
-        if self.is_available:
-            return await self._send_via_sendgrid(self.support_email, full_subject, message)
-
-        # If not available, just logging (which we already did) is sufficient
-        return True
 
     async def _send_via_sendgrid(
         self, to_email: str, subject: str, body_text: str
@@ -298,6 +276,44 @@ class EmailService:
                 return True
             logger.warning("SendGrid send failed, falling back to logged mode")
 
+        return True
+
+    async def send_save_progress_link(
+        self,
+        email: str,
+        citation_number: str,
+        resume_link: str,
+    ) -> bool:
+        """
+        Send appeal progress save link.
+
+        Args:
+            email: Customer email address
+            citation_number: Citation number
+            resume_link: Resume link
+
+        Returns:
+            True if email was sent successfully (or logged in dev mode)
+        """
+        subject, body = await self._render_template(
+            "save_progress",
+            citation_number=citation_number,
+            resume_link=resume_link,
+        )
+
+        # Always log
+        logger.info(
+            f"Save progress email to {email}: "
+            f"Citation {citation_number}, Link {resume_link}"
+        )
+
+        # Try to send via SendGrid if configured
+        if self.is_available:
+            success = await self._send_via_sendgrid(email, subject, body)
+            if success:
+                return True
+            logger.warning("SendGrid send failed, falling back to logged mode")
+
         return True  # Return True for logged mode
 
     async def send_appeal_mailed(
@@ -330,40 +346,6 @@ class EmailService:
         logger.info(
             f"Appeal mailed email to {email}: "
             f"Citation {citation_number}, Tracking {tracking_number}"
-        )
-
-        # Try to send via SendGrid if configured
-        if self.is_available:
-            success = await self._send_via_sendgrid(email, subject, body)
-            if success:
-                return True
-            logger.warning("SendGrid send failed, falling back to logged mode")
-
-        return True
-
-    async def send_verification_email(
-        self,
-        email: str,
-        verification_link: str,
-    ) -> bool:
-        """
-        Send email verification link.
-
-        Args:
-            email: User email address
-            verification_link: The full verification URL
-
-        Returns:
-            True if email was sent successfully (or logged in dev mode)
-        """
-        subject, body = await self._render_template(
-            "email_verification",
-            verification_link=verification_link,
-        )
-
-        # Always log
-        logger.info(
-            f"Verification email to {email}: Link {verification_link}"
         )
 
         # Try to send via SendGrid if configured
@@ -410,34 +392,6 @@ class EmailService:
             if success:
                 return True
             logger.warning("SendGrid send failed, falling back to logged mode")
-
-        return True
-
-    async def send_admin_alert(self, subject: str, message: str) -> bool:
-        """
-        Send an admin alert email.
-
-        Args:
-            subject: Email subject
-            message: Email body
-
-        Returns:
-            True if sent successfully or logged in fallback
-        """
-        if not self.support_email:
-            logger.warning("No support email configured for admin alerts")
-            return False
-
-        full_subject = f"[ADMIN ALERT] {subject}"
-
-        # Always log critical alerts
-        logger.error(f"ADMIN ALERT: {subject} - {message}")
-
-        if self.is_available:
-            success = await self._send_via_sendgrid(self.support_email, full_subject, message)
-            if success:
-                return True
-            logger.warning("Failed to send admin alert via SendGrid")
 
         return True
 
