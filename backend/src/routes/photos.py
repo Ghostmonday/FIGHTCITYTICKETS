@@ -173,7 +173,7 @@ async def upload_photo(
 
 
 @router.delete("/photos/{photo_id}")
-async def delete_photo(photo_id: str):
+async def delete_photo(photo_id: uuid.UUID):
     """
     Delete an uploaded photo.
     """
@@ -182,7 +182,7 @@ async def delete_photo(photo_id: str):
         if subdir.is_dir():
             for file in subdir.glob(f"{photo_id}_*"):
                 file.unlink()
-                return {"message": "Photo deleted", "photo_id": photo_id}
+                return {"message": "Photo deleted", "photo_id": str(photo_id)}
 
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
