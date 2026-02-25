@@ -11,7 +11,7 @@ from typing import Any, Optional
 import time
 import logging
 
-import stripee eeeeeeeee3ddddfffdd
+import stripe
 
 from ..config import settings
 from ..middleware.resilience import CircuitBreaker, create_stripe_circuit
