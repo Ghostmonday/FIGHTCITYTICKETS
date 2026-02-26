@@ -27,7 +27,7 @@ ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 class PresignedUrlRequest(BaseModel):
     filename: str
     content_type: str
-    citation_number: Optional[str] = None
+    citation_number: str | None = None
 
 
 class PresignedUrlResponse(BaseModel):
@@ -107,13 +107,13 @@ def get_presigned_url(request: PresignedUrlRequest):
 
 @router.post("/photos/upload", response_model=UploadResponse)
 async def upload_photo(
-    citation_number: Optional[str] = None,
-    city_id: Optional[str] = None,
-    file: UploadFile = File(...),
+    citation_number: str | None = None,
+    city_id: str | None = None,  # noqa: ARG001
+    file: UploadFile = File(...),  # noqa: B008
 ):
     """
     Upload a photo of a parking ticket.
-    
+
     Stores the file temporarily and returns a photo_id that can be
     used to associate the photo with an appeal.
     """
@@ -124,17 +124,24 @@ async def upload_photo(
             detail=f"Invalid file type. Allowed: {', '.join(ALLOWED_TYPES)}",
         )
 
-    # Read file content to check size
-    content = await file.read()
-    if len(content) > MAX_FILE_SIZE:
+    # Check file size without reading into memory
+    # UploadFile.file is a SpooledTemporaryFile
+    file.file.seek(0, 2)
+    file_size = file.file.tell()
+    file.file.seek(0)
+
+    if file_size > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File too large. Max size: {MAX_FILE_SIZE / (1024*1024)}MB",
         )
 
+    # Read file content
+    content = await file.read()
+
     # Generate unique ID
     photo_id = str(uuid.uuid4())
-    
+
     # Determine extension
     ext = ".jpg"
     if file.content_type == "image/png":
@@ -147,21 +154,21 @@ async def upload_photo(
     # Create filename with metadata
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     safe_filename = f"{photo_id}_{timestamp}{ext}"
-    
+
     # Create subdirectory based on citation or default
     subdir = "temp"
     if citation_number:
         # Sanitize citation number for directory name
         safe_citation = "".join(c for c in citation_number if c.isalnum())[:20]
         subdir = safe_citation
-    
+
     target_dir = UPLOAD_DIR / subdir
     target_dir.mkdir(parents=True, exist_ok=True)
-    
+
     file_path = target_dir / safe_filename
 
     # Write file
-    with open(file_path, "wb") as f:
+    with file_path.open("wb") as f:
         f.write(content)
 
     return UploadResponse(
