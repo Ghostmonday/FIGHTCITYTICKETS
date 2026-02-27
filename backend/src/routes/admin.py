@@ -8,6 +8,7 @@ Protected by admin secret key header.
 import json
 import logging
 import os
+import re
 import secrets
 from typing import Dict, List, Optional
 
@@ -96,6 +97,57 @@ class AddressOverrideResponse(BaseModel):
 
 class LoginRequest(BaseModel):
     secret: str
+
+
+# Redaction Logic
+
+def _redact_sensitive_info(logs: str) -> str:
+    """
+    Redact PII and sensitive credentials from logs.
+
+    Targets:
+    - Email addresses
+    - Phone numbers (common formats)
+    - Stripe secret keys (sk_live_..., sk_test_..., rk_...)
+    - Common API key patterns in key=value pairs
+    """
+    if not logs:
+        return ""
+
+    # Compile regex patterns
+    # 1. Email addresses (basic pattern)
+    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+
+    # 2. Phone numbers (US formats: 123-456-7890, (123) 456-7890, 123.456.7890)
+    # Be careful not to match timestamps or other numbers
+    phone_pattern = r'\b(?:\+?1[-. ]?)?\(?([2-9][0-8][0-9])\)?[-. ]?([2-9][0-9]{2})[-. ]?([0-9]{4})\b'
+
+    # 3. Stripe Secret Keys
+    stripe_key_pattern = r'\b(sk_live_|sk_test_|rk_live_|rk_test_)[a-zA-Z0-9]{10,}\b'
+
+    # 4. Generic Key Redaction (e.g. api_key='...', password="...")
+    # Matches common variable assignments in repr() or JSON
+    # Keys: api_key, password, secret, token, key
+    generic_secret_pattern = r'(["\']?(?:api[_\s]?key|password|secret|token|auth[_\s]?token)["\']?\s*[:=]\s*)(["\'][^"\']+["\'])'
+
+    # Apply redactions
+    redacted = logs
+
+    # Redact Stripe Keys
+    redacted = re.sub(stripe_key_pattern, r'\1[REDACTED]', redacted)
+
+    # Redact Emails (excluding common false positives if necessary, but basic pattern is usually safe for logs)
+    redacted = re.sub(email_pattern, '[EMAIL_REDACTED]', redacted)
+
+    # Redact Phone Numbers
+    redacted = re.sub(phone_pattern, '[PHONE_REDACTED]', redacted)
+
+    # Redact Generic Secrets
+    # This replaces the value part with [REDACTED]
+    # Group 1 is the key and separator, Group 2 is the quoted value
+    redacted = re.sub(generic_secret_pattern, r'\1"[REDACTED]"', redacted, flags=re.IGNORECASE)
+
+    return redacted
 
 
 # Endpoints
@@ -371,7 +423,12 @@ def get_server_logs(
         with open(log_file, "r") as f:
             all_lines = f.readlines()
             last_lines = all_lines[-lines:]
-            return LogResponse(logs="".join(last_lines))
+            raw_logs = "".join(last_lines)
+
+            # Apply redaction
+            clean_logs = _redact_sensitive_info(raw_logs)
+
+            return LogResponse(logs=clean_logs)
     except Exception as e:
         logger.error(f"Error reading logs: {e}")
         return LogResponse(logs=f"Error reading log file: {str(e)}")
