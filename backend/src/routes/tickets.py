@@ -8,7 +8,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from ..middleware.rate_limit import limiter
 from ..services.citation import CitationValidator
@@ -44,10 +44,10 @@ class TicketType(BaseModel):
 class CitationValidationRequest(BaseModel):
     """Request model for citation validation."""
 
-    citation_number: str
-    license_plate: Optional[str] = None
-    violation_date: Optional[str] = None
-    city_id: Optional[str] = None
+    citation_number: str = Field(..., max_length=100)
+    license_plate: Optional[str] = Field(None, max_length=20)
+    violation_date: Optional[str] = Field(None, max_length=20)
+    city_id: Optional[str] = Field(None, max_length=100)
 
 
 class CitationValidationResponse(BaseModel):
