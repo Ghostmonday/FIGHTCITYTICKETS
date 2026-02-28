@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 from pathlib import Path
-from backend.src.services.address_validator import AddressValidator
+from src.services.address_validator import AddressValidator
 
 @pytest.fixture
 def mock_city_registry():
@@ -28,11 +28,11 @@ def mock_email_service():
 @pytest.fixture
 def address_validator(mock_city_registry):
     # Mocking get_city_registry inside AddressValidator
-    with patch("backend.src.services.address_validator.get_city_registry", return_value=mock_city_registry):
+    with patch("src.services.address_validator.get_city_registry", return_value=mock_city_registry):
         validator = AddressValidator(cities_dir=Path("/tmp/cities"))
 
         # Override CITY_URL_MAPPING to include our test city
-        from backend.src.services import address_validator as av_module
+        from src.services import address_validator as av_module
         av_module.CITY_URL_MAPPING["test-city"] = "http://test-city.com"
         av_module.EXPECTED_ADDRESSES["test-city"] = "123 Main St, Test City, TS 12345"
 
@@ -54,7 +54,7 @@ async def test_alert_on_consecutive_failures(address_validator, mock_email_servi
     address_validator._scrape_url = AsyncMock(return_value=None)
 
     # Mock get_email_service to return our mock service
-    with patch("backend.src.services.address_validator.get_email_service", return_value=mock_email_service):
+    with patch("src.services.address_validator.get_email_service", return_value=mock_email_service):
 
         # 1st Failure
         await address_validator.validate_address(city_id)
@@ -93,7 +93,7 @@ async def test_reset_count_on_success(address_validator, mock_email_service):
     # Mock _scrape_url to fail initially
     address_validator._scrape_url = AsyncMock(return_value=None)
 
-    with patch("backend.src.services.address_validator.get_email_service", return_value=mock_email_service):
+    with patch("src.services.address_validator.get_email_service", return_value=mock_email_service):
         # 2 Failures
         await address_validator.validate_address(city_id)
         await address_validator.validate_address(city_id)
