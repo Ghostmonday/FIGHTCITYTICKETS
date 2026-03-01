@@ -97,7 +97,7 @@ async def refine_appeal_statement(request: StatementRefinementRequest):
         # Unexpected error
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Statement refinement failed: {str(e)}",
+            detail="Statement refinement failed",
         ) from e
 
 

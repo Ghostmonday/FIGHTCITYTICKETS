@@ -201,7 +201,7 @@ async def update_appeal(
             if not intake:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Intake {intake_id} not found",
+                    detail="Intake not found",
                 )
             
             # Update fields using ORM
@@ -227,7 +227,7 @@ async def update_appeal(
         logger.error(f"Error updating intake {intake_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update intake: {str(e)}",
+            detail="Failed to update intake",
         )
 
 
@@ -248,7 +248,7 @@ async def get_appeal(
         if not intake:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Intake {intake_id} not found",
+                detail="Intake not found",
             )
 
         return {
@@ -279,7 +279,7 @@ async def get_appeal(
         logger.error(f"Error retrieving intake {intake_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve intake: {str(e)}",
+            detail="Failed to retrieve intake",
         )
 
 
@@ -329,7 +329,7 @@ async def create_appeal(data: AppealUpdateRequest):
         logger.error(f"Error creating intake: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create intake: {str(e)}",
+            detail="Failed to create intake",
         )
 
 
@@ -350,7 +350,7 @@ async def send_resume_link(
         if not intake:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Intake {intake_id} not found",
+                detail="Intake not found",
             )
 
         # Generate a fresh token
@@ -374,5 +374,5 @@ async def send_resume_link(
         logger.error(f"Error sending resume link for intake {intake_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send resume link: {str(e)}",
+            detail="Failed to send resume link",
         )

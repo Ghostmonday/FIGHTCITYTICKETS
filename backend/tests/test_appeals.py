@@ -97,7 +97,7 @@ def test_update_appeal_not_found(mock_db_service):
     # The application uses a custom error handler that returns "message" instead of "detail"
     data = response.json()
     assert "message" in data
-    assert data["message"] == f"Intake {intake_id} not found"
+    assert "not found" in data["message"].lower()
 
 def test_update_appeal_no_updates(mock_db_service):
     intake_id = 123
@@ -147,9 +147,6 @@ def test_update_appeal_db_error(mock_db_service):
     response = client.put(f"/api/appeals/{intake_id}", json={"appeal_reason": "test"})
 
     assert response.status_code == 500
-    # For 500 errors raised as HTTPException, it seems the default handler is active
-    # returning 'detail' with the exception message.
     data = response.json()
     assert "detail" in data
     assert "Failed to update intake" in data["detail"]
-    assert "DB Connection Lost" in data["detail"]
