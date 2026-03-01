@@ -385,7 +385,7 @@ async def create_appeal_checkout(request: Request, data: AppealCheckoutRequest):
         logger.error(f"Stripe checkout error: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create checkout session: {str(e)}",
+            detail="Failed to create checkout session",
         )
 
 

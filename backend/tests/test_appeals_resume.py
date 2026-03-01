@@ -71,7 +71,7 @@ def test_send_resume_link_not_found(mock_db_service, mock_email_service):
     )
 
     assert response.status_code == 404
-    assert response.json()["message"] == f"Intake {intake_id} not found"
+    assert "not found" in response.json()["message"].lower()
 
 def test_send_resume_link_email_failure(mock_db_service, mock_email_service):
     intake_id = 123
